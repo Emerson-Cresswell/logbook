@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procedure Logbook & CPD</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <h1>Procedure Logbook & CPD</h1>
+      <p>Local-first clinical logbook</p>
+    </header>
+
+    <main>
+      <section id="homeScreen" class="screen active">
+        <div id="backupCard" class="backup-card backup-ok">
+          <h2 id="backupTitle">Backup up to date</h2>
+          <p id="backupText">No changes since last backup.</p>
+          <button id="backupNowButton" class="button secondary hidden">Backup now</button>
+        </div>
+
+        <div class="home-actions">
+          <button id="addEntryButton" class="button primary">Add new entry</button>
+          <button id="viewLogbookButton" class="button secondary">View logbook</button>
+          <button id="viewSummariesButton" class="button secondary">Summaries</button>
+          <button id="viewBackupButton" class="button secondary">Backup & export</button>
+        </div>
+      </section>
+
+      <section id="entryTypeScreen" class="screen">
+        <button class="back-button" data-go="homeScreen">Back</button>
+        <h2>What would you like to add?</h2>
+        <button class="choice-button" data-entry-type="procedure">Procedure</button>
+        <button class="choice-button" data-entry-type="cpd">CPD</button>
+      </section>
+
+      <section id="wizardScreen" class="screen">
+        <button id="wizardBackButton" class="back-button">Back</button>
+        <p id="stepLabel" class="step-label"></p>
+        <h2 id="wizardTitle"></h2>
+        <p id="wizardHelp" class="help-text"></p>
+        <div id="wizardContent"></div>
+      </section>
+
+      <section id="logbookScreen" class="screen">
+        <button class="back-button" data-go="homeScreen">Back</button>
+        <h2>Logbook</h2>
+        <div class="filter-row">
+          <button class="filter-button active" data-filter="all">All</button>
+          <button class="filter-button" data-filter="procedure">Procedures</button>
+          <button class="filter-button" data-filter="cpd">CPD</button>
+        </div>
+        <input id="searchInput" class="search-input" type="search" placeholder="Search entries">
+        <div id="entryList" class="entry-list"></div>
+      </section>
+
+      <section id="summariesScreen" class="screen">
+        <button class="back-button" data-go="homeScreen">Back</button>
+        <h2>Summaries</h2>
+        <div id="summaryContent"></div>
+      </section>
+
+      <section id="backupScreen" class="screen">
+        <button class="back-button" data-go="homeScreen">Back</button>
+        <h2>Backup & export</h2>
+        <button id="downloadJsonButton" class="button primary">Download JSON backup</button>
+        <button id="downloadCsvButton" class="button secondary">Download CSV export</button>
+        <button id="importJsonButton" class="button secondary">Import JSON backup</button>
+        <input id="importFileInput" type="file" accept="application/json" hidden>
+        <p class="warning-text">
+          Do not enter patient-identifiable information.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
