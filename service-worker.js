@@ -1,4 +1,4 @@
-const CACHE_NAME = "procedure-logbook-v1";
+const CACHE_NAME = "procedure-logbook-v2";
 
 const FILES_TO_CACHE = [
   "./",
@@ -6,7 +6,8 @@ const FILES_TO_CACHE = [
   "./styles.css",
   "./app.js",
   "./manifest.json",
-  "./icon.svg"
+  "./icon.svg",
+  "./xlsx.full.min.js"
 ];
 
 self.addEventListener("install", event => {
