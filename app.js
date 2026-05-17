@@ -15,6 +15,7 @@ let wizardSteps = [];
 let wizardIndex = 0;
 let draft = {};
 let logbookFilter = "all";
+let editingEntryId = null;
 
 const procedureSteps = [
   "date",
