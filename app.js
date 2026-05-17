@@ -800,12 +800,12 @@ function makeDateScreen() {
     nextWizardStep();
   });
 
-  const nextButton = makeButton("Next", "button primary", () => {
+  const selectedDateButton = makeButton("Use selected date", "button primary wizard-action-button date-confirm-button", () => {
     draft.date = input.value;
     nextWizardStep();
   });
 
-  wrapper.append(input, todayButton, yesterdayButton, nextButton);
+  wrapper.append(input, todayButton, yesterdayButton, selectedDateButton);
   return wrapper;
 }
 
@@ -832,15 +832,21 @@ function makeHospitalScreen() {
     }));
   });
 
-  wrapper.appendChild(makeButton("Add hospital", "button secondary wizard-action-button", () => {
-    renderAddHospitalScreen(wrapper);
-  }));
+  const rowButtons = [
+    makeButton("Add hospital", "button secondary wizard-action-button", () => {
+      renderAddHospitalScreen(wrapper);
+    })
+  ];
 
   if (state.hospitals.length > 0) {
-    wrapper.appendChild(makeButton("Delete hospital", "button secondary wizard-action-button", () => {
-      renderDeleteHospitalScreen(wrapper);
-    }));
+    rowButtons.push(
+      makeButton("Delete hospital", "button secondary wizard-action-button", () => {
+        renderDeleteHospitalScreen(wrapper);
+      })
+    );
   }
+
+  wrapper.appendChild(makeActionRow(rowButtons));
 
   wrapper.appendChild(makeButton("Skip / not recorded", "button secondary wizard-action-button", () => {
     draft.hospital = "";
@@ -950,15 +956,21 @@ function makeChoiceScreen(field, procedureName = "") {
   });
 
   if (configurable) {
-    wrapper.appendChild(makeButton(`Add ${label}`, "button secondary wizard-action-button", () => {
-      renderAddOptionScreen(wrapper, field, procedureName);
-    }));
+    const rowButtons = [
+      makeButton(`Add ${label}`, "button secondary wizard-action-button", () => {
+        renderAddOptionScreen(wrapper, field, procedureName);
+      })
+    ];
 
     if (options.length > 0) {
-      wrapper.appendChild(makeButton(`Delete ${label}`, "button secondary wizard-action-button", () => {
-        renderDeleteOptionScreen(wrapper, field, procedureName);
-      }));
+      rowButtons.push(
+        makeButton(`Delete ${label}`, "button secondary wizard-action-button", () => {
+          renderDeleteOptionScreen(wrapper, field, procedureName);
+        })
+      );
     }
+
+    wrapper.appendChild(makeActionRow(rowButtons));
   }
 
   return wrapper;
@@ -1216,6 +1228,17 @@ function makeButton(text, className, onClick) {
   button.textContent = text;
   button.addEventListener("click", onClick);
   return button;
+}
+
+function makeActionRow(buttons) {
+  const row = document.createElement("div");
+  row.className = buttons.length === 1 ? "action-row single-action" : "action-row";
+
+  buttons.forEach(button => {
+    row.appendChild(button);
+  });
+
+  return row;
 }
 
 function renderLogbook() {
