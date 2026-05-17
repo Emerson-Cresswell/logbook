@@ -21,9 +21,10 @@ const procedureSteps = [
   "date",
   "hospital",
   "specialty",
+  "context",
   "procedure",
   "site",
-  "context",
+  "technique",
   "role",
   "supervision",
   "outcome",
@@ -73,6 +74,10 @@ const procedureOptions = {
     "Clinic",
     "Other"
   ],
+  technique: [
+    "Ultrasound",
+    "Landmark"
+  ],
   role: [
     "Observed",
     "Assisted",
@@ -115,45 +120,20 @@ const siteOptionsByProcedure = {
     "Left radial",
     "Right femoral",
     "Left femoral",
+    "Right brachial",
+    "Left brachial",
     "Dorsalis pedis",
-    "Other"
-  ],
-  "Intubation": [
-    "Oral",
-    "Nasal",
-    "Tracheostomy",
     "Other"
   ],
   "Chest drain": [
     "Right chest",
     "Left chest",
-    "Seldinger",
-    "Open/surgical",
-    "Other"
-  ],
-  "Lumbar puncture": [
-    "Diagnostic",
-    "Therapeutic",
     "Other"
   ],
   "Ascitic drain": [
-    "Diagnostic tap",
-    "Therapeutic drain",
-    "Other"
-  ],
-  "Bronchoscopy": [
-    "Diagnostic",
-    "Therapeutic",
-    "Airway toilet",
-    "Other"
-  ],
-  "Tracheostomy-related procedure": [
-    "Change",
-    "Insertion assistance",
-    "Troubleshooting",
-    "Other"
-  ],
-  "Other": [
+    "Right abdomen",
+    "Left abdomen",
+    "Midline",
     "Other"
   ]
 };
@@ -312,6 +292,38 @@ function renderBackupStatus() {
   }
 }
 
+function hasSiteOptions(procedureName) {
+  return Array.isArray(siteOptionsByProcedure[procedureName]) &&
+    siteOptionsByProcedure[procedureName].length > 0;
+}
+
+function isStepRelevant(step) {
+  if (step === "site") {
+    return currentEntryType === "procedure" && hasSiteOptions(draft.procedure);
+  }
+
+  if (step === "technique") {
+    return currentEntryType === "procedure" && draft.procedure === "Arterial line";
+  }
+
+  return true;
+}
+
+function getRelevantWizardSteps() {
+  return wizardSteps.filter(step => isStepRelevant(step));
+}
+
+function findNextRelevantIndex(startIndex, direction) {
+  let index = startIndex + direction;
+
+  while (index >= 0 && index < wizardSteps.length) {
+    if (isStepRelevant(wizardSteps[index])) return index;
+    index += direction;
+  }
+
+  return null;
+}
+
 function startEntry(type) {
   currentEntryType = type;
   editingEntryId = null;
@@ -343,6 +355,10 @@ function editEntry(entryId) {
   currentEntryType = entry.type;
   draft = { ...entry };
 
+  if (draft.type === "procedure" && !draft.context && draft.location) {
+    draft.context = draft.location;
+  }
+
   wizardSteps = entry.type === "procedure" ? procedureSteps : cpdSteps;
   wizardIndex = 0;
 
@@ -351,8 +367,10 @@ function editEntry(entryId) {
 }
 
 function goWizardBack() {
-  if (wizardIndex > 0) {
-    wizardIndex -= 1;
+  const previousIndex = findNextRelevantIndex(wizardIndex, -1);
+
+  if (previousIndex !== null) {
+    wizardIndex = previousIndex;
     renderWizard();
   } else {
     showScreen("entryTypeScreen");
@@ -360,20 +378,35 @@ function goWizardBack() {
 }
 
 function nextWizardStep() {
-  if (wizardIndex < wizardSteps.length - 1) {
-    wizardIndex += 1;
+  const nextIndex = findNextRelevantIndex(wizardIndex, 1);
+
+  if (nextIndex !== null) {
+    wizardIndex = nextIndex;
     renderWizard();
   }
 }
 
 function renderWizard() {
   const step = wizardSteps[wizardIndex];
+
+  if (!isStepRelevant(step)) {
+    const nextIndex = findNextRelevantIndex(wizardIndex, 1);
+    if (nextIndex !== null) {
+      wizardIndex = nextIndex;
+      renderWizard();
+    }
+    return;
+  }
+
   const stepLabel = document.getElementById("stepLabel");
   const title = document.getElementById("wizardTitle");
   const help = document.getElementById("wizardHelp");
   const content = document.getElementById("wizardContent");
 
-  stepLabel.textContent = `Step ${wizardIndex + 1} of ${wizardSteps.length}`;
+  const relevantSteps = getRelevantWizardSteps();
+  const visibleStepNumber = relevantSteps.indexOf(step) + 1;
+
+  stepLabel.textContent = `Step ${visibleStepNumber} of ${relevantSteps.length}`;
   help.textContent = "";
   content.innerHTML = "";
 
@@ -391,8 +424,14 @@ function renderWizard() {
   }
 
   if (step === "specialty") {
-    title.textContent = "Specialty / area";
+    title.textContent = "Specialty / Placement";
     content.appendChild(makeChoiceScreen("specialty", procedureOptions.specialty));
+    return;
+  }
+
+  if (step === "context") {
+    title.textContent = "Location";
+    content.appendChild(makeChoiceScreen("context", procedureOptions.context));
     return;
   }
 
@@ -403,16 +442,16 @@ function renderWizard() {
   }
 
   if (step === "site") {
-    title.textContent = "Site / subtype";
-    const procedure = draft.procedure || "Other";
-    const options = siteOptionsByProcedure[procedure] || ["Other"];
+    title.textContent = "Site";
+    const procedure = draft.procedure || "";
+    const options = siteOptionsByProcedure[procedure] || [];
     content.appendChild(makeChoiceScreen("site", options));
     return;
   }
 
-  if (step === "context") {
-    title.textContent = "Context";
-    content.appendChild(makeChoiceScreen("context", procedureOptions.context));
+  if (step === "technique") {
+    title.textContent = "Technique";
+    content.appendChild(makeChoiceScreen("technique", procedureOptions.technique));
     return;
   }
 
@@ -492,7 +531,7 @@ function renderWizard() {
   }
 
   if (step === "review") {
-    title.textContent = "Review & save";
+    title.textContent = editingEntryId ? "Review & save changes" : "Review & save";
     content.appendChild(makeReviewScreen());
   }
 }
@@ -508,12 +547,12 @@ function makeDateScreen() {
     draft.date = input.value;
   });
 
-  const todayButton = makeButton("Today", "choice-button", () => {
+  const todayButton = makeButton("Today", "choice-button centered-choice", () => {
     draft.date = todayISO();
     nextWizardStep();
   });
 
-  const yesterdayButton = makeButton("Yesterday", "choice-button", () => {
+  const yesterdayButton = makeButton("Yesterday", "choice-button centered-choice", () => {
     const date = new Date();
     date.setDate(date.getDate() - 1);
     draft.date = date.toISOString().slice(0, 10);
@@ -646,6 +685,12 @@ function makeChoiceScreen(field, options) {
       }
 
       draft[field] = option;
+
+      if (field === "procedure") {
+        delete draft.site;
+        delete draft.technique;
+      }
+
       nextWizardStep();
     }));
   });
@@ -670,6 +715,12 @@ function renderOtherInput(wrapper, field, option) {
     }
 
     draft[field] = value;
+
+    if (field === "procedure") {
+      delete draft.site;
+      delete draft.technique;
+    }
+
     nextWizardStep();
   });
 
@@ -782,33 +833,36 @@ function makeReviewScreen() {
   const review = document.createElement("div");
   review.className = "review-list";
 
-  const rows = currentEntryType === "procedure"
-    ? [
-        ["Date", formatDate(draft.date)],
-        ["Hospital", draft.hospital || "Not recorded"],
-        ["Specialty", draft.specialty],
-        ["Procedure", draft.procedure],
-        ["Site/subtype", draft.site],
-        ["Context", draft.context],
-        ["Role", draft.role],
-        ["Supervision", draft.supervision],
-        ["Outcome", draft.outcome],
-        ["Attempts", draft.attempts],
-        ["Complication", draft.complication],
-        ["Notes", draft.notes || "None"]
-      ]
-    : [
-        ["Date", formatDate(draft.date)],
-        ["CPD type", draft.cpdType],
-        ["Format", draft.cpdFormat],
-        ["Topic", draft.cpdTopic],
-        ["Title", draft.cpdTitle],
-        ["Provider", draft.cpdProvider || "Not recorded"],
-        ["Location", draft.cpdLocation || "Not recorded"],
-        ["Time", draft.cpdTime],
-        ["Evidence", draft.cpdEvidence],
-        ["Reflection", draft.cpdReflection || "None"]
-      ];
+  const procedureRows = [
+    ["Date", formatDate(draft.date)],
+    ["Hospital", draft.hospital || "Not recorded"],
+    ["Specialty / Placement", draft.specialty],
+    ["Location", draft.context],
+    ["Procedure", draft.procedure],
+    ["Site", draft.site || "Not applicable"],
+    ["Technique", draft.technique || "Not applicable"],
+    ["Role", draft.role],
+    ["Supervision", draft.supervision],
+    ["Outcome", draft.outcome],
+    ["Attempts", draft.attempts],
+    ["Complication", draft.complication],
+    ["Notes", draft.notes || "None"]
+  ];
+
+  const cpdRows = [
+    ["Date", formatDate(draft.date)],
+    ["CPD type", draft.cpdType],
+    ["Format", draft.cpdFormat],
+    ["Topic", draft.cpdTopic],
+    ["Title", draft.cpdTitle],
+    ["Provider", draft.cpdProvider || "Not recorded"],
+    ["Location", draft.cpdLocation || "Not recorded"],
+    ["Time", draft.cpdTime],
+    ["Evidence", draft.cpdEvidence],
+    ["Reflection", draft.cpdReflection || "None"]
+  ];
+
+  const rows = currentEntryType === "procedure" ? procedureRows : cpdRows;
 
   rows.forEach(([label, value]) => {
     const p = document.createElement("p");
@@ -913,10 +967,11 @@ function entrySummary(entry) {
     return [
       `Date: ${formatDate(entry.date)}`,
       `Hospital: ${entry.hospital || "Not recorded"}`,
-      `Specialty: ${entry.specialty || "Not recorded"}`,
+      `Specialty / Placement: ${entry.specialty || "Not recorded"}`,
+      `Location: ${entry.context || "Not recorded"}`,
       `Procedure: ${entry.procedure || "Not recorded"}`,
-      `Site/subtype: ${entry.site || "Not recorded"}`,
-      `Context: ${entry.context || "Not recorded"}`,
+      `Site: ${entry.site || "Not applicable"}`,
+      `Technique: ${entry.technique || "Not applicable"}`,
       `Role: ${entry.role || "Not recorded"}`,
       `Supervision: ${entry.supervision || "Not recorded"}`,
       `Outcome: ${entry.outcome || "Not recorded"}`,
@@ -955,6 +1010,7 @@ function renderSummaries() {
 
   container.appendChild(summaryCard("Procedures by type", countBy(procedures, "procedure")));
   container.appendChild(summaryCard("Procedures by hospital", countBy(procedures, "hospital")));
+  container.appendChild(summaryCard("Procedures by location", countBy(procedures, "context")));
   container.appendChild(summaryCard("Procedures by supervision", countBy(procedures, "supervision")));
   container.appendChild(summaryCard("CPD by type", countBy(cpd, "cpdType")));
   container.appendChild(summaryCard("CPD by topic", countBy(cpd, "cpdTopic")));
@@ -1058,8 +1114,10 @@ function downloadExcelWorkbook() {
   addSheet(workbook, "Procedure summary", buildProcedureSummaryRows(), ["Summary", "Value"]);
   addSheet(workbook, "CPD summary", buildCpdSummaryRows(), ["Summary", "Value"]);
   addSheet(workbook, "Hospital summary", countByAsObjects(procedureRows, "Hospital", "Hospital"), ["Hospital", "Count"]);
+  addSheet(workbook, "Location summary", countByAsObjects(procedureRows, "Location", "Location"), ["Location", "Count"]);
   addSheet(workbook, "Supervision summary", countByAsObjects(procedureRows, "Supervision", "Supervision"), ["Supervision", "Count"]);
   addSheet(workbook, "Procedure type summary", countByAsObjects(procedureRows, "Procedure", "Procedure"), ["Procedure", "Count"]);
+  addSheet(workbook, "Technique summary", countByAsObjects(procedureRows, "Technique", "Technique"), ["Technique", "Count"]);
   addSheet(workbook, "CPD topic summary", countByAsObjects(cpdRows, "Topic", "Topic"), ["Topic", "Count"]);
 
   const filename = `procedure-logbook-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
@@ -1100,10 +1158,11 @@ function allEntriesHeaders() {
     "Type",
     "Date",
     "Hospital",
-    "Specialty",
+    "Specialty / Placement",
+    "Location",
     "Procedure",
-    "Site/subtype",
-    "Context",
+    "Site",
+    "Technique",
     "Role",
     "Supervision",
     "Outcome",
@@ -1115,7 +1174,7 @@ function allEntriesHeaders() {
     "Topic",
     "Title",
     "Provider",
-    "Location",
+    "CPD location",
     "Time claimed",
     "Evidence",
     "Reflection",
@@ -1128,10 +1187,11 @@ function procedureHeaders() {
   return [
     "Date",
     "Hospital",
-    "Specialty",
+    "Specialty / Placement",
+    "Location",
     "Procedure",
-    "Site/subtype",
-    "Context",
+    "Site",
+    "Technique",
     "Role",
     "Supervision",
     "Outcome",
@@ -1165,10 +1225,11 @@ function entryToAllEntriesRow(entry) {
     "Type": entry.type || "",
     "Date": entry.date || "",
     "Hospital": entry.hospital || "",
-    "Specialty": entry.specialty || "",
+    "Specialty / Placement": entry.specialty || "",
+    "Location": entry.context || "",
     "Procedure": entry.procedure || "",
-    "Site/subtype": entry.site || "",
-    "Context": entry.context || "",
+    "Site": entry.site || "",
+    "Technique": entry.technique || "",
     "Role": entry.role || "",
     "Supervision": entry.supervision || "",
     "Outcome": entry.outcome || "",
@@ -1180,7 +1241,7 @@ function entryToAllEntriesRow(entry) {
     "Topic": entry.cpdTopic || "",
     "Title": entry.cpdTitle || "",
     "Provider": entry.cpdProvider || "",
-    "Location": entry.cpdLocation || "",
+    "CPD location": entry.cpdLocation || "",
     "Time claimed": entry.cpdTime || "",
     "Evidence": entry.cpdEvidence || "",
     "Reflection": entry.cpdReflection || "",
@@ -1193,10 +1254,11 @@ function entryToProcedureRow(entry) {
   return {
     "Date": entry.date || "",
     "Hospital": entry.hospital || "",
-    "Specialty": entry.specialty || "",
+    "Specialty / Placement": entry.specialty || "",
+    "Location": entry.context || "",
     "Procedure": entry.procedure || "",
-    "Site/subtype": entry.site || "",
-    "Context": entry.context || "",
+    "Site": entry.site || "",
+    "Technique": entry.technique || "",
     "Role": entry.role || "",
     "Supervision": entry.supervision || "",
     "Outcome": entry.outcome || "",
@@ -1235,7 +1297,9 @@ function buildProcedureSummaryRows() {
     { Summary: "Procedures with recorded complications", Value: procedures.filter(entry => entry.complication && entry.complication !== "None").length },
     { Summary: "Independent procedures", Value: procedures.filter(entry => entry.supervision === "Independent").length },
     { Summary: "Directly supervised procedures", Value: procedures.filter(entry => entry.supervision === "Direct supervision").length },
-    { Summary: "Indirectly supervised procedures", Value: procedures.filter(entry => entry.supervision === "Indirect supervision").length }
+    { Summary: "Indirectly supervised procedures", Value: procedures.filter(entry => entry.supervision === "Indirect supervision").length },
+    { Summary: "Arterial lines using ultrasound", Value: procedures.filter(entry => entry.procedure === "Arterial line" && entry.technique === "Ultrasound").length },
+    { Summary: "Arterial lines using landmark technique", Value: procedures.filter(entry => entry.procedure === "Arterial line" && entry.technique === "Landmark").length }
   ];
 }
 
