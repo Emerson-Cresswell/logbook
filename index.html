@@ -3,9 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Procedure Logbook & CPD</title>
+
   <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+
+  <meta name="theme-color" content="#1d4ed8">
 </head>
+
 <body>
   <div id="app">
     <header class="app-header">
@@ -32,6 +38,7 @@
       <section id="entryTypeScreen" class="screen">
         <button class="back-button" data-go="homeScreen">Back</button>
         <h2>What would you like to add?</h2>
+
         <button class="choice-button" data-entry-type="procedure">Procedure</button>
         <button class="choice-button" data-entry-type="cpd">CPD</button>
       </section>
@@ -47,12 +54,15 @@
       <section id="logbookScreen" class="screen">
         <button class="back-button" data-go="homeScreen">Back</button>
         <h2>Logbook</h2>
+
         <div class="filter-row">
           <button class="filter-button active" data-filter="all">All</button>
           <button class="filter-button" data-filter="procedure">Procedures</button>
           <button class="filter-button" data-filter="cpd">CPD</button>
         </div>
+
         <input id="searchInput" class="search-input" type="search" placeholder="Search entries">
+
         <div id="entryList" class="entry-list"></div>
       </section>
 
@@ -65,17 +75,29 @@
       <section id="backupScreen" class="screen">
         <button class="back-button" data-go="homeScreen">Back</button>
         <h2>Backup & export</h2>
-        <button id="downloadJsonButton" class="button primary">Download JSON backup</button>
-        <button id="downloadCsvButton" class="button secondary">Download CSV export</button>
-        <button id="importJsonButton" class="button secondary">Import JSON backup</button>
+
+        <section id="backupScreenStatus" class="backup-card backup-ok">
+          <h3 id="backupScreenTitle">Backup up to date</h3>
+          <p id="backupScreenText">No changes since last backup.</p>
+        </section>
+
+        <div class="stacked-buttons">
+          <button id="downloadJsonButton" class="button primary">Download JSON backup</button>
+          <button id="downloadExcelButton" class="button secondary">Download Excel workbook</button>
+          <button id="importJsonButton" class="button secondary">Import JSON backup</button>
+        </div>
+
         <input id="importFileInput" type="file" accept="application/json" hidden>
+
         <p class="warning-text">
-          Do not enter patient-identifiable information.
+          Do not enter patient-identifiable information. Do not enter names, NHS numbers,
+          hospital numbers, dates of birth, addresses, or identifiable free text.
         </p>
       </section>
     </main>
   </div>
 
+  <script src="xlsx.full.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
