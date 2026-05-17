@@ -98,6 +98,7 @@ h2 {
 }
 
 .backup-card {
+  position: relative;
   border-radius: 16px;
   padding: 16px;
   margin-bottom: 18px;
@@ -123,9 +124,21 @@ h2 {
   border-color: #fca5a5;
 }
 
+#backupCard.backup-needed #backupTitle {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  padding-right: 230px;
+}
+
+#backupCard.backup-needed #backupText {
+  margin-top: 4px;
+}
+
 #backupNowButton {
-  display: block;
-  margin: 16px auto 0;
+  position: absolute;
+  top: 16px;
+  right: 16px;
   min-width: 220px;
 }
 
@@ -184,11 +197,32 @@ h2 {
   color: #991b1b;
 }
 
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.action-row.single-action {
+  grid-template-columns: 1fr;
+}
+
 .wizard-action-button {
   display: block;
   width: 100%;
-  margin-bottom: 12px;
   text-align: center;
+}
+
+.action-row .wizard-action-button {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.date-confirm-button {
+  width: 100%;
+  text-align: center;
+  margin-top: 4px;
 }
 
 .hidden {
