@@ -3,6 +3,24 @@ const STORAGE_KEY = "procedureLogbookData_v1";
 let state = {
   entries: [],
   hospitals: [],
+  customOptions: {
+    specialty: [],
+    context: [],
+    procedure: [],
+    siteByProcedure: {},
+    cpdType: [],
+    cpdFormat: [],
+    cpdTopic: []
+  },
+  hiddenDefaultOptions: {
+    specialty: [],
+    context: [],
+    procedure: [],
+    siteByProcedure: {},
+    cpdType: [],
+    cpdFormat: [],
+    cpdTopic: []
+  },
   backup: {
     lastBackupAt: null,
     changeCountSinceBackup: 0
@@ -45,7 +63,7 @@ const cpdSteps = [
   "review"
 ];
 
-const procedureOptions = {
+const defaultProcedureOptions = {
   specialty: [
     "ICU",
     "Anaesthetics",
@@ -105,7 +123,7 @@ const procedureOptions = {
   ]
 };
 
-const siteOptionsByProcedure = {
+const defaultSiteOptionsByProcedure = {
   "Central venous catheter": [
     "Right IJ",
     "Left IJ",
@@ -138,7 +156,7 @@ const siteOptionsByProcedure = {
   ]
 };
 
-const cpdOptions = {
+const defaultCpdOptions = {
   cpdType: [
     "Course",
     "Conference",
@@ -190,6 +208,16 @@ const cpdOptions = {
   ]
 };
 
+const configurableFields = [
+  "specialty",
+  "context",
+  "procedure",
+  "site",
+  "cpdType",
+  "cpdFormat",
+  "cpdTopic"
+];
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -204,7 +232,79 @@ function formatDate(dateString) {
   });
 }
 
+function normaliseText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function emptyOptionStore() {
+  return {
+    specialty: [],
+    context: [],
+    procedure: [],
+    siteByProcedure: {},
+    cpdType: [],
+    cpdFormat: [],
+    cpdTopic: []
+  };
+}
+
+function cleanArray(value) {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set();
+  const cleaned = [];
+
+  value.forEach(item => {
+    const text = String(item || "").trim();
+    const key = text.toLowerCase();
+
+    if (text && !seen.has(key)) {
+      seen.add(key);
+      cleaned.push(text);
+    }
+  });
+
+  return cleaned;
+}
+
+function cleanOptionStore(store) {
+  const base = emptyOptionStore();
+  const input = store || {};
+
+  Object.keys(base).forEach(key => {
+    if (key === "siteByProcedure") {
+      base.siteByProcedure = {};
+      const siteInput = input.siteByProcedure || {};
+
+      Object.keys(siteInput).forEach(procedureName => {
+        base.siteByProcedure[procedureName] = cleanArray(siteInput[procedureName]);
+      });
+    } else {
+      base[key] = cleanArray(input[key]);
+    }
+  });
+
+  return base;
+}
+
+function ensureStateShape() {
+  state.entries = Array.isArray(state.entries) ? state.entries : [];
+  state.hospitals = cleanArray(state.hospitals).sort();
+  state.customOptions = cleanOptionStore(state.customOptions);
+  state.hiddenDefaultOptions = cleanOptionStore(state.hiddenDefaultOptions);
+
+  state.backup = state.backup || {
+    lastBackupAt: null,
+    changeCountSinceBackup: 0
+  };
+
+  if (typeof state.backup.changeCountSinceBackup !== "number") {
+    state.backup.changeCountSinceBackup = 0;
+  }
+}
+
 function saveState() {
+  ensureStateShape();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
@@ -218,15 +318,15 @@ function loadState() {
     state = {
       entries: parsed.entries || [],
       hospitals: parsed.hospitals || [],
+      customOptions: parsed.customOptions || emptyOptionStore(),
+      hiddenDefaultOptions: parsed.hiddenDefaultOptions || emptyOptionStore(),
       backup: parsed.backup || {
         lastBackupAt: null,
         changeCountSinceBackup: 0
       }
     };
 
-    if (typeof state.backup.changeCountSinceBackup !== "number") {
-      state.backup.changeCountSinceBackup = 0;
-    }
+    ensureStateShape();
   } catch {
     alert("There was a problem loading saved data.");
   }
@@ -292,14 +392,157 @@ function renderBackupStatus() {
   }
 }
 
-function hasSiteOptions(procedureName) {
-  return Array.isArray(siteOptionsByProcedure[procedureName]) &&
-    siteOptionsByProcedure[procedureName].length > 0;
+function getDefaultOptions(field, procedureName = "") {
+  if (field === "site") {
+    return defaultSiteOptionsByProcedure[procedureName] || [];
+  }
+
+  if (defaultProcedureOptions[field]) {
+    return defaultProcedureOptions[field];
+  }
+
+  if (defaultCpdOptions[field]) {
+    return defaultCpdOptions[field];
+  }
+
+  return [];
+}
+
+function getStoredOptionList(storeName, field, procedureName = "") {
+  const store = state[storeName] || emptyOptionStore();
+
+  if (field === "site") {
+    store.siteByProcedure = store.siteByProcedure || {};
+    return cleanArray(store.siteByProcedure[procedureName] || []);
+  }
+
+  return cleanArray(store[field] || []);
+}
+
+function setStoredOptionList(storeName, field, list, procedureName = "") {
+  if (!state[storeName]) state[storeName] = emptyOptionStore();
+
+  if (field === "site") {
+    state[storeName].siteByProcedure = state[storeName].siteByProcedure || {};
+    state[storeName].siteByProcedure[procedureName] = cleanArray(list);
+    return;
+  }
+
+  state[storeName][field] = cleanArray(list);
+}
+
+function getDisplayedOptions(field, procedureName = "") {
+  const defaults = getDefaultOptions(field, procedureName);
+  const hiddenDefaults = getStoredOptionList("hiddenDefaultOptions", field, procedureName)
+    .map(normaliseText);
+
+  const visibleDefaults = defaults.filter(option =>
+    !hiddenDefaults.includes(normaliseText(option))
+  );
+
+  const visibleKeys = new Set(visibleDefaults.map(normaliseText));
+
+  const custom = getStoredOptionList("customOptions", field, procedureName)
+    .filter(option => !visibleKeys.has(normaliseText(option)))
+    .sort((a, b) => a.localeCompare(b));
+
+  return [...visibleDefaults, ...custom];
+}
+
+function optionExists(field, value, procedureName = "") {
+  const key = normaliseText(value);
+  return getDisplayedOptions(field, procedureName)
+    .some(option => normaliseText(option) === key);
+}
+
+function addUserOption(field, value, procedureName = "") {
+  const text = String(value || "").trim();
+
+  if (!text) {
+    alert("Please enter an option.");
+    return false;
+  }
+
+  if (optionExists(field, text, procedureName)) {
+    alert("This option already exists.");
+    return false;
+  }
+
+  const defaults = getDefaultOptions(field, procedureName);
+  const defaultMatch = defaults.find(option => normaliseText(option) === normaliseText(text));
+
+  if (defaultMatch) {
+    const hidden = getStoredOptionList("hiddenDefaultOptions", field, procedureName)
+      .filter(option => normaliseText(option) !== normaliseText(defaultMatch));
+
+    setStoredOptionList("hiddenDefaultOptions", field, hidden, procedureName);
+  } else {
+    const custom = getStoredOptionList("customOptions", field, procedureName);
+    custom.push(text);
+    setStoredOptionList("customOptions", field, custom, procedureName);
+  }
+
+  markChanged();
+  return true;
+}
+
+function deleteUserOption(field, value, procedureName = "") {
+  const defaults = getDefaultOptions(field, procedureName);
+  const defaultMatch = defaults.find(option => normaliseText(option) === normaliseText(value));
+
+  if (defaultMatch) {
+    const hidden = getStoredOptionList("hiddenDefaultOptions", field, procedureName);
+    hidden.push(defaultMatch);
+    setStoredOptionList("hiddenDefaultOptions", field, hidden, procedureName);
+  } else {
+    const custom = getStoredOptionList("customOptions", field, procedureName)
+      .filter(option => normaliseText(option) !== normaliseText(value));
+
+    setStoredOptionList("customOptions", field, custom, procedureName);
+  }
+
+  if (normaliseText(draft[field]) === normaliseText(value)) {
+    delete draft[field];
+  }
+
+  if (field === "procedure") {
+    delete draft.site;
+    delete draft.technique;
+  }
+
+  markChanged();
+}
+
+function fieldLabel(field) {
+  const labels = {
+    specialty: "Specialty / Placement",
+    context: "Location",
+    procedure: "Procedure",
+    site: "Site",
+    cpdType: "CPD type",
+    cpdFormat: "Format",
+    cpdTopic: "Topic area"
+  };
+
+  return labels[field] || "Option";
+}
+
+function isConfigurableField(field) {
+  return configurableFields.includes(field);
+}
+
+function procedureSupportsSite(procedureName) {
+  if (!procedureName) return false;
+
+  const hasDefaultSites = Object.prototype.hasOwnProperty.call(defaultSiteOptionsByProcedure, procedureName);
+  const hasCustomSites = getStoredOptionList("customOptions", "site", procedureName).length > 0;
+
+  return hasDefaultSites || hasCustomSites;
 }
 
 function isStepRelevant(step) {
   if (step === "site") {
-    return currentEntryType === "procedure" && hasSiteOptions(draft.procedure);
+    return currentEntryType === "procedure" && procedureSupportsSite(draft.procedure);
   }
 
   if (step === "technique") {
@@ -425,45 +668,43 @@ function renderWizard() {
 
   if (step === "specialty") {
     title.textContent = "Specialty / Placement";
-    content.appendChild(makeChoiceScreen("specialty", procedureOptions.specialty));
+    content.appendChild(makeChoiceScreen("specialty"));
     return;
   }
 
   if (step === "context") {
     title.textContent = "Location";
-    content.appendChild(makeChoiceScreen("context", procedureOptions.context));
+    content.appendChild(makeChoiceScreen("context"));
     return;
   }
 
   if (step === "procedure") {
     title.textContent = "Procedure";
-    content.appendChild(makeChoiceScreen("procedure", procedureOptions.procedure));
+    content.appendChild(makeChoiceScreen("procedure"));
     return;
   }
 
   if (step === "site") {
     title.textContent = "Site";
-    const procedure = draft.procedure || "";
-    const options = siteOptionsByProcedure[procedure] || [];
-    content.appendChild(makeChoiceScreen("site", options));
+    content.appendChild(makeChoiceScreen("site", draft.procedure));
     return;
   }
 
   if (step === "technique") {
     title.textContent = "Technique";
-    content.appendChild(makeChoiceScreen("technique", procedureOptions.technique));
+    content.appendChild(makeChoiceScreen("technique"));
     return;
   }
 
   if (step === "role") {
     title.textContent = "Role";
-    content.appendChild(makeChoiceScreen("role", procedureOptions.role));
+    content.appendChild(makeChoiceScreen("role"));
     return;
   }
 
   if (step === "supervision") {
     title.textContent = "Supervision level";
-    content.appendChild(makeChoiceScreen("supervision", procedureOptions.supervision));
+    content.appendChild(makeChoiceScreen("supervision"));
     return;
   }
 
@@ -475,7 +716,7 @@ function renderWizard() {
 
   if (step === "complication") {
     title.textContent = "Complication";
-    content.appendChild(makeChoiceScreen("complication", procedureOptions.complication));
+    content.appendChild(makeChoiceScreen("complication"));
     return;
   }
 
@@ -488,19 +729,19 @@ function renderWizard() {
 
   if (step === "cpdType") {
     title.textContent = "CPD type";
-    content.appendChild(makeChoiceScreen("cpdType", cpdOptions.cpdType));
+    content.appendChild(makeChoiceScreen("cpdType"));
     return;
   }
 
   if (step === "cpdFormat") {
     title.textContent = "Format";
-    content.appendChild(makeChoiceScreen("cpdFormat", cpdOptions.cpdFormat));
+    content.appendChild(makeChoiceScreen("cpdFormat"));
     return;
   }
 
   if (step === "cpdTopic") {
     title.textContent = "Topic area";
-    content.appendChild(makeChoiceScreen("cpdTopic", cpdOptions.cpdTopic));
+    content.appendChild(makeChoiceScreen("cpdTopic"));
     return;
   }
 
@@ -513,7 +754,7 @@ function renderWizard() {
 
   if (step === "cpdTime") {
     title.textContent = "Time claimed";
-    content.appendChild(makeChoiceScreen("cpdTime", cpdOptions.cpdTime));
+    content.appendChild(makeChoiceScreen("cpdTime"));
     return;
   }
 
@@ -526,7 +767,7 @@ function renderWizard() {
 
   if (step === "cpdEvidence") {
     title.textContent = "Evidence";
-    content.appendChild(makeChoiceScreen("cpdEvidence", cpdOptions.cpdEvidence));
+    content.appendChild(makeChoiceScreen("cpdEvidence"));
     return;
   }
 
@@ -591,17 +832,17 @@ function makeHospitalScreen() {
     }));
   });
 
-  wrapper.appendChild(makeButton("Add hospital", "button secondary", () => {
+  wrapper.appendChild(makeButton("Add hospital", "button secondary wizard-action-button", () => {
     renderAddHospitalScreen(wrapper);
   }));
 
   if (state.hospitals.length > 0) {
-    wrapper.appendChild(makeButton("Delete hospital", "button secondary", () => {
+    wrapper.appendChild(makeButton("Delete hospital", "button secondary wizard-action-button", () => {
       renderDeleteHospitalScreen(wrapper);
     }));
   }
 
-  wrapper.appendChild(makeButton("Skip / not recorded", "button secondary", () => {
+  wrapper.appendChild(makeButton("Skip / not recorded", "button secondary wizard-action-button", () => {
     draft.hospital = "";
     nextWizardStep();
   }));
@@ -616,7 +857,7 @@ function renderAddHospitalScreen(wrapper) {
   input.className = "text-input";
   input.placeholder = "Hospital name";
 
-  const saveButton = makeButton("Save hospital", "button primary", () => {
+  const saveButton = makeButton("Save hospital", "button primary wizard-action-button", () => {
     const name = input.value.trim();
 
     if (!name) {
@@ -632,13 +873,11 @@ function renderAddHospitalScreen(wrapper) {
 
     state.hospitals.push(name);
     state.hospitals.sort();
-    saveState();
-
-    draft.hospital = name;
-    nextWizardStep();
+    markChanged();
+    renderWizard();
   });
 
-  const cancelButton = makeButton("Cancel", "button secondary", renderWizard);
+  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderWizard);
 
   wrapper.append(input, saveButton, cancelButton);
 }
@@ -660,16 +899,24 @@ function renderDeleteHospitalScreen(wrapper) {
       if (!confirmed) return;
 
       state.hospitals = state.hospitals.filter(h => h !== hospital);
-      saveState();
+
+      if (draft.hospital === hospital) {
+        delete draft.hospital;
+      }
+
+      markChanged();
       renderWizard();
     }));
   });
 
-  wrapper.appendChild(makeButton("Cancel", "button secondary", renderWizard));
+  wrapper.appendChild(makeButton("Cancel", "button secondary wizard-action-button", renderWizard));
 }
 
-function makeChoiceScreen(field, options) {
+function makeChoiceScreen(field, procedureName = "") {
   const wrapper = document.createElement("div");
+  const options = getDisplayedOptions(field, procedureName);
+  const configurable = isConfigurableField(field);
+  const label = fieldLabel(field);
 
   if (draft[field]) {
     wrapper.appendChild(makeButton(`Keep current: ${draft[field]}`, "choice-button", () => {
@@ -677,9 +924,16 @@ function makeChoiceScreen(field, options) {
     }));
   }
 
+  if (options.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "help-text";
+    empty.textContent = "No options available.";
+    wrapper.appendChild(empty);
+  }
+
   options.forEach(option => {
     wrapper.appendChild(makeButton(option, "choice-button", () => {
-      if (option === "Other" || option === "Custom") {
+      if ((option === "Other" || option === "Custom") && !configurable) {
         renderOtherInput(wrapper, field, option);
         return;
       }
@@ -695,7 +949,68 @@ function makeChoiceScreen(field, options) {
     }));
   });
 
+  if (configurable) {
+    wrapper.appendChild(makeButton(`Add ${label}`, "button secondary wizard-action-button", () => {
+      renderAddOptionScreen(wrapper, field, procedureName);
+    }));
+
+    if (options.length > 0) {
+      wrapper.appendChild(makeButton(`Delete ${label}`, "button secondary wizard-action-button", () => {
+        renderDeleteOptionScreen(wrapper, field, procedureName);
+      }));
+    }
+  }
+
   return wrapper;
+}
+
+function renderAddOptionScreen(wrapper, field, procedureName = "") {
+  wrapper.innerHTML = "";
+
+  const label = fieldLabel(field);
+
+  const input = document.createElement("input");
+  input.className = "text-input";
+  input.placeholder = `New ${label}`;
+
+  const saveButton = makeButton(`Save ${label}`, "button primary wizard-action-button", () => {
+    const saved = addUserOption(field, input.value, procedureName);
+
+    if (saved) {
+      renderWizard();
+    }
+  });
+
+  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderWizard);
+
+  wrapper.append(input, saveButton, cancelButton);
+}
+
+function renderDeleteOptionScreen(wrapper, field, procedureName = "") {
+  wrapper.innerHTML = "";
+
+  const label = fieldLabel(field);
+  const options = getDisplayedOptions(field, procedureName);
+
+  const message = document.createElement("div");
+  message.className = "delete-message";
+  message.textContent = `Which ${label} do you want to delete?`;
+  wrapper.appendChild(message);
+
+  options.forEach(option => {
+    wrapper.appendChild(makeButton(option, "choice-button danger", () => {
+      const confirmed = confirm(
+        `Delete "${option}" from the ${label} quick-select list?\n\nExisting logbook records will not be changed.`
+      );
+
+      if (!confirmed) return;
+
+      deleteUserOption(field, option, procedureName);
+      renderWizard();
+    }));
+  });
+
+  wrapper.appendChild(makeButton("Cancel", "button secondary wizard-action-button", renderWizard));
 }
 
 function renderOtherInput(wrapper, field, option) {
@@ -706,7 +1021,7 @@ function renderOtherInput(wrapper, field, option) {
   input.placeholder = option === "Custom" ? "Enter custom value" : "Enter other value";
   input.value = draft[field] || "";
 
-  const saveButton = makeButton("Save", "button primary", () => {
+  const saveButton = makeButton("Save", "button primary wizard-action-button", () => {
     const value = input.value.trim();
 
     if (!value) {
@@ -724,7 +1039,7 @@ function renderOtherInput(wrapper, field, option) {
     nextWizardStep();
   });
 
-  const cancelButton = makeButton("Cancel", "button secondary", renderWizard);
+  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderWizard);
 
   wrapper.append(input, saveButton, cancelButton);
 }
@@ -779,12 +1094,12 @@ function makeTextAreaScreen(field, placeholder) {
   textarea.placeholder = placeholder;
   textarea.value = draft[field] || "";
 
-  const saveButton = makeButton("Next", "button primary", () => {
+  const saveButton = makeButton("Next", "button primary wizard-action-button", () => {
     draft[field] = textarea.value.trim();
     nextWizardStep();
   });
 
-  const skipButton = makeButton("Skip", "button secondary", () => {
+  const skipButton = makeButton("Skip", "button secondary wizard-action-button", () => {
     draft[field] = "";
     nextWizardStep();
   });
@@ -811,7 +1126,7 @@ function makeDetailsScreen() {
   locationInput.placeholder = "Location or website, optional";
   locationInput.value = draft.cpdLocation || "";
 
-  const nextButton = makeButton("Next", "button primary", () => {
+  const nextButton = makeButton("Next", "button primary wizard-action-button", () => {
     draft.cpdTitle = titleInput.value.trim();
     draft.cpdProvider = providerInput.value.trim();
     draft.cpdLocation = locationInput.value.trim();
@@ -874,7 +1189,7 @@ function makeReviewScreen() {
 
   const saveButtonText = editingEntryId ? "Save changes" : "Save entry";
 
-  wrapper.appendChild(makeButton(saveButtonText, "button primary", () => {
+  wrapper.appendChild(makeButton(saveButtonText, "button primary wizard-action-button", () => {
     draft.updatedAt = new Date().toISOString();
 
     if (editingEntryId) {
@@ -1067,10 +1382,12 @@ function summaryCard(title, rows) {
 function buildBackupObject() {
   return {
     app: "Procedure & CPD Logbook",
-    schemaVersion: 1,
+    schemaVersion: 2,
     exportedAt: new Date().toISOString(),
     entries: state.entries,
     hospitals: state.hospitals,
+    customOptions: state.customOptions,
+    hiddenDefaultOptions: state.hiddenDefaultOptions,
     backup: state.backup
   };
 }
@@ -1328,22 +1645,21 @@ function importJsonBackup(file) {
       }
 
       const confirmed = confirm(
-        "Import this backup?\n\nThis will replace the current entries and hospital list on this device."
+        "Import this backup?\n\nThis will replace the current entries, hospital list, and custom option lists on this device."
       );
 
       if (!confirmed) return;
 
       state.entries = imported.entries || [];
       state.hospitals = imported.hospitals || [];
+      state.customOptions = imported.customOptions || emptyOptionStore();
+      state.hiddenDefaultOptions = imported.hiddenDefaultOptions || emptyOptionStore();
       state.backup = imported.backup || {
         lastBackupAt: null,
         changeCountSinceBackup: 0
       };
 
-      if (typeof state.backup.changeCountSinceBackup !== "number") {
-        state.backup.changeCountSinceBackup = 0;
-      }
-
+      ensureStateShape();
       saveState();
       renderBackupStatus();
       alert("Backup imported successfully.");
@@ -1446,6 +1762,7 @@ if ("serviceWorker" in navigator) {
 
 function init() {
   loadState();
+  ensureStateShape();
   attachEvents();
   renderBackupStatus();
   showScreen("homeScreen");
