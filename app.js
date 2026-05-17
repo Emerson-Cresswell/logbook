@@ -32,6 +32,7 @@ let currentEntryType = null;
 let wizardSteps = [];
 let wizardIndex = 0;
 let draft = {};
+let currentEntrySummaryExpanded = false;
 let logbookFilter = "all";
 let editingEntryId = null;
 
@@ -581,7 +582,7 @@ function startEntry(type) {
 
   wizardSteps = type === "procedure" ? procedureSteps : cpdSteps;
   wizardIndex = 0;
-
+  currentEntrySummaryExpanded = false;
   showScreen("wizardScreen");
   renderWizard();
 }
@@ -604,7 +605,7 @@ function editEntry(entryId) {
 
   wizardSteps = entry.type === "procedure" ? procedureSteps : cpdSteps;
   wizardIndex = 0;
-
+  currentEntrySummaryExpanded = false;
   showScreen("wizardScreen");
   renderWizard();
 }
@@ -652,7 +653,11 @@ function renderWizard() {
   stepLabel.textContent = `Step ${visibleStepNumber} of ${relevantSteps.length}`;
   help.textContent = "";
   content.innerHTML = "";
-
+ 
+  if (step !== "review") {
+    content.appendChild(makeCurrentEntrySummaryStrip());
+  }
+  
   if (step === "date") {
     title.textContent = currentEntryType === "procedure" ? "Date performed" : "Date completed";
     content.appendChild(makeDateScreen());
@@ -775,6 +780,124 @@ function renderWizard() {
     title.textContent = editingEntryId ? "Review & save changes" : "Review & save";
     content.appendChild(makeReviewScreen());
   }
+}
+
+function getCurrentEntrySummaryItems() {
+  const items = [];
+
+  const add = (label, value) => {
+    const text = String(value || "").trim();
+    if (text) {
+      items.push([label, text]);
+    }
+  };
+
+  add("Date", formatDate(draft.date));
+
+  if (currentEntryType === "procedure") {
+    add("Hospital", draft.hospital);
+    add("Specialty", draft.specialty);
+    add("Location", draft.context);
+    add("Procedure", draft.procedure);
+
+    if (procedureSupportsSite(draft.procedure)) {
+      add("Site", draft.site);
+    }
+
+    if (draft.procedure === "Arterial line") {
+      add("Technique", draft.technique);
+    }
+
+    add("Role", draft.role);
+    add("Supervision", draft.supervision);
+    add("Outcome", draft.outcome);
+    add("Attempts", draft.attempts);
+    add("Complication", draft.complication);
+  } else {
+    add("CPD type", draft.cpdType);
+    add("Format", draft.cpdFormat);
+    add("Topic", draft.cpdTopic);
+    add("Title", draft.cpdTitle);
+    add("Provider", draft.cpdProvider);
+    add("Time", draft.cpdTime);
+    add("Evidence", draft.cpdEvidence);
+  }
+
+  return items;
+}
+
+function getCurrentEntrySummaryLine() {
+  const items = getCurrentEntrySummaryItems();
+
+  if (items.length === 0) {
+    return currentEntryType === "procedure" ? "Procedure entry started" : "CPD entry started";
+  }
+
+  const priorityLabels = currentEntryType === "procedure"
+    ? ["Date", "Procedure", "Site", "Hospital"]
+    : ["Date", "CPD type", "Topic", "Title"];
+
+  const priorityItems = priorityLabels
+    .map(label => items.find(([itemLabel]) => itemLabel === label))
+    .filter(Boolean);
+
+  const chosenItems = (priorityItems.length > 0 ? priorityItems : items).slice(0, 3);
+
+  return chosenItems.map(([, value]) => value).join(" • ");
+}
+
+function makeCurrentEntrySummaryStrip() {
+  const details = document.createElement("details");
+  details.className = "current-entry-summary";
+  details.open = currentEntrySummaryExpanded;
+
+  details.addEventListener("toggle", () => {
+    currentEntrySummaryExpanded = details.open;
+  });
+
+  const summary = document.createElement("summary");
+
+  const label = document.createElement("span");
+  label.className = "current-entry-summary-label";
+  label.textContent = "Current entry";
+
+  const line = document.createElement("span");
+  line.className = "current-entry-summary-line";
+  line.textContent = getCurrentEntrySummaryLine();
+
+  const chevron = document.createElement("span");
+  chevron.className = "current-entry-summary-chevron";
+  chevron.textContent = "▾";
+
+  summary.append(label, line, chevron);
+
+  const body = document.createElement("div");
+  body.className = "current-entry-summary-body";
+
+  const items = getCurrentEntrySummaryItems();
+
+  if (items.length === 0) {
+    const empty = document.createElement("p");
+    empty.textContent = "Nothing entered yet.";
+    body.appendChild(empty);
+  } else {
+    items.forEach(([itemLabel, value]) => {
+      const row = document.createElement("div");
+      row.className = "current-entry-summary-row";
+
+      const key = document.createElement("span");
+      key.textContent = itemLabel;
+
+      const val = document.createElement("strong");
+      val.textContent = value;
+
+      row.append(key, val);
+      body.appendChild(row);
+    });
+  }
+
+  details.append(summary, body);
+  return details;
 }
 
 function makeDateScreen() {
