@@ -233,6 +233,7 @@ function loadState() {
 
   try {
     const parsed = JSON.parse(saved);
+
     state = {
       entries: parsed.entries || [],
       hospitals: parsed.hospitals || [],
@@ -241,6 +242,10 @@ function loadState() {
         changeCountSinceBackup: 0
       }
     };
+
+    if (typeof state.backup.changeCountSinceBackup !== "number") {
+      state.backup.changeCountSinceBackup = 0;
+    }
   } catch {
     alert("There was a problem loading saved data.");
   }
@@ -308,6 +313,7 @@ function renderBackupStatus() {
 
 function startEntry(type) {
   currentEntryType = type;
+
   draft = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
     type,
@@ -318,6 +324,7 @@ function startEntry(type) {
 
   wizardSteps = type === "procedure" ? procedureSteps : cpdSteps;
   wizardIndex = 0;
+
   showScreen("wizardScreen");
   renderWizard();
 }
@@ -545,6 +552,7 @@ function renderAddHospitalScreen(wrapper) {
 
   const saveButton = makeButton("Save hospital", "button primary", () => {
     const name = input.value.trim();
+
     if (!name) {
       alert("Please enter a hospital name.");
       return;
@@ -559,6 +567,7 @@ function renderAddHospitalScreen(wrapper) {
     state.hospitals.push(name);
     state.hospitals.sort();
     saveState();
+
     draft.hospital = name;
     nextWizardStep();
   });
@@ -620,6 +629,7 @@ function renderOtherInput(wrapper, field, option) {
 
   const saveButton = makeButton("Save", "button primary", () => {
     const value = input.value.trim();
+
     if (!value) {
       alert("Please enter a value.");
       return;
@@ -903,6 +913,22 @@ function countBy(entries, field) {
     .map(([key, count]) => `${key}: ${count}`);
 }
 
+function countByAsObjects(entries, field, labelName) {
+  const counts = {};
+
+  entries.forEach(entry => {
+    const key = entry[field] || "Not recorded";
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([key, count]) => ({
+      [labelName]: key,
+      Count: count
+    }));
+}
+
 function summaryCard(title, rows) {
   const card = document.createElement("div");
   card.className = "summary-card";
@@ -942,66 +968,225 @@ function downloadJsonBackup() {
   if (saved) markBackedUp();
 }
 
-function downloadCsvExport() {
-  const rows = [
-    [
-      "type",
-      "date",
-      "hospital",
-      "specialty",
-      "procedure",
-      "site",
-      "context",
-      "role",
-      "supervision",
-      "outcome",
-      "attempts",
-      "complication",
-      "notes",
-      "cpdType",
-      "cpdFormat",
-      "cpdTopic",
-      "cpdTitle",
-      "cpdProvider",
-      "cpdLocation",
-      "cpdTime",
-      "cpdEvidence",
-      "cpdReflection"
-    ]
-  ];
+function downloadExcelWorkbook() {
+  if (typeof XLSX === "undefined") {
+    alert("The Excel export library has not loaded. Please refresh the app and try again.");
+    return;
+  }
 
-  state.entries.forEach(entry => {
-    rows.push([
-      entry.type,
-      entry.date,
-      entry.hospital,
-      entry.specialty,
-      entry.procedure,
-      entry.site,
-      entry.context,
-      entry.role,
-      entry.supervision,
-      entry.outcome,
-      entry.attempts,
-      entry.complication,
-      entry.notes,
-      entry.cpdType,
-      entry.cpdFormat,
-      entry.cpdTopic,
-      entry.cpdTitle,
-      entry.cpdProvider,
-      entry.cpdLocation,
-      entry.cpdTime,
-      entry.cpdEvidence,
-      entry.cpdReflection
-    ].map(value => value || ""));
+  const workbook = XLSX.utils.book_new();
+
+  const allEntriesRows = state.entries.map(entryToAllEntriesRow);
+  const procedureRows = state.entries
+    .filter(entry => entry.type === "procedure")
+    .map(entryToProcedureRow);
+  const cpdRows = state.entries
+    .filter(entry => entry.type === "cpd")
+    .map(entryToCpdRow);
+
+  addSheet(workbook, "All entries", allEntriesRows, allEntriesHeaders());
+  addSheet(workbook, "Procedures", procedureRows, procedureHeaders());
+  addSheet(workbook, "CPD", cpdRows, cpdHeaders());
+
+  addSheet(workbook, "Procedure summary", buildProcedureSummaryRows(), ["Summary", "Value"]);
+  addSheet(workbook, "CPD summary", buildCpdSummaryRows(), ["Summary", "Value"]);
+  addSheet(workbook, "Hospital summary", countByAsObjects(procedureRows, "Hospital", "Hospital"), ["Hospital", "Count"]);
+  addSheet(workbook, "Supervision summary", countByAsObjects(procedureRows, "Supervision", "Supervision"), ["Supervision", "Count"]);
+  addSheet(workbook, "Procedure type summary", countByAsObjects(procedureRows, "Procedure", "Procedure"), ["Procedure", "Count"]);
+  addSheet(workbook, "CPD topic summary", countByAsObjects(cpdRows, "Topic", "Topic"), ["Topic", "Count"]);
+  addSheet(workbook, "Backup info", buildBackupInfoRows(), ["Field", "Value"]);
+
+  const filename = `procedure-logbook-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  XLSX.writeFile(workbook, filename);
+}
+
+function addSheet(workbook, sheetName, rows, headers) {
+  const safeRows = rows.length > 0 ? rows : [emptyRow(headers)];
+  const worksheet = XLSX.utils.json_to_sheet(safeRows, { header: headers });
+
+  worksheet["!cols"] = headers.map(header => ({
+    wch: Math.max(14, Math.min(35, header.length + 4))
+  }));
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+}
+
+function emptyRow(headers) {
+  const row = {};
+  headers.forEach(header => {
+    row[header] = "";
   });
+  return row;
+}
 
-  const csv = rows.map(row => row.map(csvEscape).join(",")).join("\n");
-  const filename = `procedure-logbook-export-${new Date().toISOString().slice(0, 10)}.csv`;
-  const blob = new Blob([csv], { type: "text/csv" });
+function allEntriesHeaders() {
+  return [
+    "Type",
+    "Date",
+    "Hospital",
+    "Specialty",
+    "Procedure",
+    "Site/subtype",
+    "Context",
+    "Role",
+    "Supervision",
+    "Outcome",
+    "Attempts",
+    "Complication",
+    "Notes",
+    "CPD type",
+    "CPD format",
+    "Topic",
+    "Title",
+    "Provider",
+    "Location",
+    "Time claimed",
+    "Evidence",
+    "Reflection",
+    "Created at",
+    "Updated at"
+  ];
+}
 
-  downloadBlob(blob, filename);
+function procedureHeaders() {
+  return [
+    "Date",
+    "Hospital",
+    "Specialty",
+    "Procedure",
+    "Site/subtype",
+    "Context",
+    "Role",
+    "Supervision",
+    "Outcome",
+    "Attempts",
+    "Complication",
+    "Notes",
+    "Created at",
+    "Updated at"
+  ];
+}
+
+function cpdHeaders() {
+  return [
+    "Date",
+    "CPD type",
+    "CPD format",
+    "Topic",
+    "Title",
+    "Provider",
+    "Location",
+    "Time claimed",
+    "Evidence",
+    "Reflection",
+    "Created at",
+    "Updated at"
+  ];
+}
+
+function entryToAllEntriesRow(entry) {
+  return {
+    "Type": entry.type || "",
+    "Date": entry.date || "",
+    "Hospital": entry.hospital || "",
+    "Specialty": entry.specialty || "",
+    "Procedure": entry.procedure || "",
+    "Site/subtype": entry.site || "",
+    "Context": entry.context || "",
+    "Role": entry.role || "",
+    "Supervision": entry.supervision || "",
+    "Outcome": entry.outcome || "",
+    "Attempts": entry.attempts || "",
+    "Complication": entry.complication || "",
+    "Notes": entry.notes || "",
+    "CPD type": entry.cpdType || "",
+    "CPD format": entry.cpdFormat || "",
+    "Topic": entry.cpdTopic || "",
+    "Title": entry.cpdTitle || "",
+    "Provider": entry.cpdProvider || "",
+    "Location": entry.cpdLocation || "",
+    "Time claimed": entry.cpdTime || "",
+    "Evidence": entry.cpdEvidence || "",
+    "Reflection": entry.cpdReflection || "",
+    "Created at": entry.createdAt || "",
+    "Updated at": entry.updatedAt || ""
+  };
+}
+
+function entryToProcedureRow(entry) {
+  return {
+    "Date": entry.date || "",
+    "Hospital": entry.hospital || "",
+    "Specialty": entry.specialty || "",
+    "Procedure": entry.procedure || "",
+    "Site/subtype": entry.site || "",
+    "Context": entry.context || "",
+    "Role": entry.role || "",
+    "Supervision": entry.supervision || "",
+    "Outcome": entry.outcome || "",
+    "Attempts": entry.attempts || "",
+    "Complication": entry.complication || "",
+    "Notes": entry.notes || "",
+    "Created at": entry.createdAt || "",
+    "Updated at": entry.updatedAt || ""
+  };
+}
+
+function entryToCpdRow(entry) {
+  return {
+    "Date": entry.date || "",
+    "CPD type": entry.cpdType || "",
+    "CPD format": entry.cpdFormat || "",
+    "Topic": entry.cpdTopic || "",
+    "Title": entry.cpdTitle || "",
+    "Provider": entry.cpdProvider || "",
+    "Location": entry.cpdLocation || "",
+    "Time claimed": entry.cpdTime || "",
+    "Evidence": entry.cpdEvidence || "",
+    "Reflection": entry.cpdReflection || "",
+    "Created at": entry.createdAt || "",
+    "Updated at": entry.updatedAt || ""
+  };
+}
+
+function buildProcedureSummaryRows() {
+  const procedures = state.entries.filter(entry => entry.type === "procedure");
+
+  return [
+    { Summary: "Total procedures", Value: procedures.length },
+    { Summary: "Successful procedures", Value: procedures.filter(entry => entry.outcome === "Successful").length },
+    { Summary: "Unsuccessful procedures", Value: procedures.filter(entry => entry.outcome === "Unsuccessful").length },
+    { Summary: "Procedures with recorded complications", Value: procedures.filter(entry => entry.complication && entry.complication !== "None").length },
+    { Summary: "Independent procedures", Value: procedures.filter(entry => entry.supervision === "Independent").length },
+    { Summary: "Directly supervised procedures", Value: procedures.filter(entry => entry.supervision === "Direct supervision").length },
+    { Summary: "Indirectly supervised procedures", Value: procedures.filter(entry => entry.supervision === "Indirect supervision").length }
+  ];
+}
+
+function buildCpdSummaryRows() {
+  const cpd = state.entries.filter(entry => entry.type === "cpd");
+
+  return [
+    { Summary: "Total CPD entries", Value: cpd.length },
+    { Summary: "Entries with certificate available", Value: cpd.filter(entry => entry.cpdEvidence === "Certificate available").length },
+    { Summary: "Entries with attendance recorded", Value: cpd.filter(entry => entry.cpdEvidence === "Attendance recorded").length },
+    { Summary: "Reflection-only entries", Value: cpd.filter(entry => entry.cpdEvidence === "Reflection only").length },
+    { Summary: "Entries with no evidence recorded", Value: cpd.filter(entry => entry.cpdEvidence === "No evidence").length }
+  ];
+}
+
+function buildBackupInfoRows() {
+  return [
+    { Field: "App", Value: "Procedure Logbook & CPD" },
+    { Field: "Schema version", Value: "1" },
+    { Field: "Exported at", Value: new Date().toISOString() },
+    { Field: "Total entries", Value: state.entries.length },
+    { Field: "Total procedures", Value: state.entries.filter(entry => entry.type === "procedure").length },
+    { Field: "Total CPD entries", Value: state.entries.filter(entry => entry.type === "cpd").length },
+    { Field: "Saved hospitals", Value: state.hospitals.length },
+    { Field: "Last JSON backup marked at", Value: state.backup.lastBackupAt || "Never" },
+    { Field: "Changes since last JSON backup", Value: state.backup.changeCountSinceBackup }
+  ];
 }
 
 function importJsonBackup(file) {
@@ -1029,6 +1214,10 @@ function importJsonBackup(file) {
         changeCountSinceBackup: 0
       };
 
+      if (typeof state.backup.changeCountSinceBackup !== "number") {
+        state.backup.changeCountSinceBackup = 0;
+      }
+
       saveState();
       renderBackupStatus();
       alert("Backup imported successfully.");
@@ -1047,16 +1236,12 @@ function downloadBlob(blob, filename) {
 
   link.href = url;
   link.download = filename;
+
   document.body.appendChild(link);
   link.click();
   link.remove();
 
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function csvEscape(value) {
-  const text = String(value ?? "");
-  return `"${text.replaceAll('"', '""')}"`;
 }
 
 function escapeHtml(value) {
@@ -1097,7 +1282,7 @@ function attachEvents() {
 
   document.getElementById("backupNowButton").addEventListener("click", downloadJsonBackup);
   document.getElementById("downloadJsonButton").addEventListener("click", downloadJsonBackup);
-  document.getElementById("downloadCsvButton").addEventListener("click", downloadCsvExport);
+  document.getElementById("downloadExcelButton").addEventListener("click", downloadExcelWorkbook);
 
   document.getElementById("importJsonButton").addEventListener("click", () => {
     document.getElementById("importFileInput").click();
@@ -1125,19 +1310,19 @@ function attachEvents() {
   });
 }
 
-function init() {
-  loadState();
-  attachEvents();
-  renderBackupStatus();
-  showScreen("homeScreen");
-}
-
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./service-worker.js").catch(error => {
       console.log("Service worker registration failed:", error);
     });
   });
+}
+
+function init() {
+  loadState();
+  attachEvents();
+  renderBackupStatus();
+  showScreen("homeScreen");
 }
 
 init();
