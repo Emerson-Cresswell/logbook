@@ -994,7 +994,6 @@ function downloadExcelWorkbook() {
   addSheet(workbook, "Supervision summary", countByAsObjects(procedureRows, "Supervision", "Supervision"), ["Supervision", "Count"]);
   addSheet(workbook, "Procedure type summary", countByAsObjects(procedureRows, "Procedure", "Procedure"), ["Procedure", "Count"]);
   addSheet(workbook, "CPD topic summary", countByAsObjects(cpdRows, "Topic", "Topic"), ["Topic", "Count"]);
-  addSheet(workbook, "Backup info", buildBackupInfoRows(), ["Field", "Value"]);
 
   const filename = `procedure-logbook-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
   XLSX.writeFile(workbook, filename);
@@ -1007,6 +1006,16 @@ function addSheet(workbook, sheetName, rows, headers) {
   worksheet["!cols"] = headers.map(header => ({
     wch: Math.max(14, Math.min(35, header.length + 4))
   }));
+
+  const lastRow = safeRows.length;
+  const lastCol = headers.length - 1;
+
+  worksheet["!autofilter"] = {
+    ref: XLSX.utils.encode_range({
+      s: { r: 0, c: 0 },
+      e: { r: lastRow, c: lastCol }
+    })
+  };
 
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 }
@@ -1172,20 +1181,6 @@ function buildCpdSummaryRows() {
     { Summary: "Entries with attendance recorded", Value: cpd.filter(entry => entry.cpdEvidence === "Attendance recorded").length },
     { Summary: "Reflection-only entries", Value: cpd.filter(entry => entry.cpdEvidence === "Reflection only").length },
     { Summary: "Entries with no evidence recorded", Value: cpd.filter(entry => entry.cpdEvidence === "No evidence").length }
-  ];
-}
-
-function buildBackupInfoRows() {
-  return [
-    { Field: "App", Value: "Procedure Logbook & CPD" },
-    { Field: "Schema version", Value: "1" },
-    { Field: "Exported at", Value: new Date().toISOString() },
-    { Field: "Total entries", Value: state.entries.length },
-    { Field: "Total procedures", Value: state.entries.filter(entry => entry.type === "procedure").length },
-    { Field: "Total CPD entries", Value: state.entries.filter(entry => entry.type === "cpd").length },
-    { Field: "Saved hospitals", Value: state.hospitals.length },
-    { Field: "Last JSON backup marked at", Value: state.backup.lastBackupAt || "Never" },
-    { Field: "Changes since last JSON backup", Value: state.backup.changeCountSinceBackup }
   ];
 }
 
