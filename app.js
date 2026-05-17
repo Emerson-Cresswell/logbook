@@ -964,8 +964,13 @@ function downloadJsonBackup() {
 
   downloadBlob(blob, filename);
 
-  const saved = confirm("If the backup file saved successfully, tap OK to mark your backup as up to date.");
-  if (saved) markBackedUp();
+  setTimeout(() => {
+    const saved = confirm(
+      "The backup file should now have downloaded or opened the save prompt.\n\nIf you saved the backup file successfully, tap OK to mark your backup as up to date.\n\nIf you cancelled or are not sure, tap Cancel."
+    );
+
+    if (saved) markBackedUp();
+  }, 1500);
 }
 
 function downloadExcelWorkbook() {
