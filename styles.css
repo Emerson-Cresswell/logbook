@@ -18,11 +18,25 @@
   box-sizing: border-box;
 }
 
+html {
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #app {
@@ -112,6 +126,7 @@ h2 {
 #backupNowButton {
   display: block;
   margin: 16px auto 0;
+  min-width: 220px;
 }
 
 .home-actions,
@@ -167,6 +182,13 @@ h2 {
   background: var(--danger-bg);
   border-color: #fca5a5;
   color: #991b1b;
+}
+
+.wizard-action-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+  text-align: center;
 }
 
 .hidden {
