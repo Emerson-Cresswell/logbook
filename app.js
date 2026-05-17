@@ -314,6 +314,7 @@ function renderBackupStatus() {
 
 function startEntry(type) {
   currentEntryType = type;
+  editingEntryId = null;
 
   draft = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
@@ -324,6 +325,25 @@ function startEntry(type) {
   };
 
   wizardSteps = type === "procedure" ? procedureSteps : cpdSteps;
+  wizardIndex = 0;
+
+  showScreen("wizardScreen");
+  renderWizard();
+}
+
+function editEntry(entryId) {
+  const entry = state.entries.find(item => item.id === entryId);
+
+  if (!entry) {
+    alert("Could not find this entry.");
+    return;
+  }
+
+  editingEntryId = entryId;
+  currentEntryType = entry.type;
+  draft = { ...entry };
+
+  wizardSteps = entry.type === "procedure" ? procedureSteps : cpdSteps;
   wizardIndex = 0;
 
   showScreen("wizardScreen");
@@ -512,6 +532,12 @@ function makeDateScreen() {
 function makeHospitalScreen() {
   const wrapper = document.createElement("div");
 
+  if (draft.hospital) {
+    wrapper.appendChild(makeButton(`Keep current: ${draft.hospital}`, "choice-button", () => {
+      nextWizardStep();
+    }));
+  }
+
   if (state.hospitals.length === 0) {
     const empty = document.createElement("p");
     empty.className = "help-text";
@@ -606,6 +632,12 @@ function renderDeleteHospitalScreen(wrapper) {
 function makeChoiceScreen(field, options) {
   const wrapper = document.createElement("div");
 
+  if (draft[field]) {
+    wrapper.appendChild(makeButton(`Keep current: ${draft[field]}`, "choice-button", () => {
+      nextWizardStep();
+    }));
+  }
+
   options.forEach(option => {
     wrapper.appendChild(makeButton(option, "choice-button", () => {
       if (option === "Other" || option === "Custom") {
@@ -627,6 +659,7 @@ function renderOtherInput(wrapper, field, option) {
   const input = document.createElement("input");
   input.className = "text-input";
   input.placeholder = option === "Custom" ? "Enter custom value" : "Enter other value";
+  input.value = draft[field] || "";
 
   const saveButton = makeButton("Save", "button primary", () => {
     const value = input.value.trim();
@@ -647,6 +680,16 @@ function renderOtherInput(wrapper, field, option) {
 
 function makeOutcomeScreen() {
   const wrapper = document.createElement("div");
+
+  if (draft.outcome) {
+    const currentText = draft.attempts
+      ? `Keep current: ${draft.outcome}, ${draft.attempts} attempt(s)`
+      : `Keep current: ${draft.outcome}`;
+
+    wrapper.appendChild(makeButton(currentText, "choice-button", () => {
+      nextWizardStep();
+    }));
+  }
 
   wrapper.appendChild(makeButton("Successful", "choice-button", () => {
     draft.outcome = "Successful";
@@ -705,14 +748,17 @@ function makeDetailsScreen() {
   const titleInput = document.createElement("input");
   titleInput.className = "text-input";
   titleInput.placeholder = "Title";
+  titleInput.value = draft.cpdTitle || "";
 
   const providerInput = document.createElement("input");
   providerInput.className = "text-input";
   providerInput.placeholder = "Provider / organisation";
+  providerInput.value = draft.cpdProvider || "";
 
   const locationInput = document.createElement("input");
   locationInput.className = "text-input";
   locationInput.placeholder = "Location or website, optional";
+  locationInput.value = draft.cpdLocation || "";
 
   const nextButton = makeButton("Next", "button primary", () => {
     draft.cpdTitle = titleInput.value.trim();
@@ -772,9 +818,20 @@ function makeReviewScreen() {
 
   wrapper.appendChild(review);
 
-  wrapper.appendChild(makeButton("Save entry", "button primary", () => {
+  const saveButtonText = editingEntryId ? "Save changes" : "Save entry";
+
+  wrapper.appendChild(makeButton(saveButtonText, "button primary", () => {
     draft.updatedAt = new Date().toISOString();
-    state.entries.push({ ...draft });
+
+    if (editingEntryId) {
+      state.entries = state.entries.map(entry =>
+        entry.id === editingEntryId ? { ...draft } : entry
+      );
+    } else {
+      state.entries.push({ ...draft });
+    }
+
+    editingEntryId = null;
     saveState();
     markChanged();
     showScreen("homeScreen");
@@ -830,6 +887,10 @@ function renderLogbook() {
 
     actions.appendChild(makeButton("View", "small-button", () => {
       alert(entrySummary(entry));
+    }));
+
+    actions.appendChild(makeButton("Edit", "small-button", () => {
+      editEntry(entry.id);
     }));
 
     actions.appendChild(makeButton("Delete", "small-button delete", () => {
@@ -949,7 +1010,7 @@ function summaryCard(title, rows) {
 
 function buildBackupObject() {
   return {
-    app: "Procedure Logbook & CPD",
+    app: "Procedure & CPD Logbook",
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
     entries: state.entries,
