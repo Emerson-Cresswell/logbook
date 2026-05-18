@@ -15,7 +15,7 @@
   --border: #cbd5e1;
   --glass-highlight: rgba(255, 255, 255, 0.56);
   --soft-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
-  --button-shadow: 0 10px 18px rgba(15, 23, 42, 0.14), 0 2px 5px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.78), inset 0 -3px 8px rgba(15, 23, 42, 0.08);
+  --button-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82), inset 0 -3px 8px rgba(15, 23, 42, 0.08);
 }
 
 
@@ -103,7 +103,10 @@ main {
 }
 
 .step-label {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   color: var(--muted);
   font-weight: 700;
   margin: 0 0 8px;
@@ -113,6 +116,21 @@ main {
   margin-bottom: 0;
   text-align: right;
 }
+.cancel-edit-link {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--danger-dark);
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 0;
+  margin: 0;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
 
 h2 {
   margin: 0 0 16px;
@@ -202,7 +220,7 @@ h2 {
   position: relative;
   overflow: hidden;
   box-shadow: var(--button-shadow);
-  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
+  transition: transform 0.08s ease, background 0.08s ease;
   user-select: none;
   -webkit-user-select: none;
   isolation: isolate;
@@ -215,7 +233,24 @@ h2 {
   position: absolute;
   inset: 1px;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.30) 34%, rgba(255, 255, 255, 0.08) 64%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.20) 36%, rgba(255, 255, 255, 0.06) 70%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.button.secondary::after,
+.choice-button::after,
+.filter-button::after,
+.button.primary::after,
+.keep-current-button::after,
+.filter-button.active::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  border-radius: 999px;
   pointer-events: none;
   z-index: 0;
 }
@@ -223,31 +258,17 @@ h2 {
 .button.secondary::after,
 .choice-button::after,
 .filter-button::after {
-  content: "";
-  position: absolute;
-  top: 7px;
-  left: 12px;
-  right: 12px;
-  height: 1px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.20), rgba(15, 23, 42, 0.04) 22%, rgba(15, 23, 42, 0.04) 78%, rgba(15, 23, 42, 0.20));
-  pointer-events: none;
-  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.20), rgba(15, 23, 42, 0)) left top / 34px 2px no-repeat,
+    linear-gradient(270deg, rgba(15, 23, 42, 0.20), rgba(15, 23, 42, 0)) right top / 34px 2px no-repeat;
 }
 
 .button.primary::after,
 .keep-current-button::after,
 .filter-button.active::after {
-  content: "";
-  position: absolute;
-  top: 7px;
-  left: 12px;
-  right: 12px;
-  height: 1px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(2, 44, 39, 0.54), rgba(2, 44, 39, 0.08) 24%, rgba(2, 44, 39, 0.08) 76%, rgba(2, 44, 39, 0.54));
-  pointer-events: none;
-  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(2, 44, 39, 0.58), rgba(2, 44, 39, 0)) left top / 36px 2px no-repeat,
+    linear-gradient(270deg, rgba(2, 44, 39, 0.58), rgba(2, 44, 39, 0)) right top / 36px 2px no-repeat;
 }
 
 .button:active,
@@ -255,39 +276,38 @@ h2 {
 .filter-button:active,
 .small-button:active {
   transform: translateY(1px);
-  box-shadow: 0 5px 11px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.50), inset 0 3px 10px rgba(15, 23, 42, 0.08);
 }
 
 .button.primary {
-  background: linear-gradient(180deg, #17a99d 0%, #17a99d 40%, #0f766e 60%, #07514c 100%);
+  background: #0f766e;
   color: #ffffff;
   border: 1px solid #075a54;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.30);
-  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18), 0 2px 5px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.70), inset 0 -4px 9px rgba(0, 48, 43, 0.24);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), inset 0 -4px 9px rgba(0, 48, 43, 0.22);
 }
 
 .button.primary::before {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.56) 0%, rgba(255, 255, 255, 0.30) 32%, rgba(255, 255, 255, 0.10) 64%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.14) 36%, rgba(255, 255, 255, 0.02) 72%, rgba(255, 255, 255, 0) 100%);
 }
 
 .button.primary:active {
-  background: linear-gradient(180deg, #129387 0%, #129387 40%, #0b665f 60%, #064640 100%);
+  background: #0b665f;
 }
 
 .button.secondary {
-  background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 34%, #e3ebf4 72%, #d2dce8 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 36%, #e3ebf4 76%, #d2dce8 100%);
   color: #0f172a;
   border: 1px solid #9fb0c3;
   text-shadow: none;
-  box-shadow: 0 9px 17px rgba(15, 23, 42, 0.15), 0 2px 4px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -3px 8px rgba(15, 23, 42, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -3px 8px rgba(15, 23, 42, 0.08);
 }
 
 .button.danger-button {
-  background: linear-gradient(180deg, #ef4444 0%, #ef4444 40%, #dc2626 60%, #991b1b 100%);
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
   color: #ffffff;
   border: 1px solid #991b1b;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
-  box-shadow: 0 10px 18px rgba(153, 27, 27, 0.18), 0 2px 5px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.62), inset 0 -4px 9px rgba(69, 10, 10, 0.20);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -4px 9px rgba(69, 10, 10, 0.18);
 }
 
 .cancel-edit-button {
@@ -305,19 +325,19 @@ h2 {
   border: 1px solid #aebdcb;
   text-align: left;
   text-shadow: none;
-  box-shadow: 0 8px 15px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -3px 8px rgba(15, 23, 42, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -3px 8px rgba(15, 23, 42, 0.05);
 }
 
 .keep-current-button {
-  background: linear-gradient(180deg, #17a99d 0%, #17a99d 40%, #0f766e 60%, #07514c 100%);
+  background: #0f766e;
   color: #ffffff;
   border-color: #075a54;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.30);
-  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18), 0 2px 5px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.70), inset 0 -4px 9px rgba(0, 48, 43, 0.24);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), inset 0 -4px 9px rgba(0, 48, 43, 0.22);
 }
 
 .keep-current-button::before {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.56) 0%, rgba(255, 255, 255, 0.30) 32%, rgba(255, 255, 255, 0.10) 64%, rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.14) 36%, rgba(255, 255, 255, 0.02) 72%, rgba(255, 255, 255, 0) 100%);
 }
 
 .choice-button.centered-choice {
@@ -391,7 +411,7 @@ h2 {
 }
 
 .filter-button.active {
-  background: linear-gradient(180deg, #17a99d 0%, #17a99d 40%, #0f766e 60%, #07514c 100%);
+  background: #0f766e;
   color: white;
   border-color: #08756d;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.24);
@@ -493,7 +513,7 @@ h2 {
   background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 38%, #dbe4ee 100%);
   color: #0f172a;
   border: 1px solid #9fb0c3;
-  box-shadow: 0 5px 10px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.86), inset 0 -2px 6px rgba(15, 23, 42, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), inset 0 -2px 6px rgba(15, 23, 42, 0.06);
 }
 
 .small-button.delete {
@@ -555,7 +575,7 @@ h2 {
   border-radius: 14px;
   margin: 0 0 12px;
   overflow: hidden;
-  box-shadow: var(--button-shadow);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.80), inset 0 -3px 8px rgba(15, 23, 42, 0.06);
 }
 
 .current-entry-summary summary {
@@ -617,6 +637,21 @@ h2 {
   font-weight: 700;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.current-entry-summary-row .summary-change-original {
+  color: var(--danger-dark);
+  font-weight: 800;
+}
+
+.current-entry-summary-row .summary-change-arrow {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.current-entry-summary-row .summary-change-new {
+  color: var(--text);
+  font-weight: 800;
 }
 
 .current-entry-summary-body p {
