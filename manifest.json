@@ -1,31 +1,15 @@
 {
   "name": "MyLogbook",
   "short_name": "MyLogbook",
-  "description": "A local-first clinical procedure and CPD logbook.",
+  "description": "Procedure and CPD logbook for clinicians.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#064e3b",
-  "theme_color": "#064e3b",
-  "orientation": "portrait-primary",
+  "background_color": "#003326",
+  "theme_color": "#00513f",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
   ]
 }
