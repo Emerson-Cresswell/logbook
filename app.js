@@ -868,6 +868,7 @@ function makeDateScreen() {
 
   const todayButton = makeButton("Today", "button secondary wizard-action-button", () => {
     setDate(todayISO());
+    nextWizardStep();
   });
 
   const yesterdayButton = makeButton("Yesterday", "button secondary wizard-action-button", () => {
@@ -877,6 +878,7 @@ function makeDateScreen() {
     const month = padNumber(date.getMonth() + 1);
     const day = padNumber(date.getDate());
     setDate(`${year}-${month}-${day}`);
+    nextWizardStep();
   });
 
   const nextButton = makeButton("Next", "button primary wizard-action-button date-confirm-button", () => {
@@ -1336,18 +1338,25 @@ function renderLogbook() {
     const card = document.createElement("div");
     card.className = "entry-card";
 
+    const text = document.createElement("div");
+    text.className = "entry-card-text";
+
     const title = document.createElement("h3");
     title.textContent = entry.type === "procedure"
       ? entry.procedure || "Procedure"
       : entry.cpdTitle || "CPD entry";
 
     const date = document.createElement("p");
+    date.className = "entry-card-date";
     date.textContent = formatDate(entry.date);
 
     const subtitle = document.createElement("p");
+    subtitle.className = "entry-card-subtitle";
     subtitle.textContent = entry.type === "procedure"
       ? `${entry.hospital || "Hospital not recorded"} • ${entry.specialty || ""}`
       : `${entry.cpdType || "CPD"} • ${entry.cpdTime || ""}`;
+
+    text.append(title, date, subtitle);
 
     const actions = document.createElement("div");
     actions.className = "card-actions";
@@ -1370,7 +1379,7 @@ function renderLogbook() {
       renderLogbook();
     }));
 
-    card.append(title, date, subtitle, actions);
+    card.append(text, actions);
     list.appendChild(card);
   });
 }
