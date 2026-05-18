@@ -93,26 +93,15 @@ const defaultProcedureOptions = {
     "Clinic",
     "Other"
   ],
-  technique: [
-    "Ultrasound",
-    "Landmark"
-  ],
-  role: [
-    "Observed",
-    "Assisted",
-    "Primary operator",
-    "Supervisor"
-  ],
+  technique: ["Ultrasound", "Landmark"],
+  role: ["Observed", "Assisted", "Primary operator", "Supervisor"],
   supervision: [
     "Direct supervision",
     "Indirect supervision",
     "Independent",
     "Supervising another clinician"
   ],
-  outcome: [
-    "Successful",
-    "Unsuccessful"
-  ],
+  outcome: ["Successful", "Unsuccessful"],
   complication: [
     "None",
     "Failed procedure",
@@ -144,17 +133,8 @@ const defaultSiteOptionsByProcedure = {
     "Dorsalis pedis",
     "Other"
   ],
-  "Chest drain": [
-    "Right chest",
-    "Left chest",
-    "Other"
-  ],
-  "Ascitic drain": [
-    "Right abdomen",
-    "Left abdomen",
-    "Midline",
-    "Other"
-  ]
+  "Chest drain": ["Right chest", "Left chest", "Other"],
+  "Ascitic drain": ["Right abdomen", "Left abdomen", "Midline", "Other"]
 };
 
 const defaultCpdOptions = {
@@ -191,22 +171,8 @@ const defaultCpdOptions = {
     "Leadership/Management",
     "Other"
   ],
-  cpdTime: [
-    "15 minutes",
-    "30 minutes",
-    "1 hour",
-    "2 hours",
-    "Half day",
-    "Full day",
-    "Custom"
-  ],
-  cpdEvidence: [
-    "Certificate available",
-    "Attendance recorded",
-    "Reflection only",
-    "No evidence",
-    "Other"
-  ]
+  cpdTime: ["15 minutes", "30 minutes", "1 hour", "2 hours", "Half day", "Full day", "Custom"],
+  cpdEvidence: ["Certificate available", "Attendance recorded", "Reflection only", "No evidence", "Other"]
 };
 
 const configurableFields = [
@@ -219,18 +185,52 @@ const configurableFields = [
   "cpdTopic"
 ];
 
+function padNumber(value) {
+  return String(value).padStart(2, "0");
+}
+
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = padNumber(date.getMonth() + 1);
+  const day = padNumber(date.getDate());
+  return `${year}-${month}-${day}`;
 }
 
 function formatDate(dateString) {
   if (!dateString) return "Not recorded";
-  const date = new Date(dateString + "T00:00:00");
+  const date = new Date(`${dateString}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "Not recorded";
   return date.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric"
   });
+}
+
+function formatShortDateTime(dateValue) {
+  if (!dateValue) return "Never";
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "Never";
+
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+}
+
+function formatFileDateTime(date = new Date()) {
+  const day = padNumber(date.getDate());
+  const month = padNumber(date.getMonth() + 1);
+  const year = date.getFullYear();
+  const hours = padNumber(date.getHours());
+  const minutes = padNumber(date.getMinutes());
+  return `${day}-${month}-${year} ${hours}${minutes}`;
 }
 
 function normaliseText(value) {
@@ -290,14 +290,10 @@ function cleanOptionStore(store) {
 
 function ensureStateShape() {
   state.entries = Array.isArray(state.entries) ? state.entries : [];
-  state.hospitals = cleanArray(state.hospitals).sort();
+  state.hospitals = cleanArray(state.hospitals).sort((a, b) => a.localeCompare(b));
   state.customOptions = cleanOptionStore(state.customOptions);
   state.hiddenDefaultOptions = cleanOptionStore(state.hiddenDefaultOptions);
-
-  state.backup = state.backup || {
-    lastBackupAt: null,
-    changeCountSinceBackup: 0
-  };
+  state.backup = state.backup || { lastBackupAt: null, changeCountSinceBackup: 0 };
 
   if (typeof state.backup.changeCountSinceBackup !== "number") {
     state.backup.changeCountSinceBackup = 0;
@@ -315,18 +311,13 @@ function loadState() {
 
   try {
     const parsed = JSON.parse(saved);
-
     state = {
       entries: parsed.entries || [],
       hospitals: parsed.hospitals || [],
       customOptions: parsed.customOptions || emptyOptionStore(),
       hiddenDefaultOptions: parsed.hiddenDefaultOptions || emptyOptionStore(),
-      backup: parsed.backup || {
-        lastBackupAt: null,
-        changeCountSinceBackup: 0
-      }
+      backup: parsed.backup || { lastBackupAt: null, changeCountSinceBackup: 0 }
     };
-
     ensureStateShape();
   } catch {
     alert("There was a problem loading saved data.");
@@ -351,7 +342,10 @@ function showScreen(screenId) {
     screen.classList.remove("active");
   });
 
-  document.getElementById(screenId).classList.add("active");
+  const screen = document.getElementById(screenId);
+  if (!screen) return;
+
+  screen.classList.add("active");
   currentScreen = screenId;
 
   if (screenId === "logbookScreen") renderLogbook();
@@ -360,32 +354,33 @@ function showScreen(screenId) {
 }
 
 function renderBackupStatus() {
-  const needsBackup = state.backup.changeCountSinceBackup > 0;
-  const lastBackup = state.backup.lastBackupAt
-    ? new Date(state.backup.lastBackupAt).toLocaleString("en-GB")
-    : "Never";
-
+  const changeCount = state.backup.changeCountSinceBackup;
+  const needsBackup = changeCount > 0;
+  const lastBackup = formatShortDateTime(state.backup.lastBackupAt);
   const title = needsBackup ? "Backup needed" : "Backup up to date";
+  const changeWord = changeCount === 1 ? "change" : "changes";
   const text = needsBackup
-    ? `${state.backup.changeCountSinceBackup} change(s) since last backup. Last backup: ${lastBackup}.`
-    : `No changes since last backup. Last backup: ${lastBackup}.`;
+    ? `${changeCount} ${changeWord} since last backup\nLast backup: ${lastBackup}`
+    : `Last backup: ${lastBackup}`;
 
   const backupCard = document.getElementById("backupCard");
   const backupTitle = document.getElementById("backupTitle");
   const backupText = document.getElementById("backupText");
   const backupNowButton = document.getElementById("backupNowButton");
 
-  backupCard.classList.toggle("backup-ok", !needsBackup);
-  backupCard.classList.toggle("backup-needed", needsBackup);
-  backupTitle.textContent = title;
-  backupText.textContent = text;
-  backupNowButton.classList.toggle("hidden", !needsBackup);
+  if (backupCard && backupTitle && backupText && backupNowButton) {
+    backupCard.classList.toggle("backup-ok", !needsBackup);
+    backupCard.classList.toggle("backup-needed", needsBackup);
+    backupTitle.textContent = title;
+    backupText.textContent = text;
+    backupNowButton.classList.toggle("hidden", !needsBackup);
+  }
 
   const backupScreenStatus = document.getElementById("backupScreenStatus");
   const backupScreenTitle = document.getElementById("backupScreenTitle");
   const backupScreenText = document.getElementById("backupScreenText");
 
-  if (backupScreenStatus) {
+  if (backupScreenStatus && backupScreenTitle && backupScreenText) {
     backupScreenStatus.classList.toggle("backup-ok", !needsBackup);
     backupScreenStatus.classList.toggle("backup-needed", needsBackup);
     backupScreenTitle.textContent = title;
@@ -394,18 +389,9 @@ function renderBackupStatus() {
 }
 
 function getDefaultOptions(field, procedureName = "") {
-  if (field === "site") {
-    return defaultSiteOptionsByProcedure[procedureName] || [];
-  }
-
-  if (defaultProcedureOptions[field]) {
-    return defaultProcedureOptions[field];
-  }
-
-  if (defaultCpdOptions[field]) {
-    return defaultCpdOptions[field];
-  }
-
+  if (field === "site") return defaultSiteOptionsByProcedure[procedureName] || [];
+  if (defaultProcedureOptions[field]) return defaultProcedureOptions[field];
+  if (defaultCpdOptions[field]) return defaultCpdOptions[field];
   return [];
 }
 
@@ -434,15 +420,9 @@ function setStoredOptionList(storeName, field, list, procedureName = "") {
 
 function getDisplayedOptions(field, procedureName = "") {
   const defaults = getDefaultOptions(field, procedureName);
-  const hiddenDefaults = getStoredOptionList("hiddenDefaultOptions", field, procedureName)
-    .map(normaliseText);
-
-  const visibleDefaults = defaults.filter(option =>
-    !hiddenDefaults.includes(normaliseText(option))
-  );
-
+  const hiddenDefaults = getStoredOptionList("hiddenDefaultOptions", field, procedureName).map(normaliseText);
+  const visibleDefaults = defaults.filter(option => !hiddenDefaults.includes(normaliseText(option)));
   const visibleKeys = new Set(visibleDefaults.map(normaliseText));
-
   const custom = getStoredOptionList("customOptions", field, procedureName)
     .filter(option => !visibleKeys.has(normaliseText(option)))
     .sort((a, b) => a.localeCompare(b));
@@ -452,8 +432,7 @@ function getDisplayedOptions(field, procedureName = "") {
 
 function optionExists(field, value, procedureName = "") {
   const key = normaliseText(value);
-  return getDisplayedOptions(field, procedureName)
-    .some(option => normaliseText(option) === key);
+  return getDisplayedOptions(field, procedureName).some(option => normaliseText(option) === key);
 }
 
 function addUserOption(field, value, procedureName = "") {
@@ -475,7 +454,6 @@ function addUserOption(field, value, procedureName = "") {
   if (defaultMatch) {
     const hidden = getStoredOptionList("hiddenDefaultOptions", field, procedureName)
       .filter(option => normaliseText(option) !== normaliseText(defaultMatch));
-
     setStoredOptionList("hiddenDefaultOptions", field, hidden, procedureName);
   } else {
     const custom = getStoredOptionList("customOptions", field, procedureName);
@@ -498,13 +476,10 @@ function deleteUserOption(field, value, procedureName = "") {
   } else {
     const custom = getStoredOptionList("customOptions", field, procedureName)
       .filter(option => normaliseText(option) !== normaliseText(value));
-
     setStoredOptionList("customOptions", field, custom, procedureName);
   }
 
-  if (normaliseText(draft[field]) === normaliseText(value)) {
-    delete draft[field];
-  }
+  if (normaliseText(draft[field]) === normaliseText(value)) delete draft[field];
 
   if (field === "procedure") {
     delete draft.site;
@@ -542,14 +517,8 @@ function procedureSupportsSite(procedureName) {
 }
 
 function isStepRelevant(step) {
-  if (step === "site") {
-    return currentEntryType === "procedure" && procedureSupportsSite(draft.procedure);
-  }
-
-  if (step === "technique") {
-    return currentEntryType === "procedure" && draft.procedure === "Arterial line";
-  }
-
+  if (step === "site") return currentEntryType === "procedure" && procedureSupportsSite(draft.procedure);
+  if (step === "technique") return currentEntryType === "procedure" && draft.procedure === "Arterial line";
   return true;
 }
 
@@ -568,18 +537,24 @@ function findNextRelevantIndex(startIndex, direction) {
   return null;
 }
 
+function makeId() {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function startEntry(type) {
   currentEntryType = type;
   editingEntryId = null;
-
   draft = {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    id: makeId(),
     type,
     date: todayISO(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
-
   wizardSteps = type === "procedure" ? procedureSteps : cpdSteps;
   wizardIndex = 0;
   currentEntrySummaryExpanded = false;
@@ -646,18 +621,18 @@ function renderWizard() {
   const title = document.getElementById("wizardTitle");
   const help = document.getElementById("wizardHelp");
   const content = document.getElementById("wizardContent");
-
   const relevantSteps = getRelevantWizardSteps();
   const visibleStepNumber = relevantSteps.indexOf(step) + 1;
 
   stepLabel.textContent = `Step ${visibleStepNumber} of ${relevantSteps.length}`;
+  title.textContent = "";
   help.textContent = "";
   content.innerHTML = "";
- 
+
   if (step !== "review") {
     content.appendChild(makeCurrentEntrySummaryStrip());
   }
-  
+
   if (step === "date") {
     title.textContent = currentEntryType === "procedure" ? "Date performed" : "Date completed";
     content.appendChild(makeDateScreen());
@@ -727,8 +702,7 @@ function renderWizard() {
 
   if (step === "notes") {
     title.textContent = "Notes";
-    help.textContent = "Optional. Do not enter patient-identifiable information.";
-    content.appendChild(makeTextAreaScreen("notes", "Non-identifying notes only"));
+    content.appendChild(makeTextAreaScreen("notes", "Optional notes"));
     return;
   }
 
@@ -787,9 +761,7 @@ function getCurrentEntrySummaryItems() {
 
   const add = (label, value) => {
     const text = String(value || "").trim();
-    if (text) {
-      items.push([label, text]);
-    }
+    if (text) items.push([label, text]);
   };
 
   add("Date", formatDate(draft.date));
@@ -800,13 +772,8 @@ function getCurrentEntrySummaryItems() {
     add("Location", draft.context);
     add("Procedure", draft.procedure);
 
-    if (procedureSupportsSite(draft.procedure)) {
-      add("Site", draft.site);
-    }
-
-    if (draft.procedure === "Arterial line") {
-      add("Technique", draft.technique);
-    }
+    if (procedureSupportsSite(draft.procedure)) add("Site", draft.site);
+    if (draft.procedure === "Arterial line") add("Technique", draft.technique);
 
     add("Role", draft.role);
     add("Supervision", draft.supervision);
@@ -826,26 +793,6 @@ function getCurrentEntrySummaryItems() {
   return items;
 }
 
-function getCurrentEntrySummaryLine() {
-  const items = getCurrentEntrySummaryItems();
-
-  if (items.length === 0) {
-    return currentEntryType === "procedure" ? "Procedure entry started" : "CPD entry started";
-  }
-
-  const priorityLabels = currentEntryType === "procedure"
-    ? ["Date", "Procedure", "Site", "Hospital"]
-    : ["Date", "CPD type", "Topic", "Title"];
-
-  const priorityItems = priorityLabels
-    .map(label => items.find(([itemLabel]) => itemLabel === label))
-    .filter(Boolean);
-
-  const chosenItems = (priorityItems.length > 0 ? priorityItems : items).slice(0, 3);
-
-  return chosenItems.map(([, value]) => value).join(" • ");
-}
-
 function makeCurrentEntrySummaryStrip() {
   const details = document.createElement("details");
   details.className = "current-entry-summary";
@@ -861,15 +808,11 @@ function makeCurrentEntrySummaryStrip() {
   label.className = "current-entry-summary-label";
   label.textContent = "Current entry";
 
-  const line = document.createElement("span");
-  line.className = "current-entry-summary-line";
-  line.textContent = getCurrentEntrySummaryLine();
-
   const chevron = document.createElement("span");
   chevron.className = "current-entry-summary-chevron";
   chevron.textContent = "▾";
 
-  summary.append(label, line, chevron);
+  summary.append(label, chevron);
 
   const body = document.createElement("div");
   body.className = "current-entry-summary-body";
@@ -919,7 +862,10 @@ function makeDateScreen() {
   const yesterdayButton = makeButton("Yesterday", "choice-button centered-choice", () => {
     const date = new Date();
     date.setDate(date.getDate() - 1);
-    draft.date = date.toISOString().slice(0, 10);
+    const year = date.getFullYear();
+    const month = padNumber(date.getMonth() + 1);
+    const day = padNumber(date.getDate());
+    draft.date = `${year}-${month}-${day}`;
     nextWizardStep();
   });
 
@@ -970,7 +916,6 @@ function makeHospitalScreen() {
   }
 
   wrapper.appendChild(makeActionRow(rowButtons));
-
   wrapper.appendChild(makeButton("Skip / not recorded", "button secondary wizard-action-button", () => {
     draft.hospital = "";
     nextWizardStep();
@@ -994,20 +939,20 @@ function renderAddHospitalScreen(wrapper) {
       return;
     }
 
-    const exists = state.hospitals.some(h => h.toLowerCase() === name.toLowerCase());
+    const exists = state.hospitals.some(hospital => hospital.toLowerCase() === name.toLowerCase());
+
     if (exists) {
       alert("This hospital already exists.");
       return;
     }
 
     state.hospitals.push(name);
-    state.hospitals.sort();
+    state.hospitals.sort((a, b) => a.localeCompare(b));
     markChanged();
     renderWizard();
   });
 
   const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderWizard);
-
   wrapper.append(input, saveButton, cancelButton);
 }
 
@@ -1027,12 +972,8 @@ function renderDeleteHospitalScreen(wrapper) {
 
       if (!confirmed) return;
 
-      state.hospitals = state.hospitals.filter(h => h !== hospital);
-
-      if (draft.hospital === hospital) {
-        delete draft.hospital;
-      }
-
+      state.hospitals = state.hospitals.filter(item => item !== hospital);
+      if (draft.hospital === hospital) delete draft.hospital;
       markChanged();
       renderWizard();
     }));
@@ -1103,21 +1044,16 @@ function renderAddOptionScreen(wrapper, field, procedureName = "") {
   wrapper.innerHTML = "";
 
   const label = fieldLabel(field);
-
   const input = document.createElement("input");
   input.className = "text-input";
   input.placeholder = `New ${label}`;
 
   const saveButton = makeButton(`Save ${label}`, "button primary wizard-action-button", () => {
     const saved = addUserOption(field, input.value, procedureName);
-
-    if (saved) {
-      renderWizard();
-    }
+    if (saved) renderWizard();
   });
 
   const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderWizard);
-
   wrapper.append(input, saveButton, cancelButton);
 }
 
@@ -1175,7 +1111,6 @@ function renderOtherInput(wrapper, field, option) {
   });
 
   const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderWizard);
-
   wrapper.append(input, saveButton, cancelButton);
 }
 
@@ -1316,21 +1251,20 @@ function makeReviewScreen() {
 
   rows.forEach(([label, value]) => {
     const p = document.createElement("p");
-    p.innerHTML = `<strong>${escapeHtml(label)}:</strong> ${escapeHtml(value || "Not recorded")}`;
+    const strong = document.createElement("strong");
+    strong.textContent = `${label}: `;
+    p.append(strong, document.createTextNode(value || "Not recorded"));
     review.appendChild(p);
   });
 
   wrapper.appendChild(review);
 
   const saveButtonText = editingEntryId ? "Save changes" : "Save entry";
-
   wrapper.appendChild(makeButton(saveButtonText, "button primary wizard-action-button", () => {
     draft.updatedAt = new Date().toISOString();
 
     if (editingEntryId) {
-      state.entries = state.entries.map(entry =>
-        entry.id === editingEntryId ? { ...draft } : entry
-      );
+      state.entries = state.entries.map(entry => entry.id === editingEntryId ? { ...draft } : entry);
     } else {
       state.entries.push({ ...draft });
     }
@@ -1356,17 +1290,17 @@ function makeButton(text, className, onClick) {
 function makeActionRow(buttons) {
   const row = document.createElement("div");
   row.className = buttons.length === 1 ? "action-row single-action" : "action-row";
-
-  buttons.forEach(button => {
-    row.appendChild(button);
-  });
-
+  buttons.forEach(button => row.appendChild(button));
   return row;
 }
 
 function renderLogbook() {
-  const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+  const searchInput = document.getElementById("searchInput");
+  const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
   const list = document.getElementById("entryList");
+
+  if (!list) return;
+
   list.innerHTML = "";
 
   const entries = state.entries
@@ -1375,7 +1309,10 @@ function renderLogbook() {
     .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
   if (entries.length === 0) {
-    list.innerHTML = "<p>No entries found.</p>";
+    const empty = document.createElement("p");
+    empty.className = "help-text";
+    empty.textContent = "No entries found.";
+    list.appendChild(empty);
     return;
   }
 
@@ -1383,19 +1320,18 @@ function renderLogbook() {
     const card = document.createElement("div");
     card.className = "entry-card";
 
-    const title = entry.type === "procedure"
+    const title = document.createElement("h3");
+    title.textContent = entry.type === "procedure"
       ? entry.procedure || "Procedure"
       : entry.cpdTitle || "CPD entry";
 
-    const subtitle = entry.type === "procedure"
+    const date = document.createElement("p");
+    date.textContent = formatDate(entry.date);
+
+    const subtitle = document.createElement("p");
+    subtitle.textContent = entry.type === "procedure"
       ? `${entry.hospital || "Hospital not recorded"} • ${entry.specialty || ""}`
       : `${entry.cpdType || "CPD"} • ${entry.cpdTime || ""}`;
-
-    card.innerHTML = `
-      <h3>${escapeHtml(title)}</h3>
-      <p>${escapeHtml(formatDate(entry.date))}</p>
-      <p>${escapeHtml(subtitle)}</p>
-    `;
 
     const actions = document.createElement("div");
     actions.className = "card-actions";
@@ -1418,7 +1354,7 @@ function renderLogbook() {
       renderLogbook();
     }));
 
-    card.appendChild(actions);
+    card.append(title, date, subtitle, actions);
     list.appendChild(card);
   });
 }
@@ -1458,6 +1394,8 @@ function entrySummary(entry) {
 
 function renderSummaries() {
   const container = document.getElementById("summaryContent");
+  if (!container) return;
+
   container.innerHTML = "";
 
   const procedures = state.entries.filter(entry => entry.type === "procedure");
@@ -1482,6 +1420,7 @@ function countBy(entries, field) {
   if (entries.length === 0) return ["None recorded."];
 
   const counts = {};
+
   entries.forEach(entry => {
     const key = entry[field] || "Not recorded";
     counts[key] = (counts[key] || 0) + 1;
@@ -1502,10 +1441,7 @@ function countByAsObjects(entries, field, labelName) {
 
   return Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
-    .map(([key, count]) => ({
-      [labelName]: key,
-      Count: count
-    }));
+    .map(([key, count]) => ({ [labelName]: key, Count: count }));
 }
 
 function summaryCard(title, rows) {
@@ -1540,7 +1476,7 @@ function buildBackupObject() {
 
 function downloadJsonBackup() {
   const backup = buildBackupObject();
-  const filename = `procedure-logbook-backup-${new Date().toISOString().slice(0, 16).replace("T", "-").replace(":", "")}.json`;
+  const filename = `Logbook Backup ${formatFileDateTime()}.json`;
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
 
   downloadBlob(blob, filename);
@@ -1556,24 +1492,18 @@ function downloadJsonBackup() {
 
 function downloadExcelWorkbook() {
   if (typeof XLSX === "undefined") {
-    alert("The Excel export library has not loaded. Please refresh the app and try again.");
+    alert("The Excel export library has not loaded.\nPlease refresh the app and try again.");
     return;
   }
 
   const workbook = XLSX.utils.book_new();
-
   const allEntriesRows = state.entries.map(entryToAllEntriesRow);
-  const procedureRows = state.entries
-    .filter(entry => entry.type === "procedure")
-    .map(entryToProcedureRow);
-  const cpdRows = state.entries
-    .filter(entry => entry.type === "cpd")
-    .map(entryToCpdRow);
+  const procedureRows = state.entries.filter(entry => entry.type === "procedure").map(entryToProcedureRow);
+  const cpdRows = state.entries.filter(entry => entry.type === "cpd").map(entryToCpdRow);
 
   addSheet(workbook, "All entries", allEntriesRows, allEntriesHeaders());
   addSheet(workbook, "Procedures", procedureRows, procedureHeaders());
   addSheet(workbook, "CPD", cpdRows, cpdHeaders());
-
   addSheet(workbook, "Procedure summary", buildProcedureSummaryRows(), ["Summary", "Value"]);
   addSheet(workbook, "CPD summary", buildCpdSummaryRows(), ["Summary", "Value"]);
   addSheet(workbook, "Hospital summary", countByAsObjects(procedureRows, "Hospital", "Hospital"), ["Hospital", "Count"]);
@@ -1583,7 +1513,7 @@ function downloadExcelWorkbook() {
   addSheet(workbook, "Technique summary", countByAsObjects(procedureRows, "Technique", "Technique"), ["Technique", "Count"]);
   addSheet(workbook, "CPD topic summary", countByAsObjects(cpdRows, "Topic", "Topic"), ["Topic", "Count"]);
 
-  const filename = `procedure-logbook-export-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const filename = `Procedure and CPD Logbook ${formatFileDateTime()}.xlsx`;
   XLSX.writeFile(workbook, filename);
 }
 
@@ -1800,10 +1730,7 @@ function importJsonBackup(file) {
       state.hospitals = imported.hospitals || [];
       state.customOptions = imported.customOptions || emptyOptionStore();
       state.hiddenDefaultOptions = imported.hiddenDefaultOptions || emptyOptionStore();
-      state.backup = imported.backup || {
-        lastBackupAt: null,
-        changeCountSinceBackup: 0
-      };
+      state.backup = imported.backup || { lastBackupAt: null, changeCountSinceBackup: 0 };
 
       ensureStateShape();
       saveState();
@@ -1821,24 +1748,12 @@ function importJsonBackup(file) {
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-
   link.href = url;
   link.download = filename;
-
   document.body.appendChild(link);
   link.click();
   link.remove();
-
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 function attachEvents() {
@@ -1867,7 +1782,6 @@ function attachEvents() {
   });
 
   document.getElementById("wizardBackButton").addEventListener("click", goWizardBack);
-
   document.getElementById("backupNowButton").addEventListener("click", downloadJsonBackup);
   document.getElementById("downloadJsonButton").addEventListener("click", downloadJsonBackup);
   document.getElementById("downloadExcelButton").addEventListener("click", downloadExcelWorkbook);
@@ -1888,8 +1802,8 @@ function attachEvents() {
     button.addEventListener("click", () => {
       logbookFilter = button.dataset.filter;
 
-      document.querySelectorAll(".filter-button").forEach(btn => {
-        btn.classList.remove("active");
+      document.querySelectorAll(".filter-button").forEach(filterButton => {
+        filterButton.classList.remove("active");
       });
 
       button.classList.add("active");
