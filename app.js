@@ -702,7 +702,7 @@ function renderWizard() {
 
   if (step === "notes") {
     title.textContent = "Optional notes";
-    content.appendChild(makeTextAreaScreen("notes", "Optional notes only. Do not enter patient-identifiable information.", { showSkip: false }));
+    content.appendChild(makeTextAreaScreen("notes", "Do not enter patient-identifiable information.", { showSkip: false }));
     return;
   }
 
