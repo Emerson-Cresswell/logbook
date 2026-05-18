@@ -49,6 +49,7 @@ const procedureSteps = [
   "role",
   "supervision",
   "outcome",
+  "attempts",
   "complication",
   "notes",
   "review"
@@ -647,6 +648,10 @@ function renderWizard() {
 
   if (step !== "review") {
     content.appendChild(makeCurrentEntrySummaryStrip());
+
+    if (editingEntryId) {
+      content.appendChild(makeCancelEditButton());
+    }
   }
 
   if (step === "date") {
@@ -657,7 +662,6 @@ function renderWizard() {
 
   if (step === "hospital") {
     title.textContent = "Hospital";
-    help.textContent = "Choose a saved hospital or add a new one.";
     content.appendChild(makeHospitalScreen());
     return;
   }
@@ -707,6 +711,12 @@ function renderWizard() {
   if (step === "outcome") {
     title.textContent = "Outcome";
     content.appendChild(makeOutcomeScreen());
+    return;
+  }
+
+  if (step === "attempts") {
+    title.textContent = "Number of attempts";
+    content.appendChild(makeAttemptsScreen());
     return;
   }
 
@@ -859,6 +869,25 @@ function makeCurrentEntrySummaryStrip() {
   return details;
 }
 
+function cancelEdit() {
+  editingEntryId = null;
+  draft = {};
+
+  if (editReturnScreen === "logbookScreen") {
+    showScreen("logbookScreen");
+    requestAnimationFrame(() => {
+      window.scrollTo(0, editReturnScrollY);
+    });
+    return;
+  }
+
+  showScreen("homeScreen");
+}
+
+function makeCancelEditButton() {
+  return makeButton("Cancel edit", "button danger-button cancel-edit-button", cancelEdit);
+}
+
 function makeDateScreen() {
   const wrapper = document.createElement("div");
   wrapper.className = "date-screen";
@@ -949,10 +978,6 @@ function makeHospitalScreen() {
   }
 
   wrapper.appendChild(makeActionRow(rowButtons));
-  wrapper.appendChild(makeButton("Skip / not recorded", "button secondary wizard-action-button", () => {
-    draft.hospital = "";
-    nextWizardStep();
-  }));
 
   return wrapper;
 }
@@ -1151,35 +1176,32 @@ function makeOutcomeScreen() {
   const wrapper = document.createElement("div");
 
   if (editingEntryId && draft.outcome) {
-    const currentText = draft.attempts
-      ? `Keep current: ${draft.outcome}, ${draft.attempts} attempt(s)`
-      : `Keep current: ${draft.outcome}`;
-
-    wrapper.appendChild(makeButton(currentText, "choice-button keep-current-button", () => {
+    wrapper.appendChild(makeButton(`Keep current: ${draft.outcome}`, "choice-button keep-current-button", () => {
       nextWizardStep();
     }));
   }
 
   wrapper.appendChild(makeButton("Successful", "choice-button", () => {
     draft.outcome = "Successful";
-    renderAttemptsScreen(wrapper);
+    nextWizardStep();
   }));
 
   wrapper.appendChild(makeButton("Unsuccessful", "choice-button", () => {
     draft.outcome = "Unsuccessful";
-    renderAttemptsScreen(wrapper);
+    nextWizardStep();
   }));
 
   return wrapper;
 }
 
-function renderAttemptsScreen(wrapper) {
-  wrapper.innerHTML = "";
+function makeAttemptsScreen() {
+  const wrapper = document.createElement("div");
 
-  const label = document.createElement("p");
-  label.className = "help-text";
-  label.textContent = "Number of attempts";
-  wrapper.appendChild(label);
+  if (editingEntryId && draft.attempts) {
+    wrapper.appendChild(makeButton(`Keep current: ${draft.attempts}`, "choice-button keep-current-button", () => {
+      nextWizardStep();
+    }));
+  }
 
   ["1", "2", "3+"].forEach(attempts => {
     wrapper.appendChild(makeButton(attempts, "choice-button", () => {
@@ -1187,6 +1209,8 @@ function renderAttemptsScreen(wrapper) {
       nextWizardStep();
     }));
   });
+
+  return wrapper;
 }
 
 function makeTextAreaScreen(field, placeholder, options = {}) {
@@ -1315,6 +1339,10 @@ function makeReviewScreen() {
     markChanged();
     showScreen("homeScreen");
   }));
+
+  if (editingEntryId) {
+    wrapper.appendChild(makeCancelEditButton());
+  }
 
   return wrapper;
 }
