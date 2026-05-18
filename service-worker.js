@@ -1,4 +1,4 @@
-const CACHE_NAME = "procedure-logbook-v12";
+const CACHE_NAME = "procedure-logbook-v11";
 
 const FILES_TO_CACHE = [
   "./",
@@ -6,7 +6,13 @@ const FILES_TO_CACHE = [
   "./styles.css",
   "./app.js",
   "./manifest.json",
-  "./icon.svg",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./icon-1024.png",
+  "./apple-touch-icon.png",
+  "./favicon.ico",
+  "./favicon-32.png",
+  "./favicon-64.png",
   "./xlsx.full.min.js"
 ];
 
