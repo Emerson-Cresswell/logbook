@@ -35,6 +35,8 @@ let draft = {};
 let currentEntrySummaryExpanded = false;
 let logbookFilter = "all";
 let editingEntryId = null;
+let editReturnScreen = null;
+let editReturnScrollY = 0;
 
 const procedureSteps = [
   "date",
@@ -548,6 +550,8 @@ function makeId() {
 function startEntry(type) {
   currentEntryType = type;
   editingEntryId = null;
+  editReturnScreen = null;
+  editReturnScrollY = 0;
   draft = {
     id: makeId(),
     type,
@@ -570,6 +574,9 @@ function editEntry(entryId) {
     return;
   }
 
+  editReturnScreen = currentScreen === "logbookScreen" ? "logbookScreen" : null;
+  editReturnScrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+
   editingEntryId = entryId;
   currentEntryType = entry.type;
   draft = { ...entry };
@@ -591,9 +598,18 @@ function goWizardBack() {
   if (previousIndex !== null) {
     wizardIndex = previousIndex;
     renderWizard();
-  } else {
-    showScreen("entryTypeScreen");
+    return;
   }
+
+  if (editingEntryId && editReturnScreen === "logbookScreen") {
+    showScreen("logbookScreen");
+    requestAnimationFrame(() => {
+      window.scrollTo(0, editReturnScrollY);
+    });
+    return;
+  }
+
+  showScreen("entryTypeScreen");
 }
 
 function nextWizardStep() {
@@ -857,6 +873,16 @@ function makeDateScreen() {
     draft.date = input.value;
   });
 
+  const nextButton = makeButton("Next", "button primary wizard-action-button date-confirm-button", () => {
+    draft.date = input.value || todayISO();
+    nextWizardStep();
+  });
+
+  if (editingEntryId) {
+    wrapper.append(input, nextButton);
+    return wrapper;
+  }
+
   const quickSelectLabel = document.createElement("p");
   quickSelectLabel.className = "date-quick-label";
   quickSelectLabel.textContent = "Quick select";
@@ -881,11 +907,6 @@ function makeDateScreen() {
     nextWizardStep();
   });
 
-  const nextButton = makeButton("Next", "button primary wizard-action-button date-confirm-button", () => {
-    draft.date = input.value || todayISO();
-    nextWizardStep();
-  });
-
   wrapper.append(input, quickSelectLabel, makeActionRow([todayButton, yesterdayButton]), nextButton);
   return wrapper;
 }
@@ -894,7 +915,7 @@ function makeHospitalScreen() {
   const wrapper = document.createElement("div");
 
   if (editingEntryId && draft.hospital) {
-    wrapper.appendChild(makeButton(`Keep current: ${draft.hospital}`, "choice-button", () => {
+    wrapper.appendChild(makeButton(`Keep current: ${draft.hospital}`, "choice-button keep-current-button", () => {
       nextWizardStep();
     }));
   }
@@ -1001,7 +1022,7 @@ function makeChoiceScreen(field, procedureName = "") {
   const label = fieldLabel(field);
 
   if (editingEntryId && draft[field]) {
-    wrapper.appendChild(makeButton(`Keep current: ${draft[field]}`, "choice-button", () => {
+    wrapper.appendChild(makeButton(`Keep current: ${draft[field]}`, "choice-button keep-current-button", () => {
       nextWizardStep();
     }));
   }
@@ -1134,7 +1155,7 @@ function makeOutcomeScreen() {
       ? `Keep current: ${draft.outcome}, ${draft.attempts} attempt(s)`
       : `Keep current: ${draft.outcome}`;
 
-    wrapper.appendChild(makeButton(currentText, "choice-button", () => {
+    wrapper.appendChild(makeButton(currentText, "choice-button keep-current-button", () => {
       nextWizardStep();
     }));
   }
@@ -1288,6 +1309,8 @@ function makeReviewScreen() {
     }
 
     editingEntryId = null;
+    editReturnScreen = null;
+    editReturnScrollY = 0;
     saveState();
     markChanged();
     showScreen("homeScreen");
