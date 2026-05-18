@@ -1474,10 +1474,34 @@ function buildBackupObject() {
   };
 }
 
-function downloadJsonBackup() {
+async function downloadJsonBackup() {
   const backup = buildBackupObject();
   const filename = `Logbook Backup ${formatFileDateTime()}.json`;
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+
+  if (navigator.share && navigator.canShare && typeof File !== "undefined") {
+    try {
+      const file = new File([json], filename, { type: "application/json" });
+
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: "Logbook Backup",
+          text: "Procedure & CPD Logbook backup",
+          files: [file]
+        });
+
+        markBackedUp();
+        return;
+      }
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        return;
+      }
+
+      console.log("File sharing failed; falling back to standard download.", error);
+    }
+  }
 
   downloadBlob(blob, filename);
 
