@@ -79,11 +79,28 @@ main {
   margin-bottom: 10px;
 }
 
+.wizard-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.wizard-top-row .back-button {
+  margin-bottom: 0;
+}
+
 .step-label {
   display: block;
   color: var(--muted);
   font-weight: 700;
-  margin-bottom: 8px;
+  margin: 0 0 8px;
+}
+
+.wizard-top-row .step-label {
+  margin-bottom: 0;
+  text-align: right;
 }
 
 h2 {
@@ -95,6 +112,7 @@ h2 {
   color: var(--muted);
   margin-top: -6px;
   margin-bottom: 16px;
+  white-space: pre-line;
 }
 
 .backup-card {
@@ -112,6 +130,7 @@ h2 {
 
 .backup-card p {
   margin: 0 0 12px;
+  white-space: pre-line;
 }
 
 .backup-ok {
@@ -128,7 +147,7 @@ h2 {
   min-height: 56px;
   display: flex;
   align-items: center;
-  padding-right: 230px;
+  padding-right: 128px;
 }
 
 #backupCard.backup-needed #backupText {
@@ -139,7 +158,9 @@ h2 {
   position: absolute;
   top: 16px;
   right: 16px;
-  min-width: 220px;
+  min-width: 112px;
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 .home-actions,
@@ -373,8 +394,8 @@ h2 {
 .current-entry-summary {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 16px;
-  margin: -2px 0 16px;
+  border-radius: 14px;
+  margin: 0 0 12px;
   overflow: hidden;
 }
 
@@ -382,11 +403,11 @@ h2 {
   list-style: none;
   cursor: pointer;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px;
-  min-height: 48px;
+  padding: 16px;
+  min-height: 56px;
 }
 
 .current-entry-summary summary::-webkit-details-marker {
@@ -395,22 +416,16 @@ h2 {
 
 .current-entry-summary-label {
   color: var(--primary);
-  font-weight: 800;
+  font-size: 1.05rem;
+  font-weight: 700;
   white-space: nowrap;
-}
-
-.current-entry-summary-line {
-  color: var(--muted);
-  font-size: 0.95rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
 }
 
 .current-entry-summary-chevron {
-  color: var(--muted);
+  color: var(--primary);
+  font-size: 1.35rem;
   font-weight: 800;
+  line-height: 1;
   transition: transform 0.15s ease;
 }
 
