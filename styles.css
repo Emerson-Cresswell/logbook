@@ -12,9 +12,9 @@
   --success: #15803d;
   --success-bg: #dcfce7;
   --border: #cbd5e1;
-  --glass-highlight: rgba(255, 255, 255, 0.42);
-  --soft-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
-  --button-shadow: 0 7px 14px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  --glass-highlight: rgba(255, 255, 255, 0.56);
+  --soft-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+  --button-shadow: 0 10px 18px rgba(15, 23, 42, 0.14), 0 2px 5px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.78), inset 0 -3px 8px rgba(15, 23, 42, 0.08);
 }
 
 
@@ -204,6 +204,7 @@ h2 {
   transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease;
   user-select: none;
   -webkit-user-select: none;
+  isolation: isolate;
 }
 
 .button::before,
@@ -211,11 +212,11 @@ h2 {
 .filter-button::before {
   content: "";
   position: absolute;
-  inset: 1px 1px auto 1px;
-  height: 48%;
-  border-radius: 13px 13px 18px 18px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.06));
+  inset: 1px;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.68) 0%, rgba(255, 255, 255, 0.30) 42%, rgba(255, 255, 255, 0.08) 70%, rgba(255, 255, 255, 0) 100%);
   pointer-events: none;
+  z-index: 0;
 }
 
 .button:active,
@@ -223,31 +224,36 @@ h2 {
 .filter-button:active,
 .small-button:active {
   transform: translateY(1px);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  box-shadow: 0 5px 11px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.50), inset 0 3px 10px rgba(15, 23, 42, 0.08);
 }
 
 .button.primary {
-  background: linear-gradient(180deg, #149084 0%, var(--primary) 58%, #0b5f5a 100%);
+  background: linear-gradient(180deg, #39d8c9 0%, #19b1a4 24%, #0f8a80 58%, #0a5f59 100%);
   color: white;
+  border: 1px solid #08756d;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.24);
 }
 
 .button.primary:active {
-  background: linear-gradient(180deg, #0f766e 0%, var(--primary-dark) 100%);
+  background: linear-gradient(180deg, #16a296 0%, #0d766e 56%, var(--primary-dark) 100%);
 }
 
 .button.secondary {
-  background: linear-gradient(180deg, #f8fafc 0%, var(--secondary) 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f4f7fb 38%, #dbe4ee 100%);
   color: var(--secondary-text);
+  border: 1px solid #aebdcb;
+  box-shadow: 0 9px 17px rgba(15, 23, 42, 0.13), 0 2px 4px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.86), inset 0 -3px 8px rgba(15, 23, 42, 0.07);
 }
 
 .choice-button {
   display: block;
   width: 100%;
   margin-bottom: 12px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 46%, #edf2f7 100%);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid #b4c2d1;
   text-align: left;
+  box-shadow: 0 8px 15px rgba(15, 23, 42, 0.11), 0 1px 2px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.86), inset 0 -3px 8px rgba(15, 23, 42, 0.04);
 }
 
 .choice-button.centered-choice {
@@ -255,7 +261,7 @@ h2 {
 }
 
 .choice-button:active {
-  background: #f1f5f9;
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
 }
 
 .choice-button.danger {
@@ -314,12 +320,15 @@ h2 {
   padding: 10px 14px;
   min-height: 42px;
   white-space: nowrap;
-  background: var(--secondary);
+  background: linear-gradient(180deg, #ffffff 0%, #f4f7fb 42%, #dbe4ee 100%);
+  border: 1px solid #aebdcb;
 }
 
 .filter-button.active {
-  background: var(--primary);
+  background: linear-gradient(180deg, #39d8c9 0%, #19b1a4 24%, #0f8a80 58%, #0a5f59 100%);
   color: white;
+  border-color: #08756d;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.24);
 }
 
 .search-input,
@@ -365,8 +374,8 @@ h2 {
 }
 
 .entry-card {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 46%, #edf2f7 100%);
+  border: 1px solid #b4c2d1;
   border-radius: 14px;
   padding: 10px 12px;
   box-shadow: 0 5px 12px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.45);
@@ -398,9 +407,10 @@ h2 {
   padding: 7px 10px;
   font-weight: 700;
   font-size: 0.9rem;
-  background: linear-gradient(180deg, #ffffff 0%, var(--secondary) 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f4f7fb 42%, #dbe4ee 100%);
   color: var(--secondary-text);
-  box-shadow: 0 4px 9px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  border: 1px solid #aebdcb;
+  box-shadow: 0 5px 10px rgba(15, 23, 42, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.82), inset 0 -2px 6px rgba(15, 23, 42, 0.05);
 }
 
 .small-button.delete {
@@ -409,8 +419,8 @@ h2 {
 }
 
 .summary-card {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 46%, #edf2f7 100%);
+  border: 1px solid #b4c2d1;
   border-radius: 16px;
   padding: 14px;
   margin-bottom: 12px;
@@ -435,8 +445,8 @@ h2 {
 }
 
 .review-list {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 46%, #edf2f7 100%);
+  border: 1px solid #b4c2d1;
   border-radius: 16px;
   padding: 14px;
   margin-bottom: 16px;
@@ -457,8 +467,8 @@ h2 {
 }
 
 .current-entry-summary {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 46%, #edf2f7 100%);
+  border: 1px solid #b4c2d1;
   border-radius: 14px;
   margin: 0 0 12px;
   overflow: hidden;
