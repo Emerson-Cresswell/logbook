@@ -228,23 +228,21 @@ h2 {
 }
 
 .button.primary {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.18) 30%, rgba(255, 255, 255, 0.04) 58%, rgba(0, 0, 0, 0.16) 100%),
-    linear-gradient(90deg, #0a5f59 0%, #15998e 46%, #0d756d 100%);
+  background: linear-gradient(90deg, #084f4a 0%, #0c6962 34%, #11877d 68%, #18a99c 100%);
   color: #ffffff;
   border: 1px solid #075a54;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
-  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18), 0 2px 5px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.64), inset 0 -4px 9px rgba(0, 48, 43, 0.24);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.30);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18), 0 2px 5px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.70), inset 0 -4px 9px rgba(0, 48, 43, 0.24);
 }
 
 .button.primary::before {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.18) 38%, rgba(255, 255, 255, 0) 72%);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0.28) 28%, rgba(255, 255, 255, 0.10) 56%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 44%, rgba(255, 255, 255, 0.12) 100%);
 }
 
 .button.primary:active {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.08) 34%, rgba(0, 0, 0, 0.18) 100%),
-    linear-gradient(90deg, #084f4a 0%, #0f766e 48%, #095b55 100%);
+  background: linear-gradient(90deg, #073f3b 0%, #0a5f59 36%, #0f766e 68%, #139387 100%);
 }
 
 .button.secondary {
@@ -265,6 +263,20 @@ h2 {
   text-align: left;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.78);
   box-shadow: 0 8px 15px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -3px 8px rgba(15, 23, 42, 0.05);
+}
+
+.keep-current-button {
+  background: linear-gradient(90deg, #084f4a 0%, #0c6962 34%, #11877d 68%, #18a99c 100%);
+  color: #ffffff;
+  border-color: #075a54;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.30);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18), 0 2px 5px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.70), inset 0 -4px 9px rgba(0, 48, 43, 0.24);
+}
+
+.keep-current-button::before {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0.28) 28%, rgba(255, 255, 255, 0.10) 56%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 44%, rgba(255, 255, 255, 0.12) 100%);
 }
 
 .choice-button.centered-choice {
@@ -336,7 +348,7 @@ h2 {
 }
 
 .filter-button.active {
-  background: linear-gradient(180deg, #39d8c9 0%, #19b1a4 24%, #0f8a80 58%, #0a5f59 100%);
+  background: linear-gradient(90deg, #084f4a 0%, #0c6962 34%, #11877d 68%, #18a99c 100%);
   color: white;
   border-color: #08756d;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.24);
