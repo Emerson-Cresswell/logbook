@@ -701,8 +701,8 @@ function renderWizard() {
   }
 
   if (step === "notes") {
-    title.textContent = "Notes";
-    content.appendChild(makeTextAreaScreen("notes", "Optional notes"));
+    title.textContent = "Optional notes";
+    content.appendChild(makeTextAreaScreen("notes", "Optional notes only. Do not enter patient-identifiable information.", { showSkip: false }));
     return;
   }
 
@@ -806,7 +806,7 @@ function makeCurrentEntrySummaryStrip() {
 
   const label = document.createElement("span");
   label.className = "current-entry-summary-label";
-  label.textContent = "Current entry";
+  label.textContent = "Entry summary";
 
   const chevron = document.createElement("span");
   chevron.className = "current-entry-summary-chevron";
@@ -845,43 +845,53 @@ function makeCurrentEntrySummaryStrip() {
 
 function makeDateScreen() {
   const wrapper = document.createElement("div");
+  wrapper.className = "date-screen";
 
   const input = document.createElement("input");
   input.type = "date";
   input.className = "date-input";
   input.value = draft.date || todayISO();
+  draft.date = input.value;
+
   input.addEventListener("change", () => {
     draft.date = input.value;
   });
 
-  const todayButton = makeButton("Today", "choice-button centered-choice", () => {
-    draft.date = todayISO();
-    nextWizardStep();
+  const quickSelectLabel = document.createElement("p");
+  quickSelectLabel.className = "date-quick-label";
+  quickSelectLabel.textContent = "Quick select";
+
+  const setDate = value => {
+    draft.date = value;
+    input.value = value;
+  };
+
+  const todayButton = makeButton("Today", "button secondary wizard-action-button", () => {
+    setDate(todayISO());
   });
 
-  const yesterdayButton = makeButton("Yesterday", "choice-button centered-choice", () => {
+  const yesterdayButton = makeButton("Yesterday", "button secondary wizard-action-button", () => {
     const date = new Date();
     date.setDate(date.getDate() - 1);
     const year = date.getFullYear();
     const month = padNumber(date.getMonth() + 1);
     const day = padNumber(date.getDate());
-    draft.date = `${year}-${month}-${day}`;
+    setDate(`${year}-${month}-${day}`);
+  });
+
+  const nextButton = makeButton("Next", "button primary wizard-action-button date-confirm-button", () => {
+    draft.date = input.value || todayISO();
     nextWizardStep();
   });
 
-  const selectedDateButton = makeButton("Use selected date", "button primary wizard-action-button date-confirm-button", () => {
-    draft.date = input.value;
-    nextWizardStep();
-  });
-
-  wrapper.append(input, todayButton, yesterdayButton, selectedDateButton);
+  wrapper.append(input, quickSelectLabel, makeActionRow([todayButton, yesterdayButton]), nextButton);
   return wrapper;
 }
 
 function makeHospitalScreen() {
   const wrapper = document.createElement("div");
 
-  if (draft.hospital) {
+  if (editingEntryId && draft.hospital) {
     wrapper.appendChild(makeButton(`Keep current: ${draft.hospital}`, "choice-button", () => {
       nextWizardStep();
     }));
@@ -988,7 +998,7 @@ function makeChoiceScreen(field, procedureName = "") {
   const configurable = isConfigurableField(field);
   const label = fieldLabel(field);
 
-  if (draft[field]) {
+  if (editingEntryId && draft[field]) {
     wrapper.appendChild(makeButton(`Keep current: ${draft[field]}`, "choice-button", () => {
       nextWizardStep();
     }));
@@ -1117,7 +1127,7 @@ function renderOtherInput(wrapper, field, option) {
 function makeOutcomeScreen() {
   const wrapper = document.createElement("div");
 
-  if (draft.outcome) {
+  if (editingEntryId && draft.outcome) {
     const currentText = draft.attempts
       ? `Keep current: ${draft.outcome}, ${draft.attempts} attempt(s)`
       : `Keep current: ${draft.outcome}`;
@@ -1156,8 +1166,9 @@ function renderAttemptsScreen(wrapper) {
   });
 }
 
-function makeTextAreaScreen(field, placeholder) {
+function makeTextAreaScreen(field, placeholder, options = {}) {
   const wrapper = document.createElement("div");
+  const showSkip = options.showSkip !== false;
 
   const textarea = document.createElement("textarea");
   textarea.className = "textarea-input";
@@ -1169,12 +1180,17 @@ function makeTextAreaScreen(field, placeholder) {
     nextWizardStep();
   });
 
-  const skipButton = makeButton("Skip", "button secondary wizard-action-button", () => {
-    draft[field] = "";
-    nextWizardStep();
-  });
+  wrapper.append(textarea, saveButton);
 
-  wrapper.append(textarea, saveButton, skipButton);
+  if (showSkip) {
+    const skipButton = makeButton("Skip", "button secondary wizard-action-button", () => {
+      draft[field] = "";
+      nextWizardStep();
+    });
+
+    wrapper.appendChild(skipButton);
+  }
+
   return wrapper;
 }
 
