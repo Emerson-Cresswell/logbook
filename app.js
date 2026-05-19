@@ -634,14 +634,20 @@ function renderWizardStepLabel(stepLabel, text) {
   stepText.textContent = text;
   stepLabel.appendChild(stepText);
 
+  const cancelButton = document.createElement("button");
+  cancelButton.type = "button";
+
   if (editingEntryId) {
-    const cancelButton = document.createElement("button");
-    cancelButton.type = "button";
     cancelButton.className = "cancel-edit-link";
     cancelButton.textContent = "Cancel edit";
     cancelButton.addEventListener("click", cancelEdit);
-    stepLabel.appendChild(cancelButton);
+  } else {
+    cancelButton.className = "cancel-entry-link";
+    cancelButton.textContent = "Cancel entry";
+    cancelButton.addEventListener("click", cancelEntry);
   }
+
+  stepLabel.appendChild(cancelButton);
 }
 
 function formatAttemptText(value) {
@@ -930,6 +936,18 @@ function makeCurrentEntrySummaryStrip() {
 
   details.append(summary, body);
   return details;
+}
+
+function cancelEntry() {
+  editingEntryId = null;
+  editReturnScreen = null;
+  editReturnScrollY = 0;
+  currentEntryType = null;
+  wizardSteps = [];
+  wizardIndex = 0;
+  draft = {};
+  currentEntrySummaryExpanded = false;
+  showScreen("homeScreen");
 }
 
 function cancelEdit() {
