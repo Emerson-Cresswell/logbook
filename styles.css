@@ -122,7 +122,8 @@ main {
   gap: 2px;
 }
 
-.cancel-edit-link {
+.cancel-edit-link,
+.cancel-entry-link {
   appearance: none;
   -webkit-appearance: none;
   border: none;
@@ -138,7 +139,8 @@ main {
   min-width: 0;
 }
 
-.cancel-edit-link:active {
+.cancel-edit-link:active,
+.cancel-entry-link:active {
   opacity: 0.65;
 }
 
