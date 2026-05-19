@@ -797,3 +797,15 @@ textarea:focus-visible {
 .compact-date-input {
   text-align: left;
 }
+
+.status-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.status-pill:active {
+  transform: translateY(1px);
+}
