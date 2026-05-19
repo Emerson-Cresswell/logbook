@@ -134,8 +134,7 @@ main {
   line-height: 1.15;
   padding: 0;
   margin: 0;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
+  text-decoration: none;
   min-width: 0;
 }
 
@@ -708,4 +707,93 @@ textarea:focus-visible {
 .keep-current-button:active,
 .filter-button.active:active {
   background: #115e59;
+}
+
+
+.placement-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.placement-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 46%, #edf2f7 100%);
+  border: 1px solid #b4c2d1;
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.placement-card.placement-hidden {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.placement-card-text {
+  min-width: 0;
+}
+
+.placement-card h3 {
+  margin: 0 0 3px;
+  font-size: 1rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placement-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.status-pill {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.status-shown {
+  background: var(--success-bg);
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.status-hidden {
+  background: var(--danger-bg);
+  color: var(--danger-dark);
+  border: 1px solid #fca5a5;
+}
+
+.visibility-option {
+  display: block;
+}
+
+.visibility-option.shown-option {
+  border-color: #86efac;
+}
+
+.visibility-option.hidden-option {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: var(--danger-dark);
+}
+
+.field-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 800;
+  margin: 4px 0 6px;
+}
+
+.compact-date-input {
+  text-align: left;
 }
