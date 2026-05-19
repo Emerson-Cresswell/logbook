@@ -42,8 +42,9 @@ let placementsBackAction = () => showScreen("homeScreen");
 
 const procedureSteps = [
   "date",
-  "hospital",
+  "placement",
   "specialty",
+  "hospital",
   "context",
   "procedure",
   "site",
@@ -59,6 +60,7 @@ const procedureSteps = [
 
 const cpdSteps = [
   "date",
+  "placement",
   "cpdType",
   "cpdFormat",
   "cpdTopic",
@@ -347,6 +349,53 @@ function formatPlacementLabel(placement) {
   return `${placement.name} · ${formatPlacementRange(placement)}`;
 }
 
+function getPlacementById(placementId) {
+  if (!placementId) return null;
+  return state.placements.find(placement => placement.id === placementId) || null;
+}
+
+function formatPlacementSnapshot(name, startDate = "", endDate = "") {
+  const placementName = String(name || "").trim();
+
+  if (!placementName) {
+    return "Not linked to a placement";
+  }
+
+  return formatPlacementLabel({ name: placementName, startDate, endDate });
+}
+
+function getEntryPlacementDisplay(entry) {
+  if (!entry) return "Not linked to a placement";
+
+  const livePlacement = getPlacementById(entry.placementId);
+
+  if (livePlacement) {
+    return formatPlacementLabel(livePlacement);
+  }
+
+  return formatPlacementSnapshot(entry.placementName, entry.placementStartDate, entry.placementEndDate);
+}
+
+function getEntryPlacementExport(entry) {
+  const display = getEntryPlacementDisplay(entry);
+  return display === "Not linked to a placement" ? "" : display;
+}
+
+function setDraftPlacement(placement) {
+  if (!placement) {
+    draft.placementId = "";
+    draft.placementName = "";
+    draft.placementStartDate = "";
+    draft.placementEndDate = "";
+    return;
+  }
+
+  draft.placementId = placement.id;
+  draft.placementName = placement.name;
+  draft.placementStartDate = placement.startDate || "";
+  draft.placementEndDate = placement.endDate || "";
+}
+
 function ensureStateShape() {
   state.entries = Array.isArray(state.entries) ? state.entries : [];
   state.hospitals = cleanArray(state.hospitals).sort((a, b) => a.localeCompare(b));
@@ -562,7 +611,7 @@ function deleteUserOption(field, value, procedureName = "") {
 
 function fieldLabel(field) {
   const labels = {
-    specialty: "Specialty / Placement",
+    specialty: "Specialty",
     context: "Location",
     procedure: "Procedure",
     site: "Site",
@@ -625,6 +674,10 @@ function startEntry(type) {
     id: makeId(),
     type,
     date: todayISO(),
+    placementId: "",
+    placementName: "",
+    placementStartDate: "",
+    placementEndDate: "",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -765,6 +818,12 @@ function renderWizard() {
     return;
   }
 
+  if (step === "placement") {
+    title.textContent = "Placement";
+    content.appendChild(makePlacementChoiceScreen());
+    return;
+  }
+
   if (step === "hospital") {
     title.textContent = "Hospital";
     content.appendChild(makeHospitalScreen());
@@ -772,7 +831,7 @@ function renderWizard() {
   }
 
   if (step === "specialty") {
-    title.textContent = "Specialty / Placement";
+    title.textContent = "Specialty";
     content.appendChild(makeChoiceScreen("specialty"));
     return;
   }
@@ -906,10 +965,11 @@ function getCurrentEntrySummaryItems() {
   };
 
   add("Date", formatDate(draft.date), original ? formatDate(original.date) : undefined);
+  add("Placement", getEntryPlacementDisplay(draft), original ? getEntryPlacementDisplay(original) : undefined);
 
   if (currentEntryType === "procedure") {
-    add("Hospital", draft.hospital, original ? original.hospital : undefined);
     add("Specialty", draft.specialty, original ? original.specialty : undefined);
+    add("Hospital", draft.hospital, original ? original.hospital : undefined);
     add("Location", draft.context, original ? (original.context || original.location) : undefined);
     add("Procedure", draft.procedure, original ? original.procedure : undefined);
 
@@ -1087,6 +1147,211 @@ function makeDateScreen() {
 
   wrapper.append(input, quickSelectLabel, makeActionRow([todayButton, yesterdayButton]), nextButton);
   return wrapper;
+}
+
+function makePlacementChoiceButton(placement, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "choice-button placement-choice-button";
+
+  const name = document.createElement("span");
+  name.className = "placement-choice-name";
+  name.textContent = placement.name;
+
+  const dates = document.createElement("span");
+  dates.className = "placement-choice-dates";
+  dates.textContent = formatPlacementRange(placement);
+
+  button.append(name, dates);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function makePlacementChoiceScreen() {
+  const wrapper = document.createElement("div");
+  const visiblePlacements = state.placements.filter(placement => !placement.hidden);
+
+  if (editingEntryId) {
+    wrapper.appendChild(makeButton(`Keep current: ${getEntryPlacementDisplay(draft)}`, "choice-button keep-current-button", () => {
+      nextWizardStep();
+    }));
+  }
+
+  wrapper.appendChild(makeButton("Not linked to a placement", "choice-button", () => {
+    setDraftPlacement(null);
+    nextWizardStep();
+  }));
+
+  if (visiblePlacements.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "help-text";
+    empty.textContent = state.placements.length === 0
+      ? "No placements added yet. You can add one now, or continue without linking this entry to a placement."
+      : "All placements are currently hidden. You can show placements again below, or continue without linking this entry to a placement.";
+    wrapper.appendChild(empty);
+  }
+
+  visiblePlacements.forEach(placement => {
+    wrapper.appendChild(makePlacementChoiceButton(placement, () => {
+      setDraftPlacement(placement);
+      nextWizardStep();
+    }));
+  });
+
+  wrapper.appendChild(makeActionRow([
+    makeButton("Add placement", "button secondary wizard-action-button", () => renderAddPlacementFromWizard(wrapper)),
+    makeButton("Show/hide placements", "button secondary wizard-action-button", () => renderShowHidePlacementsFromWizard(wrapper))
+  ]));
+
+  return wrapper;
+}
+
+function renderAddPlacementFromWizard(wrapper) {
+  wrapper.innerHTML = "";
+
+  const instructions = document.createElement("p");
+  instructions.className = "help-text";
+  instructions.textContent = "Add the name and date range for this placement.";
+
+  const nameLabel = document.createElement("label");
+  nameLabel.className = "field-label";
+  nameLabel.textContent = "Placement name";
+
+  const nameInput = document.createElement("input");
+  nameInput.className = "text-input";
+  nameInput.placeholder = "For example: ACCS Emergency Medicine";
+
+  const startLabel = document.createElement("label");
+  startLabel.className = "field-label";
+  startLabel.textContent = "Start date";
+
+  const startInput = document.createElement("input");
+  startInput.type = "date";
+  startInput.className = "text-input compact-date-input";
+
+  const endLabel = document.createElement("label");
+  endLabel.className = "field-label";
+  endLabel.textContent = "End date";
+
+  const endInput = document.createElement("input");
+  endInput.type = "date";
+  endInput.className = "text-input compact-date-input";
+
+  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderWizard);
+
+  const saveButton = makeButton("Save placement", "button primary wizard-action-button", () => {
+    const name = nameInput.value.trim();
+    const startDate = startInput.value;
+    const endDate = endInput.value;
+
+    if (!name) {
+      alert("Please enter a placement name.");
+      return;
+    }
+
+    if (startDate && endDate && startDate > endDate) {
+      alert("The end date cannot be before the start date.");
+      return;
+    }
+
+    const duplicate = state.placements.some(placement => {
+      return normaliseText(placement.name) === normaliseText(name)
+        && placement.startDate === startDate
+        && placement.endDate === endDate;
+    });
+
+    if (duplicate) {
+      alert("This placement already exists.");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const placement = {
+      id: makeId(),
+      name,
+      startDate,
+      endDate,
+      hidden: false,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    state.placements.push(placement);
+    state.placements = cleanPlacements(state.placements);
+    const savedPlacement = state.placements.find(item => item.id === placement.id) || placement;
+    setDraftPlacement(savedPlacement);
+    markChanged();
+    nextWizardStep();
+  });
+
+  wrapper.append(
+    instructions,
+    nameLabel,
+    nameInput,
+    startLabel,
+    startInput,
+    endLabel,
+    endInput,
+    makeActionRow([cancelButton, saveButton])
+  );
+}
+
+function makePlacementVisibilityButton(placement, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = placement.hidden
+    ? "choice-button visibility-option hidden-option"
+    : "choice-button visibility-option shown-option";
+
+  const content = document.createElement("span");
+  content.className = "visibility-option-content";
+
+  const text = document.createElement("span");
+  text.className = "visibility-option-text";
+
+  const name = document.createElement("strong");
+  name.textContent = placement.name;
+
+  const dates = document.createElement("small");
+  dates.textContent = formatPlacementRange(placement);
+
+  text.append(name, dates);
+
+  const status = document.createElement("span");
+  status.className = placement.hidden ? "status-pill status-hidden" : "status-pill status-shown";
+  status.textContent = placement.hidden ? "Hidden" : "Shown";
+
+  content.append(text, status);
+  button.appendChild(content);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function renderShowHidePlacementsFromWizard(wrapper) {
+  wrapper.innerHTML = "";
+
+  const message = document.createElement("p");
+  message.className = "help-text";
+  message.textContent = "Tap a placement to switch it between shown and hidden.";
+  wrapper.appendChild(message);
+
+  if (state.placements.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "help-text";
+    empty.textContent = "No placements added yet.";
+    wrapper.appendChild(empty);
+  }
+
+  state.placements.forEach(placement => {
+    wrapper.appendChild(makePlacementVisibilityButton(placement, () => {
+      placement.hidden = !placement.hidden;
+      placement.updatedAt = new Date().toISOString();
+      markChanged();
+      renderShowHidePlacementsFromWizard(wrapper);
+    }));
+  });
+
+  wrapper.appendChild(makeButton("Done", "button primary wizard-action-button", renderWizard));
 }
 
 function makeHospitalScreen() {
@@ -1432,8 +1697,9 @@ function makeReviewScreen() {
 
   const procedureRows = [
     ["Date", formatDate(draft.date)],
+    ["Placement", getEntryPlacementDisplay(draft)],
+    ["Specialty", draft.specialty],
     ["Hospital", draft.hospital || "Not recorded"],
-    ["Specialty / Placement", draft.specialty],
     ["Location", draft.context],
     ["Procedure", draft.procedure],
     ["Site", draft.site || "Not applicable"],
@@ -1448,6 +1714,7 @@ function makeReviewScreen() {
 
   const cpdRows = [
     ["Date", formatDate(draft.date)],
+    ["Placement", getEntryPlacementDisplay(draft)],
     ["CPD type", draft.cpdType],
     ["Format", draft.cpdFormat],
     ["Topic", draft.cpdTopic],
@@ -1822,7 +2089,14 @@ function showDeletePlacementDialog(placementId) {
 
   const placementName = document.createElement("div");
   placementName.className = "dialog-placement-name";
-  placementName.textContent = formatPlacementLabel(placement);
+
+  const placementTitle = document.createElement("h4");
+  placementTitle.textContent = placement.name;
+
+  const placementDates = document.createElement("p");
+  placementDates.textContent = formatPlacementRange(placement);
+
+  placementName.append(placementTitle, placementDates);
 
   const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", closePlacementDialog);
 
@@ -2045,8 +2319,9 @@ function entrySummary(entry) {
   if (entry.type === "procedure") {
     return [
       `Date: ${formatDate(entry.date)}`,
+      `Placement: ${getEntryPlacementDisplay(entry)}`,
+      `Specialty: ${entry.specialty || "Not recorded"}`,
       `Hospital: ${entry.hospital || "Not recorded"}`,
-      `Specialty / Placement: ${entry.specialty || "Not recorded"}`,
       `Location: ${entry.context || "Not recorded"}`,
       `Procedure: ${entry.procedure || "Not recorded"}`,
       `Site: ${entry.site || "Not applicable"}`,
@@ -2062,6 +2337,7 @@ function entrySummary(entry) {
 
   return [
     `Date: ${formatDate(entry.date)}`,
+    `Placement: ${getEntryPlacementDisplay(entry)}`,
     `Type: ${entry.cpdType || "Not recorded"}`,
     `Format: ${entry.cpdFormat || "Not recorded"}`,
     `Topic: ${entry.cpdTopic || "Not recorded"}`,
@@ -2257,8 +2533,9 @@ function allEntriesHeaders() {
   return [
     "Type",
     "Date",
+    "Placement",
     "Hospital",
-    "Specialty / Placement",
+    "Specialty",
     "Location",
     "Procedure",
     "Site",
@@ -2286,8 +2563,9 @@ function allEntriesHeaders() {
 function procedureHeaders() {
   return [
     "Date",
+    "Placement",
     "Hospital",
-    "Specialty / Placement",
+    "Specialty",
     "Location",
     "Procedure",
     "Site",
@@ -2306,6 +2584,7 @@ function procedureHeaders() {
 function cpdHeaders() {
   return [
     "Date",
+    "Placement",
     "CPD type",
     "CPD format",
     "Topic",
@@ -2324,8 +2603,9 @@ function entryToAllEntriesRow(entry) {
   return {
     "Type": entry.type || "",
     "Date": entry.date || "",
+    "Placement": getEntryPlacementExport(entry),
     "Hospital": entry.hospital || "",
-    "Specialty / Placement": entry.specialty || "",
+    "Specialty": entry.specialty || "",
     "Location": entry.context || "",
     "Procedure": entry.procedure || "",
     "Site": entry.site || "",
@@ -2353,8 +2633,9 @@ function entryToAllEntriesRow(entry) {
 function entryToProcedureRow(entry) {
   return {
     "Date": entry.date || "",
+    "Placement": getEntryPlacementExport(entry),
     "Hospital": entry.hospital || "",
-    "Specialty / Placement": entry.specialty || "",
+    "Specialty": entry.specialty || "",
     "Location": entry.context || "",
     "Procedure": entry.procedure || "",
     "Site": entry.site || "",
@@ -2373,6 +2654,7 @@ function entryToProcedureRow(entry) {
 function entryToCpdRow(entry) {
   return {
     "Date": entry.date || "",
+    "Placement": getEntryPlacementExport(entry),
     "CPD type": entry.cpdType || "",
     "CPD format": entry.cpdFormat || "",
     "Topic": entry.cpdTopic || "",
