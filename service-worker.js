@@ -1,4 +1,4 @@
-const CACHE_NAME = "procedure-logbook-v32";
+const CACHE_NAME = "procedure-logbook-v33";
 
 const FILES_TO_CACHE = [
   "./",
