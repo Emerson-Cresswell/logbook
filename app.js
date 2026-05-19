@@ -622,6 +622,41 @@ function nextWizardStep() {
   }
 }
 
+function getOriginalEditingEntry() {
+  if (!editingEntryId) return null;
+  return state.entries.find(entry => entry.id === editingEntryId) || null;
+}
+
+function renderWizardStepLabel(stepLabel, text) {
+  stepLabel.innerHTML = "";
+
+  const stepText = document.createElement("span");
+  stepText.textContent = text;
+  stepLabel.appendChild(stepText);
+
+  if (editingEntryId) {
+    const cancelButton = document.createElement("button");
+    cancelButton.type = "button";
+    cancelButton.className = "cancel-edit-link";
+    cancelButton.textContent = "Cancel edit";
+    cancelButton.addEventListener("click", cancelEdit);
+    stepLabel.appendChild(cancelButton);
+  }
+}
+
+function formatAttemptText(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (text === "1") return "1 attempt";
+  if (text === "2") return "2 attempts";
+  if (text === "3+") return "3+ attempts";
+  return text;
+}
+
+function valuesAreDifferent(currentValue, originalValue) {
+  return String(currentValue || "").trim() !== String(originalValue || "").trim();
+}
+
 function renderWizard() {
   const step = wizardSteps[wizardIndex];
 
@@ -641,17 +676,13 @@ function renderWizard() {
   const relevantSteps = getRelevantWizardSteps();
   const visibleStepNumber = relevantSteps.indexOf(step) + 1;
 
-  stepLabel.textContent = `Step ${visibleStepNumber} of ${relevantSteps.length}`;
+  renderWizardStepLabel(stepLabel, `Step ${visibleStepNumber} of ${relevantSteps.length}`);
   title.textContent = "";
   help.textContent = "";
   content.innerHTML = "";
 
   if (step !== "review") {
     content.appendChild(makeCurrentEntrySummaryStrip());
-
-    if (editingEntryId) {
-      content.appendChild(makeCancelEditButton());
-    }
   }
 
   if (step === "date") {
@@ -784,36 +815,51 @@ function renderWizard() {
 
 function getCurrentEntrySummaryItems() {
   const items = [];
+  const original = getOriginalEditingEntry();
 
-  const add = (label, value) => {
+  const add = (label, value, originalValue = undefined) => {
     const text = String(value || "").trim();
-    if (text) items.push([label, text]);
+    const originalText = originalValue === undefined ? "" : String(originalValue || "").trim();
+
+    if (text || originalText) {
+      items.push({
+        label,
+        value: text,
+        originalValue: originalText,
+        changed: editingEntryId && originalValue !== undefined && valuesAreDifferent(text, originalText)
+      });
+    }
   };
 
-  add("Date", formatDate(draft.date));
+  add("Date", formatDate(draft.date), original ? formatDate(original.date) : undefined);
 
   if (currentEntryType === "procedure") {
-    add("Hospital", draft.hospital);
-    add("Specialty", draft.specialty);
-    add("Location", draft.context);
-    add("Procedure", draft.procedure);
+    add("Hospital", draft.hospital, original ? original.hospital : undefined);
+    add("Specialty", draft.specialty, original ? original.specialty : undefined);
+    add("Location", draft.context, original ? (original.context || original.location) : undefined);
+    add("Procedure", draft.procedure, original ? original.procedure : undefined);
 
-    if (procedureSupportsSite(draft.procedure)) add("Site", draft.site);
-    if (draft.procedure === "Arterial line") add("Technique", draft.technique);
+    if (procedureSupportsSite(draft.procedure) || (original && procedureSupportsSite(original.procedure))) {
+      add("Site", draft.site, original ? original.site : undefined);
+    }
 
-    add("Role", draft.role);
-    add("Supervision", draft.supervision);
-    add("Outcome", draft.outcome);
-    add("Attempts", draft.attempts);
-    add("Complication", draft.complication);
+    if (draft.procedure === "Arterial line" || (original && original.procedure === "Arterial line")) {
+      add("Technique", draft.technique, original ? original.technique : undefined);
+    }
+
+    add("Role", draft.role, original ? original.role : undefined);
+    add("Supervision", draft.supervision, original ? original.supervision : undefined);
+    add("Outcome", draft.outcome, original ? original.outcome : undefined);
+    add("Attempts", formatAttemptText(draft.attempts), original ? formatAttemptText(original.attempts) : undefined);
+    add("Complication", draft.complication, original ? original.complication : undefined);
   } else {
-    add("CPD type", draft.cpdType);
-    add("Format", draft.cpdFormat);
-    add("Topic", draft.cpdTopic);
-    add("Title", draft.cpdTitle);
-    add("Provider", draft.cpdProvider);
-    add("Time", draft.cpdTime);
-    add("Evidence", draft.cpdEvidence);
+    add("CPD type", draft.cpdType, original ? original.cpdType : undefined);
+    add("Format", draft.cpdFormat, original ? original.cpdFormat : undefined);
+    add("Topic", draft.cpdTopic, original ? original.cpdTopic : undefined);
+    add("Title", draft.cpdTitle, original ? original.cpdTitle : undefined);
+    add("Provider", draft.cpdProvider, original ? original.cpdProvider : undefined);
+    add("Time", draft.cpdTime, original ? original.cpdTime : undefined);
+    add("Evidence", draft.cpdEvidence, original ? original.cpdEvidence : undefined);
   }
 
   return items;
@@ -850,15 +896,32 @@ function makeCurrentEntrySummaryStrip() {
     empty.textContent = "Nothing entered yet.";
     body.appendChild(empty);
   } else {
-    items.forEach(([itemLabel, value]) => {
+    items.forEach(item => {
       const row = document.createElement("div");
       row.className = "current-entry-summary-row";
 
       const key = document.createElement("span");
-      key.textContent = itemLabel;
+      key.textContent = item.label;
 
       const val = document.createElement("strong");
-      val.textContent = value;
+
+      if (item.changed) {
+        const originalValue = document.createElement("span");
+        originalValue.className = "summary-change-original";
+        originalValue.textContent = item.originalValue || "Not recorded";
+
+        const arrow = document.createElement("span");
+        arrow.className = "summary-change-arrow";
+        arrow.textContent = " → ";
+
+        const newValue = document.createElement("span");
+        newValue.className = "summary-change-new";
+        newValue.textContent = item.value || "Not recorded";
+
+        val.append(originalValue, arrow, newValue);
+      } else {
+        val.textContent = item.value || item.originalValue || "Not recorded";
+      }
 
       row.append(key, val);
       body.appendChild(row);
@@ -1198,7 +1261,7 @@ function makeAttemptsScreen() {
   const wrapper = document.createElement("div");
 
   if (editingEntryId && draft.attempts) {
-    wrapper.appendChild(makeButton(`Keep current: ${draft.attempts}`, "choice-button keep-current-button", () => {
+    wrapper.appendChild(makeButton(`Keep current: ${formatAttemptText(draft.attempts)}`, "choice-button keep-current-button", () => {
       nextWizardStep();
     }));
   }
@@ -1339,10 +1402,6 @@ function makeReviewScreen() {
     markChanged();
     showScreen("homeScreen");
   }));
-
-  if (editingEntryId) {
-    wrapper.appendChild(makeCancelEditButton());
-  }
 
   return wrapper;
 }
