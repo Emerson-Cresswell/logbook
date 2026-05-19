@@ -38,6 +38,7 @@ let logbookFilter = "all";
 let editingEntryId = null;
 let editReturnScreen = null;
 let editReturnScrollY = 0;
+let placementsBackAction = () => showScreen("homeScreen");
 
 const procedureSteps = [
   "date",
@@ -1499,10 +1500,22 @@ function makeActionRow(buttons) {
 }
 
 
+function setPlacementsBackAction(action) {
+  placementsBackAction = typeof action === "function" ? action : () => showScreen("homeScreen");
+}
+
+function togglePlacementVisibility(placement) {
+  placement.hidden = !placement.hidden;
+  placement.updatedAt = new Date().toISOString();
+  markChanged();
+  renderPlacements();
+}
+
 function renderPlacements() {
   const container = document.getElementById("placementsContent");
   if (!container) return;
 
+  setPlacementsBackAction(() => showScreen("homeScreen"));
   container.innerHTML = "";
 
   if (state.placements.length === 0) {
@@ -1529,9 +1542,12 @@ function renderPlacements() {
 
       text.append(name, dates);
 
-      const status = document.createElement("span");
+      const status = document.createElement("button");
+      status.type = "button";
       status.className = placement.hidden ? "status-pill status-hidden" : "status-pill status-shown";
       status.textContent = placement.hidden ? "Hidden" : "Shown";
+      status.setAttribute("aria-label", `${placement.hidden ? "Show" : "Hide"} ${placement.name}`);
+      status.addEventListener("click", () => togglePlacementVisibility(placement));
 
       card.append(text, status);
       list.appendChild(card);
@@ -1545,23 +1561,17 @@ function renderPlacements() {
   ];
 
   if (state.placements.length > 0) {
-    buttons.push(
-      makeButton("Show/hide placements", "button secondary wizard-action-button", renderShowHidePlacementsScreen),
-      makeButton("Delete placement", "button secondary wizard-action-button", renderDeletePlacementsScreen)
-    );
+    buttons.push(makeButton("Delete placement", "button secondary wizard-action-button", renderDeletePlacementsScreen));
   }
 
-  container.appendChild(makeActionRow(buttons.length === 1 ? buttons : buttons.slice(0, 2)));
-
-  if (buttons.length > 2) {
-    container.appendChild(makeActionRow([buttons[2]]));
-  }
+  container.appendChild(makeActionRow(buttons));
 }
 
 function renderAddPlacementScreen() {
   const container = document.getElementById("placementsContent");
   if (!container) return;
 
+  setPlacementsBackAction(renderPlacements);
   container.innerHTML = "";
 
   const instructions = document.createElement("p");
@@ -1642,39 +1652,11 @@ function renderAddPlacementScreen() {
   );
 }
 
-function renderShowHidePlacementsScreen() {
-  const container = document.getElementById("placementsContent");
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  const instructions = document.createElement("p");
-  instructions.className = "help-text";
-  instructions.textContent = "Tap a placement to switch it between shown and hidden.";
-  container.appendChild(instructions);
-
-  state.placements.forEach(placement => {
-    const button = makeButton(
-      `${formatPlacementLabel(placement)} · ${placement.hidden ? "Hidden" : "Shown"}`,
-      placement.hidden ? "choice-button visibility-option hidden-option" : "choice-button visibility-option shown-option",
-      () => {
-        placement.hidden = !placement.hidden;
-        placement.updatedAt = new Date().toISOString();
-        markChanged();
-        renderShowHidePlacementsScreen();
-      }
-    );
-
-    container.appendChild(button);
-  });
-
-  container.appendChild(makeButton("Done", "button primary wizard-action-button", renderPlacements));
-}
-
 function renderDeletePlacementsScreen() {
   const container = document.getElementById("placementsContent");
   if (!container) return;
 
+  setPlacementsBackAction(renderPlacements);
   container.innerHTML = "";
 
   const message = document.createElement("div");
@@ -2216,6 +2198,10 @@ function attachEvents() {
 
   document.getElementById("managePlacementsButton").addEventListener("click", () => {
     showScreen("placementsScreen");
+  });
+
+  document.getElementById("placementsBackButton").addEventListener("click", () => {
+    placementsBackAction();
   });
 
   document.getElementById("viewBackupButton").addEventListener("click", () => {
