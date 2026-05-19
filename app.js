@@ -1151,7 +1151,7 @@ function renderAddHospitalScreen(wrapper) {
   });
 
   const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderWizard);
-  wrapper.append(input, saveButton, cancelButton);
+  wrapper.append(input, makeActionRow([cancelButton, saveButton]));
 }
 
 function renderDeleteHospitalScreen(wrapper) {
@@ -1252,7 +1252,7 @@ function renderAddOptionScreen(wrapper, field, procedureName = "") {
   });
 
   const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderWizard);
-  wrapper.append(input, saveButton, cancelButton);
+  wrapper.append(input, makeActionRow([cancelButton, saveButton]));
 }
 
 function renderDeleteOptionScreen(wrapper, field, procedureName = "") {
@@ -1309,7 +1309,7 @@ function renderOtherInput(wrapper, field, option) {
   });
 
   const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderWizard);
-  wrapper.append(input, saveButton, cancelButton);
+  wrapper.append(input, makeActionRow([cancelButton, saveButton]));
 }
 
 function makeOutcomeScreen() {
@@ -1663,7 +1663,7 @@ function renderAddPlacementScreen() {
 
   const actionRow = document.createElement("div");
   actionRow.className = "action-row";
-  actionRow.append(saveButton, cancelButton);
+  actionRow.append(cancelButton, saveButton);
 
   container.append(
     instructions,
@@ -1728,7 +1728,7 @@ function renderDeletePlacementsScreen(selectedIds = []) {
 
   const actionRow = document.createElement("div");
   actionRow.className = "action-row";
-  actionRow.append(deleteSelectedButton, cancelButton);
+  actionRow.append(cancelButton, deleteSelectedButton);
 
   container.append(
     message,
@@ -1784,7 +1784,7 @@ function renderConfirmDeletePlacementsScreen(selectedIds = []) {
 
   const actionRow = document.createElement("div");
   actionRow.className = "action-row";
-  actionRow.append(confirmButton, cancelButton);
+  actionRow.append(cancelButton, confirmButton);
 
   container.append(
     message,
