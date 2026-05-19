@@ -998,3 +998,33 @@ textarea:focus-visible {
 .dialog-action-row {
   margin-bottom: 0;
 }
+
+/* V38: keep button text solid and align green/red borders with secondary buttons. */
+.button-label,
+.button > *,
+.choice-button > *,
+.filter-button > *,
+.small-button > * {
+  position: relative;
+  z-index: 1;
+  color: inherit;
+  text-shadow: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.button,
+.choice-button,
+.filter-button,
+.small-button {
+  text-shadow: none;
+}
+
+.button.primary,
+.keep-current-button,
+.filter-button.active,
+.button.danger-button,
+.choice-button.danger,
+.delete-select-button.selected,
+.delete-confirm-item {
+  border-color: #9fb0c3;
+}
