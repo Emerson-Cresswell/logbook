@@ -1504,6 +1504,25 @@ function setPlacementsBackAction(action) {
   placementsBackAction = typeof action === "function" ? action : () => showScreen("homeScreen");
 }
 
+function setPlacementsTitle(text) {
+  const title = document.querySelector("#placementsScreen h2");
+  if (title) title.textContent = text;
+}
+
+function makePlacementCancelLink() {
+  const wrapper = document.createElement("div");
+  wrapper.className = "placement-top-action";
+
+  const cancelButton = document.createElement("button");
+  cancelButton.type = "button";
+  cancelButton.className = "cancel-edit-link placement-cancel-link";
+  cancelButton.textContent = "Cancel";
+  cancelButton.addEventListener("click", renderPlacements);
+
+  wrapper.appendChild(cancelButton);
+  return wrapper;
+}
+
 function togglePlacementVisibility(placement) {
   placement.hidden = !placement.hidden;
   placement.updatedAt = new Date().toISOString();
@@ -1515,6 +1534,7 @@ function renderPlacements() {
   const container = document.getElementById("placementsContent");
   if (!container) return;
 
+  setPlacementsTitle("Placements");
   setPlacementsBackAction(() => showScreen("homeScreen"));
   container.innerHTML = "";
 
@@ -1561,7 +1581,7 @@ function renderPlacements() {
   ];
 
   if (state.placements.length > 0) {
-    buttons.push(makeButton("Delete placement", "button secondary wizard-action-button", renderDeletePlacementsScreen));
+    buttons.push(makeButton("Delete placement", "button secondary wizard-action-button", () => renderDeletePlacementsScreen()));
   }
 
   container.appendChild(makeActionRow(buttons));
@@ -1571,6 +1591,7 @@ function renderAddPlacementScreen() {
   const container = document.getElementById("placementsContent");
   if (!container) return;
 
+  setPlacementsTitle("Add placement");
   setPlacementsBackAction(renderPlacements);
   container.innerHTML = "";
 
@@ -1652,33 +1673,111 @@ function renderAddPlacementScreen() {
   );
 }
 
-function renderDeletePlacementsScreen() {
+function renderDeletePlacementsScreen(selectedIds = []) {
   const container = document.getElementById("placementsContent");
   if (!container) return;
 
+  const selectedPlacementIds = new Set(selectedIds);
+
+  setPlacementsTitle("Delete placements");
   setPlacementsBackAction(renderPlacements);
   container.innerHTML = "";
 
-  const message = document.createElement("div");
-  message.className = "delete-message";
-  message.textContent = "Which placement do you want to delete?";
-  container.appendChild(message);
+  const message = document.createElement("p");
+  message.className = "help-text";
+  message.textContent = "Select one or more placements to delete.";
+
+  const list = document.createElement("div");
+  list.className = "delete-placement-list";
 
   state.placements.forEach(placement => {
-    container.appendChild(makeButton(formatPlacementLabel(placement), "choice-button danger", () => {
-      const confirmed = confirm(
-        `Delete ${placement.name}?\n\nExisting logbook records will not be changed.`
-      );
+    const isSelected = selectedPlacementIds.has(placement.id);
+    const button = makeButton(
+      formatPlacementLabel(placement),
+      isSelected ? "choice-button delete-select-button selected" : "choice-button delete-select-button",
+      () => {
+        if (selectedPlacementIds.has(placement.id)) {
+          selectedPlacementIds.delete(placement.id);
+        } else {
+          selectedPlacementIds.add(placement.id);
+        }
 
-      if (!confirmed) return;
+        renderDeletePlacementsScreen(Array.from(selectedPlacementIds));
+      }
+    );
 
-      state.placements = state.placements.filter(item => item.id !== placement.id);
-      markChanged();
-      renderPlacements();
-    }));
+    list.appendChild(button);
   });
 
-  container.appendChild(makeButton("Cancel", "button secondary wizard-action-button", renderPlacements));
+  const deleteSelectedButton = makeButton(
+    "Delete selected placements",
+    selectedPlacementIds.size > 0
+      ? "button danger-button wizard-action-button"
+      : "button secondary wizard-action-button disabled-action-button",
+    () => {
+      if (selectedPlacementIds.size === 0) return;
+      renderConfirmDeletePlacementsScreen(Array.from(selectedPlacementIds));
+    }
+  );
+  deleteSelectedButton.disabled = selectedPlacementIds.size === 0;
+
+  container.append(
+    makePlacementCancelLink(),
+    message,
+    list,
+    deleteSelectedButton
+  );
+}
+
+function renderConfirmDeletePlacementsScreen(selectedIds = []) {
+  const container = document.getElementById("placementsContent");
+  if (!container) return;
+
+  const selectedPlacementIds = new Set(selectedIds);
+  const selectedPlacements = state.placements.filter(placement => selectedPlacementIds.has(placement.id));
+
+  if (selectedPlacements.length === 0) {
+    renderDeletePlacementsScreen();
+    return;
+  }
+
+  setPlacementsTitle("Confirm deletion");
+  setPlacementsBackAction(() => renderDeletePlacementsScreen(selectedIds));
+  container.innerHTML = "";
+
+  const message = document.createElement("p");
+  message.className = "help-text";
+  message.textContent = "These placements will be deleted. Existing logbook records will not be changed.";
+
+  const list = document.createElement("div");
+  list.className = "delete-confirm-list";
+
+  selectedPlacements.forEach(placement => {
+    const item = document.createElement("div");
+    item.className = "delete-confirm-item";
+
+    const name = document.createElement("h3");
+    name.textContent = placement.name;
+
+    const dates = document.createElement("p");
+    dates.textContent = formatPlacementRange(placement);
+
+    item.append(name, dates);
+    list.appendChild(item);
+  });
+
+  const confirmButton = makeButton("Confirm deletion", "button danger-button wizard-action-button", () => {
+    state.placements = state.placements.filter(placement => !selectedPlacementIds.has(placement.id));
+    markChanged();
+    renderPlacements();
+  });
+
+  container.append(
+    makePlacementCancelLink(),
+    message,
+    list,
+    confirmButton
+  );
 }
 
 function makeFieldLabel(text) {
