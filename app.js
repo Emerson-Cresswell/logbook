@@ -366,7 +366,15 @@ function saveState() {
 }
 
 function loadState() {
-  const saved = localStorage.getItem(STORAGE_KEY);
+  let saved = null;
+
+  try {
+    saved = localStorage.getItem(STORAGE_KEY);
+  } catch (error) {
+    console.error("Unable to read saved data.", error);
+    return;
+  }
+
   if (!saved) return;
 
   try {
@@ -380,8 +388,9 @@ function loadState() {
       backup: parsed.backup || { lastBackupAt: null, changeCountSinceBackup: 0 }
     };
     ensureStateShape();
-  } catch {
-    alert("There was a problem loading saved data.");
+  } catch (error) {
+    console.error("There was a problem loading saved data.", error);
+    alert("There was a problem loading saved data. The app will open with a blank local copy. Your existing browser data has not been deleted.");
   }
 }
 
@@ -1548,10 +1557,17 @@ function renderPlacements() {
     list.className = "placement-list";
 
     state.placements.forEach(placement => {
-      const card = document.createElement("button");
-      card.type = "button";
+      const card = document.createElement("div");
       card.className = placement.hidden ? "placement-card placement-hidden" : "placement-card";
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
       card.addEventListener("click", () => renderEditPlacementScreen(placement.id));
+      card.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          renderEditPlacementScreen(placement.id);
+        }
+      });
 
       const text = document.createElement("div");
       text.className = "placement-card-text";
@@ -1564,22 +1580,14 @@ function renderPlacements() {
 
       text.append(name, dates);
 
-      const status = document.createElement("span");
+      const status = document.createElement("button");
+      status.type = "button";
       status.className = placement.hidden ? "status-pill status-hidden" : "status-pill status-shown";
       status.textContent = placement.hidden ? "Hidden" : "Shown";
-      status.setAttribute("role", "button");
-      status.setAttribute("tabindex", "0");
       status.setAttribute("aria-label", `${placement.hidden ? "Show" : "Hide"} ${placement.name}`);
       status.addEventListener("click", event => {
         event.stopPropagation();
         togglePlacementVisibility(placement);
-      });
-      status.addEventListener("keydown", event => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          event.stopPropagation();
-          togglePlacementVisibility(placement);
-        }
       });
 
       card.append(text, status);
@@ -2456,28 +2464,37 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function bindClick(id, handler) {
+  const element = document.getElementById(id);
+  if (!element) {
+    console.warn(`Missing element #${id}`);
+    return;
+  }
+  element.addEventListener("click", handler);
+}
+
 function attachEvents() {
-  document.getElementById("addEntryButton").addEventListener("click", () => {
+  bindClick("addEntryButton", () => {
     showScreen("entryTypeScreen");
   });
 
-  document.getElementById("viewLogbookButton").addEventListener("click", () => {
+  bindClick("viewLogbookButton", () => {
     showScreen("logbookScreen");
   });
 
-  document.getElementById("viewSummariesButton").addEventListener("click", () => {
+  bindClick("viewSummariesButton", () => {
     showScreen("summariesScreen");
   });
 
-  document.getElementById("managePlacementsButton").addEventListener("click", () => {
+  bindClick("managePlacementsButton", () => {
     showScreen("placementsScreen");
   });
 
-  document.getElementById("placementsBackButton").addEventListener("click", () => {
+  bindClick("placementsBackButton", () => {
     placementsBackAction();
   });
 
-  document.getElementById("viewBackupButton").addEventListener("click", () => {
+  bindClick("viewBackupButton", () => {
     showScreen("backupScreen");
   });
 
@@ -2489,22 +2506,29 @@ function attachEvents() {
     button.addEventListener("click", () => startEntry(button.dataset.entryType));
   });
 
-  document.getElementById("wizardBackButton").addEventListener("click", goWizardBack);
-  document.getElementById("backupNowButton").addEventListener("click", downloadJsonBackup);
-  document.getElementById("downloadJsonButton").addEventListener("click", downloadJsonBackup);
-  document.getElementById("downloadExcelButton").addEventListener("click", downloadExcelWorkbook);
+  bindClick("wizardBackButton", goWizardBack);
+  bindClick("backupNowButton", downloadJsonBackup);
+  bindClick("downloadJsonButton", downloadJsonBackup);
+  bindClick("downloadExcelButton", downloadExcelWorkbook);
 
-  document.getElementById("importJsonButton").addEventListener("click", () => {
-    document.getElementById("importFileInput").click();
+  bindClick("importJsonButton", () => {
+    const input = document.getElementById("importFileInput");
+    if (input) input.click();
   });
 
-  document.getElementById("importFileInput").addEventListener("change", event => {
-    const file = event.target.files[0];
-    if (file) importJsonBackup(file);
-    event.target.value = "";
-  });
+  const importFileInput = document.getElementById("importFileInput");
+  if (importFileInput) {
+    importFileInput.addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (file) importJsonBackup(file);
+      event.target.value = "";
+    });
+  }
 
-  document.getElementById("searchInput").addEventListener("input", renderLogbook);
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", renderLogbook);
+  }
 
   document.querySelectorAll("[data-filter]").forEach(button => {
     button.addEventListener("click", () => {
@@ -2529,11 +2553,22 @@ if ("serviceWorker" in navigator) {
 }
 
 function init() {
-  loadState();
-  ensureStateShape();
   attachEvents();
-  renderBackupStatus();
-  showScreen("homeScreen");
+
+  try {
+    loadState();
+    ensureStateShape();
+  } catch (error) {
+    console.error("App initialisation failed while preparing saved data.", error);
+    alert("There was a problem preparing saved data. The app has still loaded so you can export or inspect what is available.");
+  }
+
+  try {
+    renderBackupStatus();
+    showScreen("homeScreen");
+  } catch (error) {
+    console.error("App initialisation failed while rendering the home screen.", error);
+  }
 }
 
 init();
