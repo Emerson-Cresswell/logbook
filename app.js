@@ -952,9 +952,9 @@ function renderWizard() {
   }
 
   if (step === "cpdReflection") {
-    title.textContent = "Reflection";
+    title.textContent = "Optional reflection";
     help.textContent = "Optional, but useful for portfolio evidence.";
-    content.appendChild(makeTextAreaScreen("cpdReflection", "What did you learn and how will this affect your practice?"));
+    content.appendChild(makeTextAreaScreen("cpdReflection", "What did you learn and how will this affect your practice?", { showSkip: false }));
     return;
   }
 
@@ -970,11 +970,20 @@ function renderWizard() {
   }
 }
 
+function shouldShowSummaryField(stepName) {
+  if (editingEntryId) return true;
+
+  const stepIndex = wizardSteps.indexOf(stepName);
+  return stepIndex >= 0 && wizardIndex > stepIndex;
+}
+
 function getCurrentEntrySummaryItems() {
   const items = [];
   const original = getOriginalEditingEntry();
 
-  const add = (label, value, originalValue = undefined) => {
+  const add = (stepName, label, value, originalValue = undefined) => {
+    if (!shouldShowSummaryField(stepName)) return;
+
     const text = String(value || "").trim();
     const originalText = originalValue === undefined ? "" : String(originalValue || "").trim();
 
@@ -988,41 +997,40 @@ function getCurrentEntrySummaryItems() {
     }
   };
 
-  add("Date", formatDate(draft.date), original ? formatDate(original.date) : undefined);
-  add("Placement", getEntryPlacementDisplay(draft), original ? getEntryPlacementDisplay(original) : undefined);
+  add("date", "Date", formatDate(draft.date), original ? formatDate(original.date) : undefined);
+  add("placement", "Placement", getEntryPlacementDisplay(draft), original ? getEntryPlacementDisplay(original) : undefined);
 
   if (currentEntryType === "procedure") {
-    add("Specialty", draft.specialty, original ? original.specialty : undefined);
-    add("Hospital", draft.hospital, original ? original.hospital : undefined);
-    add("Location", draft.context, original ? (original.context || original.location) : undefined);
-    add("Procedure", draft.procedure, original ? original.procedure : undefined);
+    add("specialty", "Specialty", draft.specialty, original ? original.specialty : undefined);
+    add("hospital", "Hospital", draft.hospital, original ? original.hospital : undefined);
+    add("context", "Location", draft.context, original ? (original.context || original.location) : undefined);
+    add("procedure", "Procedure", draft.procedure, original ? original.procedure : undefined);
 
     if (procedureSupportsSite(draft.procedure) || (original && procedureSupportsSite(original.procedure))) {
-      add("Site", draft.site, original ? original.site : undefined);
+      add("site", "Site", draft.site, original ? original.site : undefined);
     }
 
     if (draft.procedure === "Arterial line" || (original && original.procedure === "Arterial line")) {
-      add("Technique", draft.technique, original ? original.technique : undefined);
+      add("technique", "Technique", draft.technique, original ? original.technique : undefined);
     }
 
-    add("Role", draft.role, original ? original.role : undefined);
-    add("Supervision", draft.supervision, original ? original.supervision : undefined);
-    add("Outcome", draft.outcome, original ? original.outcome : undefined);
-    add("Attempts", formatAttemptText(draft.attempts), original ? formatAttemptText(original.attempts) : undefined);
-    add("Complication", draft.complication, original ? original.complication : undefined);
+    add("role", "Role", draft.role, original ? original.role : undefined);
+    add("supervision", "Supervision", draft.supervision, original ? original.supervision : undefined);
+    add("outcome", "Outcome", draft.outcome, original ? original.outcome : undefined);
+    add("attempts", "Attempts", formatAttemptText(draft.attempts), original ? formatAttemptText(original.attempts) : undefined);
+    add("complication", "Complication", draft.complication, original ? original.complication : undefined);
   } else {
-    add("CPD type", draft.cpdType, original ? original.cpdType : undefined);
-    add("Format", draft.cpdFormat, original ? original.cpdFormat : undefined);
-    add("Topic", draft.cpdTopic, original ? original.cpdTopic : undefined);
-    add("Title", draft.cpdTitle, original ? original.cpdTitle : undefined);
-    add("Provider", draft.cpdProvider, original ? original.cpdProvider : undefined);
-    add("Time", draft.cpdTime, original ? original.cpdTime : undefined);
-    add("Evidence", draft.cpdEvidence, original ? original.cpdEvidence : undefined);
+    add("cpdType", "CPD type", draft.cpdType, original ? original.cpdType : undefined);
+    add("cpdFormat", "Format", draft.cpdFormat, original ? original.cpdFormat : undefined);
+    add("cpdTopic", "Topic", draft.cpdTopic, original ? original.cpdTopic : undefined);
+    add("cpdDetails", "Title", draft.cpdTitle, original ? original.cpdTitle : undefined);
+    add("cpdDetails", "Provider", draft.cpdProvider, original ? original.cpdProvider : undefined);
+    add("cpdTime", "Time", draft.cpdTime, original ? original.cpdTime : undefined);
+    add("cpdEvidence", "Evidence", draft.cpdEvidence, original ? original.cpdEvidence : undefined);
   }
 
   return items;
 }
-
 function makeCurrentEntrySummaryStrip() {
   const details = document.createElement("details");
   details.className = "current-entry-summary";
@@ -1831,7 +1839,12 @@ function makeButton(text, className, onClick) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = className;
-  button.textContent = text;
+
+  const label = document.createElement("span");
+  label.className = "button-label";
+  label.textContent = text;
+  button.appendChild(label);
+
   button.addEventListener("click", onClick);
   return button;
 }
