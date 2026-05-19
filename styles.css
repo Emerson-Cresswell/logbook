@@ -809,3 +809,60 @@ textarea:focus-visible {
 .status-pill:active {
   transform: translateY(1px);
 }
+
+.placement-top-action {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 10px;
+}
+
+.placement-cancel-link {
+  cursor: pointer;
+}
+
+.delete-placement-list,
+.delete-confirm-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.delete-select-button {
+  margin-bottom: 0;
+}
+
+.delete-select-button.selected {
+  background: var(--danger-bg);
+  border-color: #fca5a5;
+  color: var(--danger-dark);
+}
+
+.disabled-action-button,
+.button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.button:disabled:active {
+  transform: none;
+}
+
+.delete-confirm-item {
+  background: var(--danger-bg);
+  border: 1px solid #fca5a5;
+  border-radius: 14px;
+  padding: 12px;
+  color: var(--danger-dark);
+}
+
+.delete-confirm-item h3 {
+  margin: 0 0 3px;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.delete-confirm-item p {
+  margin: 0;
+  color: var(--danger-dark);
+  font-size: 0.9rem;
+}
