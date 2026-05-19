@@ -760,6 +760,9 @@ textarea:focus-visible {
 }
 
 .status-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
   border-radius: 999px;
   padding: 5px 9px;
   font-size: 0.78rem;
@@ -806,6 +809,9 @@ textarea:focus-visible {
 }
 
 .status-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
