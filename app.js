@@ -3,6 +3,7 @@ const STORAGE_KEY = "procedureLogbookData_v1";
 let state = {
   entries: [],
   hospitals: [],
+  placements: [],
   customOptions: {
     specialty: [],
     context: [],
@@ -291,9 +292,64 @@ function cleanOptionStore(store) {
   return base;
 }
 
+
+function cleanPlacements(value) {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set();
+  const cleaned = [];
+
+  value.forEach((item, index) => {
+    const source = typeof item === "string" ? { name: item } : (item || {});
+    const name = String(source.name || source.title || "").trim();
+    const startDate = String(source.startDate || "").trim();
+    const endDate = String(source.endDate || "").trim();
+
+    if (!name) return;
+
+    const key = `${name.toLowerCase()}|${startDate}|${endDate}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    cleaned.push({
+      id: String(source.id || `placement-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`),
+      name,
+      startDate,
+      endDate,
+      hidden: Boolean(source.hidden),
+      createdAt: source.createdAt || new Date().toISOString(),
+      updatedAt: source.updatedAt || source.createdAt || new Date().toISOString()
+    });
+  });
+
+  return cleaned.sort((a, b) => {
+    const dateCompare = (b.startDate || "").localeCompare(a.startDate || "");
+    if (dateCompare !== 0) return dateCompare;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function formatPlacementRange(placement) {
+  if (!placement) return "Date range not recorded";
+
+  if (placement.startDate && placement.endDate) {
+    return `${formatDate(placement.startDate)} – ${formatDate(placement.endDate)}`;
+  }
+
+  if (placement.startDate) return `From ${formatDate(placement.startDate)}`;
+  if (placement.endDate) return `Until ${formatDate(placement.endDate)}`;
+  return "Date range not recorded";
+}
+
+function formatPlacementLabel(placement) {
+  if (!placement) return "Placement not recorded";
+  return `${placement.name} · ${formatPlacementRange(placement)}`;
+}
+
 function ensureStateShape() {
   state.entries = Array.isArray(state.entries) ? state.entries : [];
   state.hospitals = cleanArray(state.hospitals).sort((a, b) => a.localeCompare(b));
+  state.placements = cleanPlacements(state.placements);
   state.customOptions = cleanOptionStore(state.customOptions);
   state.hiddenDefaultOptions = cleanOptionStore(state.hiddenDefaultOptions);
   state.backup = state.backup || { lastBackupAt: null, changeCountSinceBackup: 0 };
@@ -317,6 +373,7 @@ function loadState() {
     state = {
       entries: parsed.entries || [],
       hospitals: parsed.hospitals || [],
+      placements: parsed.placements || [],
       customOptions: parsed.customOptions || emptyOptionStore(),
       hiddenDefaultOptions: parsed.hiddenDefaultOptions || emptyOptionStore(),
       backup: parsed.backup || { lastBackupAt: null, changeCountSinceBackup: 0 }
@@ -353,6 +410,7 @@ function showScreen(screenId) {
 
   if (screenId === "logbookScreen") renderLogbook();
   if (screenId === "summariesScreen") renderSummaries();
+  if (screenId === "placementsScreen") renderPlacements();
   if (screenId === "homeScreen" || screenId === "backupScreen") renderBackupStatus();
 }
 
@@ -1440,6 +1498,214 @@ function makeActionRow(buttons) {
   return row;
 }
 
+
+function renderPlacements() {
+  const container = document.getElementById("placementsContent");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  if (state.placements.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "help-text";
+    empty.textContent = "No placements added yet.";
+    container.appendChild(empty);
+  } else {
+    const list = document.createElement("div");
+    list.className = "placement-list";
+
+    state.placements.forEach(placement => {
+      const card = document.createElement("div");
+      card.className = placement.hidden ? "placement-card placement-hidden" : "placement-card";
+
+      const text = document.createElement("div");
+      text.className = "placement-card-text";
+
+      const name = document.createElement("h3");
+      name.textContent = placement.name;
+
+      const dates = document.createElement("p");
+      dates.textContent = formatPlacementRange(placement);
+
+      text.append(name, dates);
+
+      const status = document.createElement("span");
+      status.className = placement.hidden ? "status-pill status-hidden" : "status-pill status-shown";
+      status.textContent = placement.hidden ? "Hidden" : "Shown";
+
+      card.append(text, status);
+      list.appendChild(card);
+    });
+
+    container.appendChild(list);
+  }
+
+  const buttons = [
+    makeButton("Add placement", "button secondary wizard-action-button", renderAddPlacementScreen)
+  ];
+
+  if (state.placements.length > 0) {
+    buttons.push(
+      makeButton("Show/hide placements", "button secondary wizard-action-button", renderShowHidePlacementsScreen),
+      makeButton("Delete placement", "button secondary wizard-action-button", renderDeletePlacementsScreen)
+    );
+  }
+
+  container.appendChild(makeActionRow(buttons.length === 1 ? buttons : buttons.slice(0, 2)));
+
+  if (buttons.length > 2) {
+    container.appendChild(makeActionRow([buttons[2]]));
+  }
+}
+
+function renderAddPlacementScreen() {
+  const container = document.getElementById("placementsContent");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const instructions = document.createElement("p");
+  instructions.className = "help-text";
+  instructions.textContent = "Add the name and date range for this placement.";
+
+  const nameInput = document.createElement("input");
+  nameInput.className = "text-input";
+  nameInput.placeholder = "Placement name, e.g. ACCS Emergency Medicine";
+
+  const startLabel = makeFieldLabel("Start date");
+  const startInput = document.createElement("input");
+  startInput.type = "date";
+  startInput.className = "date-input compact-date-input";
+
+  const endLabel = makeFieldLabel("End date");
+  const endInput = document.createElement("input");
+  endInput.type = "date";
+  endInput.className = "date-input compact-date-input";
+
+  const saveButton = makeButton("Save placement", "button primary wizard-action-button", () => {
+    const name = nameInput.value.trim();
+    const startDate = startInput.value;
+    const endDate = endInput.value;
+
+    if (!name) {
+      alert("Please enter a placement name.");
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      alert("Please enter both a start date and an end date.");
+      return;
+    }
+
+    if (endDate < startDate) {
+      alert("The end date cannot be before the start date.");
+      return;
+    }
+
+    const duplicate = state.placements.some(placement => {
+      return normaliseText(placement.name) === normaliseText(name)
+        && placement.startDate === startDate
+        && placement.endDate === endDate;
+    });
+
+    if (duplicate) {
+      alert("This placement already exists.");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    state.placements.push({
+      id: makeId(),
+      name,
+      startDate,
+      endDate,
+      hidden: false,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    markChanged();
+    renderPlacements();
+  });
+
+  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderPlacements);
+
+  container.append(
+    instructions,
+    nameInput,
+    startLabel,
+    startInput,
+    endLabel,
+    endInput,
+    saveButton,
+    cancelButton
+  );
+}
+
+function renderShowHidePlacementsScreen() {
+  const container = document.getElementById("placementsContent");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const instructions = document.createElement("p");
+  instructions.className = "help-text";
+  instructions.textContent = "Tap a placement to switch it between shown and hidden.";
+  container.appendChild(instructions);
+
+  state.placements.forEach(placement => {
+    const button = makeButton(
+      `${formatPlacementLabel(placement)} · ${placement.hidden ? "Hidden" : "Shown"}`,
+      placement.hidden ? "choice-button visibility-option hidden-option" : "choice-button visibility-option shown-option",
+      () => {
+        placement.hidden = !placement.hidden;
+        placement.updatedAt = new Date().toISOString();
+        markChanged();
+        renderShowHidePlacementsScreen();
+      }
+    );
+
+    container.appendChild(button);
+  });
+
+  container.appendChild(makeButton("Done", "button primary wizard-action-button", renderPlacements));
+}
+
+function renderDeletePlacementsScreen() {
+  const container = document.getElementById("placementsContent");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const message = document.createElement("div");
+  message.className = "delete-message";
+  message.textContent = "Which placement do you want to delete?";
+  container.appendChild(message);
+
+  state.placements.forEach(placement => {
+    container.appendChild(makeButton(formatPlacementLabel(placement), "choice-button danger", () => {
+      const confirmed = confirm(
+        `Delete ${placement.name}?\n\nExisting logbook records will not be changed.`
+      );
+
+      if (!confirmed) return;
+
+      state.placements = state.placements.filter(item => item.id !== placement.id);
+      markChanged();
+      renderPlacements();
+    }));
+  });
+
+  container.appendChild(makeButton("Cancel", "button secondary wizard-action-button", renderPlacements));
+}
+
+function makeFieldLabel(text) {
+  const label = document.createElement("label");
+  label.className = "field-label";
+  label.textContent = text;
+  return label;
+}
+
 function renderLogbook() {
   const searchInput = document.getElementById("searchInput");
   const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
@@ -1617,10 +1883,11 @@ function summaryCard(title, rows) {
 function buildBackupObject() {
   return {
     app: "Procedure & CPD Logbook",
-    schemaVersion: 2,
+    schemaVersion: 3,
     exportedAt: new Date().toISOString(),
     entries: state.entries,
     hospitals: state.hospitals,
+    placements: state.placements,
     customOptions: state.customOptions,
     hiddenDefaultOptions: state.hiddenDefaultOptions,
     backup: state.backup
@@ -1905,6 +2172,7 @@ function importJsonBackup(file) {
 
       state.entries = imported.entries || [];
       state.hospitals = imported.hospitals || [];
+      state.placements = imported.placements || [];
       state.customOptions = imported.customOptions || emptyOptionStore();
       state.hiddenDefaultOptions = imported.hiddenDefaultOptions || emptyOptionStore();
       state.backup = imported.backup || { lastBackupAt: null, changeCountSinceBackup: 0 };
@@ -1944,6 +2212,10 @@ function attachEvents() {
 
   document.getElementById("viewSummariesButton").addEventListener("click", () => {
     showScreen("summariesScreen");
+  });
+
+  document.getElementById("managePlacementsButton").addEventListener("click", () => {
+    showScreen("placementsScreen");
   });
 
   document.getElementById("viewBackupButton").addEventListener("click", () => {
