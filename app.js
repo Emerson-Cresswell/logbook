@@ -1661,6 +1661,10 @@ function renderAddPlacementScreen() {
 
   const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderPlacements);
 
+  const actionRow = document.createElement("div");
+  actionRow.className = "action-row";
+  actionRow.append(saveButton, cancelButton);
+
   container.append(
     instructions,
     nameInput,
@@ -1668,8 +1672,7 @@ function renderAddPlacementScreen() {
     startInput,
     endLabel,
     endInput,
-    saveButton,
-    cancelButton
+    actionRow
   );
 }
 
@@ -1721,11 +1724,16 @@ function renderDeletePlacementsScreen(selectedIds = []) {
   );
   deleteSelectedButton.disabled = selectedPlacementIds.size === 0;
 
+  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderPlacements);
+
+  const actionRow = document.createElement("div");
+  actionRow.className = "action-row";
+  actionRow.append(deleteSelectedButton, cancelButton);
+
   container.append(
-    makePlacementCancelLink(),
     message,
     list,
-    deleteSelectedButton
+    actionRow
   );
 }
 
@@ -1772,11 +1780,16 @@ function renderConfirmDeletePlacementsScreen(selectedIds = []) {
     renderPlacements();
   });
 
+  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderPlacements);
+
+  const actionRow = document.createElement("div");
+  actionRow.className = "action-row";
+  actionRow.append(confirmButton, cancelButton);
+
   container.append(
-    makePlacementCancelLink(),
     message,
     list,
-    confirmButton
+    actionRow
   );
 }
 
