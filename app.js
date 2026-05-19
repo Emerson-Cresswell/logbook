@@ -381,6 +381,30 @@ function getEntryPlacementExport(entry) {
   return display === "Not linked to a placement" ? "" : display;
 }
 
+function placementIncludesDate(placement, dateISO) {
+  if (!placement || !placement.startDate || !placement.endDate || !dateISO) return false;
+  return placement.startDate <= dateISO && placement.endDate >= dateISO;
+}
+
+function sortPlacementsForEntry(placements) {
+  const referenceDate = todayISO();
+
+  return [...placements].sort((a, b) => {
+    const aActive = placementIncludesDate(a, referenceDate);
+    const bActive = placementIncludesDate(b, referenceDate);
+
+    if (aActive !== bActive) return aActive ? -1 : 1;
+
+    const endCompare = (b.endDate || "").localeCompare(a.endDate || "");
+    if (endCompare !== 0) return endCompare;
+
+    const startCompare = (b.startDate || "").localeCompare(a.startDate || "");
+    if (startCompare !== 0) return startCompare;
+
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function setDraftPlacement(placement) {
   if (!placement) {
     draft.placementId = "";
@@ -1093,6 +1117,39 @@ function cancelEdit() {
   showScreen("homeScreen");
 }
 
+function saveEditedDraft() {
+  if (!editingEntryId) return;
+
+  const returnScreen = editReturnScreen;
+  const returnScrollY = editReturnScrollY;
+
+  draft.updatedAt = new Date().toISOString();
+  state.entries = state.entries.map(entry => entry.id === editingEntryId ? { ...draft } : entry);
+
+  editingEntryId = null;
+  editReturnScreen = null;
+  editReturnScrollY = 0;
+  saveState();
+  markChanged();
+
+  if (returnScreen === "logbookScreen") {
+    showScreen("logbookScreen");
+    requestAnimationFrame(() => {
+      window.scrollTo(0, returnScrollY);
+    });
+    return;
+  }
+
+  showScreen("homeScreen");
+}
+
+function appendEditSaveButton(wrapper) {
+  if (!editingEntryId || !wrapper) return wrapper;
+
+  wrapper.appendChild(makeButton("Save changes", "button primary wizard-action-button edit-save-shortcut", saveEditedDraft));
+  return wrapper;
+}
+
 function makeCancelEditButton() {
   return makeButton("Cancel edit", "button danger-button cancel-edit-button", cancelEdit);
 }
@@ -1118,7 +1175,7 @@ function makeDateScreen() {
 
   if (editingEntryId) {
     wrapper.append(input, nextButton);
-    return wrapper;
+    return appendEditSaveButton(wrapper);
   }
 
   const quickSelectLabel = document.createElement("p");
@@ -1169,7 +1226,7 @@ function makePlacementChoiceButton(placement, onClick) {
 
 function makePlacementChoiceScreen() {
   const wrapper = document.createElement("div");
-  const visiblePlacements = state.placements.filter(placement => !placement.hidden);
+  const visiblePlacements = sortPlacementsForEntry(state.placements.filter(placement => !placement.hidden));
 
   if (editingEntryId) {
     wrapper.appendChild(makeButton(`Keep current: ${getEntryPlacementDisplay(draft)}`, "choice-button keep-current-button", () => {
@@ -1203,7 +1260,7 @@ function makePlacementChoiceScreen() {
     makeButton("Show/hide placements", "button secondary wizard-action-button", () => renderShowHidePlacementsFromWizard(wrapper))
   ]));
 
-  return wrapper;
+  return appendEditSaveButton(wrapper);
 }
 
 function renderAddPlacementFromWizard(wrapper) {
@@ -1278,10 +1335,8 @@ function renderAddPlacementFromWizard(wrapper) {
 
     state.placements.push(placement);
     state.placements = cleanPlacements(state.placements);
-    const savedPlacement = state.placements.find(item => item.id === placement.id) || placement;
-    setDraftPlacement(savedPlacement);
     markChanged();
-    nextWizardStep();
+    renderWizard();
   });
 
   wrapper.append(
@@ -1342,7 +1397,7 @@ function renderShowHidePlacementsFromWizard(wrapper) {
     wrapper.appendChild(empty);
   }
 
-  state.placements.forEach(placement => {
+  sortPlacementsForEntry(state.placements).forEach(placement => {
     wrapper.appendChild(makePlacementVisibilityButton(placement, () => {
       placement.hidden = !placement.hidden;
       placement.updatedAt = new Date().toISOString();
@@ -1393,7 +1448,7 @@ function makeHospitalScreen() {
 
   wrapper.appendChild(makeActionRow(rowButtons));
 
-  return wrapper;
+  return appendEditSaveButton(wrapper);
 }
 
 function renderAddHospitalScreen(wrapper) {
@@ -1509,7 +1564,7 @@ function makeChoiceScreen(field, procedureName = "") {
     wrapper.appendChild(makeActionRow(rowButtons));
   }
 
-  return wrapper;
+  return appendEditSaveButton(wrapper);
 }
 
 function renderAddOptionScreen(wrapper, field, procedureName = "") {
@@ -1605,7 +1660,7 @@ function makeOutcomeScreen() {
     nextWizardStep();
   }));
 
-  return wrapper;
+  return appendEditSaveButton(wrapper);
 }
 
 function makeAttemptsScreen() {
@@ -1624,7 +1679,7 @@ function makeAttemptsScreen() {
     }));
   });
 
-  return wrapper;
+  return appendEditSaveButton(wrapper);
 }
 
 function makeTextAreaScreen(field, placeholder, options = {}) {
@@ -1635,6 +1690,9 @@ function makeTextAreaScreen(field, placeholder, options = {}) {
   textarea.className = "textarea-input";
   textarea.placeholder = placeholder;
   textarea.value = draft[field] || "";
+  textarea.addEventListener("input", () => {
+    draft[field] = textarea.value.trim();
+  });
 
   const saveButton = makeButton("Next", "button primary wizard-action-button", () => {
     draft[field] = textarea.value.trim();
@@ -1652,7 +1710,7 @@ function makeTextAreaScreen(field, placeholder, options = {}) {
     wrapper.appendChild(skipButton);
   }
 
-  return wrapper;
+  return appendEditSaveButton(wrapper);
 }
 
 function makeDetailsScreen() {
@@ -1673,6 +1731,16 @@ function makeDetailsScreen() {
   locationInput.placeholder = "Location or website, optional";
   locationInput.value = draft.cpdLocation || "";
 
+  const syncDetailsDraft = () => {
+    draft.cpdTitle = titleInput.value.trim();
+    draft.cpdProvider = providerInput.value.trim();
+    draft.cpdLocation = locationInput.value.trim();
+  };
+
+  titleInput.addEventListener("input", syncDetailsDraft);
+  providerInput.addEventListener("input", syncDetailsDraft);
+  locationInput.addEventListener("input", syncDetailsDraft);
+
   const nextButton = makeButton("Next", "button primary wizard-action-button", () => {
     draft.cpdTitle = titleInput.value.trim();
     draft.cpdProvider = providerInput.value.trim();
@@ -1687,7 +1755,7 @@ function makeDetailsScreen() {
   });
 
   wrapper.append(titleInput, providerInput, locationInput, nextButton);
-  return wrapper;
+  return appendEditSaveButton(wrapper);
 }
 
 function makeReviewScreen() {
@@ -1740,13 +1808,13 @@ function makeReviewScreen() {
 
   const saveButtonText = editingEntryId ? "Save changes" : "Save entry";
   wrapper.appendChild(makeButton(saveButtonText, "button primary wizard-action-button", () => {
-    draft.updatedAt = new Date().toISOString();
-
     if (editingEntryId) {
-      state.entries = state.entries.map(entry => entry.id === editingEntryId ? { ...draft } : entry);
-    } else {
-      state.entries.push({ ...draft });
+      saveEditedDraft();
+      return;
     }
+
+    draft.updatedAt = new Date().toISOString();
+    state.entries.push({ ...draft });
 
     editingEntryId = null;
     editReturnScreen = null;
