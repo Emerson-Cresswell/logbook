@@ -1,5 +1,5 @@
 const STORAGE_KEY = "procedureLogbookData_v1";
-const APP_VERSION = "v46";
+const APP_VERSION = "v47";
 
 let state = {
   entries: [],
@@ -2507,13 +2507,15 @@ function renderAddProcedureToCategory(specialtyId, categoryId) {
 
   const specialtyName = getSpecialtyNameById(specialtyId) || "Specialty";
   const categoryName = getProcedureCategoryName(categoryId);
+  const selectedProcedureIds = new Set();
+
   setSpecialtiesProceduresTitle("Add procedure");
   setSpecialtiesProceduresBackAction(() => renderProceduresForCategory(specialtyId, categoryId));
   container.innerHTML = "";
 
   const context = document.createElement("p");
   context.className = "help-text";
-  context.textContent = `${specialtyName} • ${categoryName}\nSearch existing procedures from any specialty, or create a new one.`;
+  context.textContent = `${specialtyName} • ${categoryName}\nSearch existing procedures from any specialty, select one or more, then add them to this category.`;
   container.appendChild(context);
 
   const search = document.createElement("input");
@@ -2525,6 +2527,82 @@ function renderAddProcedureToCategory(specialtyId, categoryId) {
   const list = document.createElement("div");
   list.className = "management-list";
   container.appendChild(list);
+
+  const addSelectedButton = makeButton("Add selected procedures", "button primary wizard-action-button", () => {
+    const selectedIds = Array.from(selectedProcedureIds);
+    if (selectedIds.length === 0) return;
+
+    selectedIds.forEach(procedureId => {
+      addProcedureAssignment(specialtyId, categoryId, procedureId);
+    });
+
+    renderProceduresForCategory(specialtyId, categoryId);
+  });
+  addSelectedButton.disabled = true;
+  addSelectedButton.classList.add("disabled-action-button");
+
+  const updateAddSelectedButton = () => {
+    const count = selectedProcedureIds.size;
+    addSelectedButton.disabled = count === 0;
+    addSelectedButton.classList.toggle("disabled-action-button", count === 0);
+    addSelectedButton.textContent = count === 0
+      ? "Add selected procedures"
+      : `Add selected ${count === 1 ? "procedure" : "procedures"}`;
+  };
+
+  const makeSelectableProcedureCard = procedure => {
+    const alreadyAdded = isProcedureAssignedToCategory(specialtyId, categoryId, procedure.id);
+    const selected = selectedProcedureIds.has(procedure.id);
+
+    const card = document.createElement("div");
+    card.className = alreadyAdded
+      ? "management-card procedure-selection-card procedure-already-added"
+      : "management-card procedure-selection-card";
+
+    const text = document.createElement("div");
+    text.className = "management-card-text";
+
+    const heading = document.createElement("h3");
+    heading.textContent = procedure.name;
+
+    const detail = document.createElement("p");
+    if (alreadyAdded) {
+      detail.textContent = "Already in this category";
+    } else if (isUserAddedProcedure(procedure.id)) {
+      detail.textContent = "Custom procedure";
+    } else {
+      detail.textContent = "App procedure";
+    }
+
+    text.append(heading, detail);
+
+    const capsule = document.createElement("button");
+    capsule.type = "button";
+    capsule.className = alreadyAdded
+      ? "procedure-select-pill procedure-already-added-pill"
+      : selected
+        ? "procedure-select-pill procedure-selected-pill"
+        : "procedure-select-pill";
+    capsule.textContent = alreadyAdded ? "Already added" : selected ? "Selected" : "Add";
+    capsule.disabled = alreadyAdded;
+
+    capsule.addEventListener("click", event => {
+      event.stopPropagation();
+      if (alreadyAdded) return;
+
+      if (selectedProcedureIds.has(procedure.id)) {
+        selectedProcedureIds.delete(procedure.id);
+      } else {
+        selectedProcedureIds.add(procedure.id);
+      }
+
+      updateAddSelectedButton();
+      renderSearchResults();
+    });
+
+    card.append(text, capsule);
+    return card;
+  };
 
   const renderSearchResults = () => {
     list.innerHTML = "";
@@ -2542,24 +2620,14 @@ function renderAddProcedureToCategory(specialtyId, categoryId) {
     }
 
     procedures.forEach(procedure => {
-      const alreadyAdded = isProcedureAssignedToCategory(specialtyId, categoryId, procedure.id);
-      const button = makeButton(
-        alreadyAdded ? `${procedure.name} — already added` : procedure.name,
-        alreadyAdded ? "choice-button disabled-choice" : "choice-button",
-        () => {
-          if (alreadyAdded) return;
-          addProcedureAssignment(specialtyId, categoryId, procedure.id);
-          renderProceduresForCategory(specialtyId, categoryId);
-        }
-      );
-      if (alreadyAdded) button.disabled = true;
-      list.appendChild(button);
+      list.appendChild(makeSelectableProcedureCard(procedure));
     });
   };
 
   search.addEventListener("input", renderSearchResults);
   renderSearchResults();
 
+  container.appendChild(addSelectedButton);
   container.appendChild(makeButton("Create new procedure", "button secondary wizard-action-button", () => {
     renderCreateProcedureScreen(specialtyId, categoryId);
   }));
