@@ -1100,3 +1100,32 @@ textarea:focus-visible {
     animation: none;
   }
 }
+
+/* V42: make interactive swipe-back respond to horizontal drags on iPhone. */
+html,
+body,
+#app,
+main,
+.screen,
+.button,
+.option-button,
+.filter-button,
+.back-button,
+.keep-current-button,
+.current-entry-summary,
+.log-entry-card,
+.placement-card,
+.placement-choice-button,
+.visibility-option-button {
+  touch-action: pan-y;
+}
+
+body.swipe-back-active,
+body.swipe-back-active * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body.swipe-back-active {
+  cursor: grabbing;
+}
