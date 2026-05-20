@@ -1,8 +1,38 @@
 PROJECT HANDOVER — MyLogbook PWA
-Version covered: V52
-Date prepared: 2026-05-20
+Version covered: V53 Workflow Foundation
+Date prepared: 2026-05-21
 Source of truth for code: GitHub main branch — https://github.com/Emerson-Cresswell/logbook
-Source of truth for this handover: this file should be updated whenever a meaningful code/roadmap/process change is made.
+Current confirmed runtime app version before this docs/process package: V52
+This handover should be updated every time a meaningful code, roadmap, architecture, testing, deployment, or process decision is made.
+
+================================================================================
+0. V53 WORKFLOW FOUNDATION UPDATE
+================================================================================
+Purpose of V53:
+- Optimise the project workflow before adding more app features.
+- Make the project recoverable if a ChatGPT conversation becomes inaccessible.
+- Establish repo-level documentation for future ChatGPT/Codex handovers.
+- Establish repeatable testing and coding rules before Firebase/Codex workflow changes.
+
+Files added in the V53 workflow foundation package:
+- HANDOVER.txt — exhaustive project handover and source of truth for new chats.
+- CHANGELOG.md — version-by-version release/change record.
+- TESTING_CHECKLIST.md — manual regression checklist.
+- AGENTS.md — instructions for Codex/AI agents working on the repo.
+- .github/workflows/syntax-check.yml — GitHub Actions workflow to run JavaScript syntax checks.
+
+Important note about versioning:
+- These files do not change app runtime behaviour.
+- If only these documentation/process files are committed, the visible in-app version label may still show V52.
+- For future app code releases, bump the visible homepage version label and service-worker/cache version.
+- Do not bump cache/service-worker for documentation-only commits unless a runtime file changes.
+
+Recommended immediate next workflow:
+1. Commit the V53 workflow foundation files to GitHub main or a branch.
+2. Use this HANDOVER.txt as the first file to upload/paste into any new ChatGPT conversation.
+3. Use AGENTS.md as the instruction source when using Codex Cloud.
+4. Move hosting to Firebase Hosting next, initially still static/local-first.
+5. Configure Firebase preview channels/GitHub integration before restarting large feature work.
 
 ================================================================================
 1. PROJECT SUMMARY
@@ -12,12 +42,13 @@ MyLogbook is a medical procedure and CPD logbook Progressive Web App. It is curr
 The app must remain polished, safe, and local-first while the data model is still changing. Wider private beta should not start until user accounts and automatic cloud backup/restore are available.
 
 Current confirmed status:
-- Current version: V52.
-- GitHub main branch is fully up to date and is the latest version.
+- Current runtime app version: V52 before V53 docs/process files are added.
+- GitHub main branch is fully up to date and is the latest version of the project.
 - Current stack: HTML, CSS, JavaScript, PWA, service worker, manifest, localStorage, Excel export via xlsx.full.min.js.
 - Current hosting: GitHub Pages.
 - Planned hosting: Firebase Hosting, initially still static/local-first.
-- Planned future backend: Firebase Authentication + Firestore/cloud backup later.
+- Planned future backend: Firebase Authentication + cloud backup/restore later.
+- Possible later refactor: JavaScript to TypeScript, but not immediately.
 
 ================================================================================
 2. CORE PRODUCT PRINCIPLES
@@ -31,6 +62,7 @@ The user strongly prioritises:
 - No patient-identifiable information should be encouraged or required.
 - Manual JSON backup must remain available even after cloud backup exists.
 - Historical entries must remain readable even if placements, specialties, categories, or procedures are hidden, removed, or deleted from management lists.
+- The app should get to a safe private beta quickly, but not before accounts and automatic cloud backup/restore are working.
 
 Important UX preferences:
 - User is very sensitive to visual polish inconsistencies.
@@ -40,15 +72,16 @@ Important UX preferences:
 - Emerald green is the primary action colour.
 - White/secondary buttons should have subtle internal shadow only.
 - Floating nav buttons must feel part of the same design system as normal buttons.
+- Colour alone should not be the only status indicator; use text labels as well when indicating shown/hidden or similar states.
 
 ================================================================================
 3. CURRENT CODING RULES
 ================================================================================
-When producing a new version:
+When producing a new app code version:
 - Only send changed files, unless a full replacement is explicitly required.
 - Do not send unchanged files unnecessarily.
-- Always bump the visible version label on the homepage.
-- Always bump the service worker/cache version when deployable files change.
+- Always bump the visible version label on the homepage when runtime app files change.
+- Always bump the service worker/cache version when deployable runtime files change.
 - Always syntax-check JavaScript before sending.
 - Avoid stale-cache/version mismatch issues.
 - Preserve existing working functionality.
@@ -57,14 +90,15 @@ When producing a new version:
 - Keep batches contained and testable.
 - Think about future Firebase/data model implications.
 - Avoid bloating code unnecessarily.
+- Do not introduce native alert/confirm/prompt popups; use themed app dialogs.
+- Do not remove existing manual JSON backup/import unless explicitly replacing it with safer functionality.
 
-Recommended additional process rules from V52 onward:
-- Keep this handover as HANDOVER.txt in the repository.
-- Update HANDOVER.txt with every meaningful release or roadmap decision.
-- Keep a CHANGELOG.md or RELEASE_NOTES.md with version-by-version changes.
-- Add a TESTING_CHECKLIST.md with repeatable manual tests.
-- Use branches/pull requests rather than direct edits to main once Firebase preview channels are set up.
-- Use Firebase preview URLs for iPhone testing before merging to live.
+Documentation/process commits:
+- Documentation-only commits do not require visible in-app version/cache changes.
+- HANDOVER.txt must be updated whenever important information changes.
+- CHANGELOG.md should be updated for every release/change batch.
+- TESTING_CHECKLIST.md should be updated when new features create new testing requirements.
+- AGENTS.md should be updated when coding rules or workflow assumptions change.
 
 ================================================================================
 4. CURRENT UI / NAVIGATION RULES
@@ -81,7 +115,7 @@ Floating nav controls:
 - Back button icon should be a 180-degree hairpin-style arrow, with a more orange tone.
 - Floating controls should sit slightly in from the screen edges, not tight to the corners.
 
-Important recent polish issues to verify in V52:
+Important recent polish issues to verify in V52/V53 testing:
 - Back/cancel buttons are slightly further from screen edges.
 - Save changes button only appears after actual edit changes.
 - Home button does not appear during add/edit flows.
@@ -106,7 +140,7 @@ Known working or partially working feature areas include:
 - Entry summary dropdown.
 - Home button warning popups.
 - User-created procedure concept is planned/partially prepared, but not necessarily fully implemented.
-- Draft support is planned, not yet fully implemented unless V52 added more than the handover captured.
+- Draft support concept appears to have started in the current code, but should still be treated as requiring verification/completion.
 
 ================================================================================
 6. PROCEDURE SYSTEM ARCHITECTURE
@@ -141,6 +175,11 @@ Restore default logic:
 - User-added procedures are removed from that category.
 - Restored default procedures become shown/visible.
 
+Custom categories:
+- Categories are app-defined for now.
+- Data structures should avoid making future custom categories difficult.
+- Do not hard-code assumptions that categories can never be user-created.
+
 ================================================================================
 7. ADD / REMOVE PROCEDURE FLOW
 ================================================================================
@@ -154,6 +193,7 @@ Desired behaviour:
 - Removing from category must not delete from global library.
 - Create new procedure button should appear near the top of the add-procedure flow.
 - Search box should appear only if the list/category has more than 10 procedures, unless later UX testing suggests always showing it is better.
+- Add/remove procedures page should warn about unsaved changes if navigating home before applying changes.
 
 ================================================================================
 8. CUSTOM PROCEDURE PLAN
@@ -197,6 +237,12 @@ Important page-template decisions:
 - Template pages should be filterable/exportable later.
 - Fully custom pages should be exportable but not filterable initially.
 
+Suggested stored metadata for filterable custom/template pages:
+- pageType: singleChoice | multiChoice | freeText | numberText.
+- title: human-readable page title.
+- filterKey: stable filter/export key such as site, technique, role, supervision, outcome, attempts, complications.
+- options: array of user-defined/app-defined options where relevant.
+
 ================================================================================
 9. SPECIALTIES / PLACEMENTS / WIZARD FLOW
 ================================================================================
@@ -220,10 +266,15 @@ Date → Placement → Specialty → Hospital → Location → Procedure categor
 
 Procedure page should include a search box when useful, especially for long lists.
 
+CPD flow:
+- Placement and specialty should probably be available for CPD.
+- Hospital/location/procedure-specific pages apply to procedures, not CPD.
+- CPD flow still needs deliberate review before major CPD-specific changes.
+
 ================================================================================
 10. DRAFT ENTRY PLAN
 ================================================================================
-Drafts should come after the procedure wizard/workflow is stable.
+Drafts should come after the procedure wizard/workflow is stable, unless current V52 code already partially added draft support and needs stabilising sooner.
 
 Planned features:
 - Save as draft option during entry.
@@ -268,7 +319,7 @@ Beta goal:
 Get to a safe private beta as soon as possible, but do not invite wider users until accounts and automatic cloud backup/restore are working.
 
 Revised high-level sequence:
-1. Stabilise current V52 situation.
+1. Stabilise current V52/V53 situation.
 2. Add permanent handover/versioning/testing workflow.
 3. Move hosting to Firebase Hosting while still static/local-first.
 4. Set up Firebase preview channels and/or GitHub PR preview deployments.
@@ -303,11 +354,26 @@ Privacy/security before private beta:
 - Make clear users remain responsible for not entering patient-identifiable data.
 
 ================================================================================
-14. RECOMMENDED WORKFLOW FROM V52 ONWARD
+14. RECOMMENDED WORKFLOW FROM V53 ONWARD
 ================================================================================
-Use ChatGPT for product decisions, roadmap maintenance, architecture review, and test planning.
-Use Codex Cloud/GitHub PRs for direct code changes where possible.
-Use Firebase Hosting preview channels for testing before live deployment.
+Use ChatGPT for:
+- Product decisions.
+- Roadmap maintenance.
+- Architecture review.
+- Test planning.
+- Reviewing proposed diffs conceptually.
+- Keeping HANDOVER.txt current.
+
+Use Codex Cloud/GitHub PRs for:
+- Direct code changes.
+- Branch creation.
+- Pull request creation.
+- Iterative fixes on the same branch/PR.
+
+Use Firebase Hosting preview channels for:
+- Testing each branch/PR on iPhone and desktop before merge.
+- Avoiding GitHub Pages/service-worker cache confusion.
+- Sharing exact preview builds.
 
 Recommended branch/deploy workflow:
 1. Create or ask Codex to create a branch for the next small batch.
@@ -333,11 +399,12 @@ Do not split app.js as a giant first step. That is risky.
 Recommended staged approach:
 1. Add repo hygiene files first:
    - HANDOVER.txt.
-   - CHANGELOG.md or RELEASE_NOTES.md.
+   - CHANGELOG.md.
    - TESTING_CHECKLIST.md.
-   - Optional CONTRIBUTING_FOR_CODEX.md / AGENTS.md with coding rules.
+   - AGENTS.md.
 2. Add simple automated checks:
    - JavaScript syntax check with node --check app.js.
+   - JavaScript syntax check with node --check service-worker.js.
    - Optional lightweight smoke checks later.
 3. Move to Firebase Hosting and preview channels.
 4. Only then begin modularisation gradually.
@@ -365,23 +432,22 @@ Use ES modules if keeping the app build-free, but update index.html and service 
 If starting in a new chat:
 1. Read this HANDOVER.txt.
 2. Treat GitHub main as the current source of truth unless the user says otherwise.
-3. Confirm current visible app version and cache version if inspecting code.
+3. Treat V52 as the current confirmed runtime version unless the user says a later runtime app version has been merged.
 4. Do not assume older V49 handover details are current if they conflict with V52/GitHub main.
 5. Before coding, inspect current app.js/styles.css/service-worker.js/index.html as needed.
-6. Continue with process optimisation first if not already done.
+6. Continue with process/Firebase/Codex optimisation first if not already done.
 7. For app changes, propose a small batch, then produce only changed files with a version/cache bump and syntax check.
+8. Update HANDOVER.txt and CHANGELOG.md after each meaningful change.
 
 ================================================================================
 17. IMMEDIATE NEXT TASKS SUGGESTED
 ================================================================================
 Recommended next non-feature tasks:
-1. Add HANDOVER.txt to repo.
-2. Add CHANGELOG.md or RELEASE_NOTES.md.
-3. Add TESTING_CHECKLIST.md.
-4. Add AGENTS.md / CODEX_INSTRUCTIONS.md with project rules for Codex.
-5. Move static hosting from GitHub Pages to Firebase Hosting.
-6. Configure Firebase Hosting GitHub Action for PR preview URLs.
-7. Decide whether to use Codex Cloud as the main code-editing workflow.
+1. Commit V53 workflow foundation files.
+2. Move static hosting from GitHub Pages to Firebase Hosting.
+3. Configure Firebase Hosting GitHub Action for PR preview URLs.
+4. Decide whether to use Codex Cloud as the main code-editing workflow.
+5. Confirm how to keep HANDOVER.txt updated after each merged PR.
 
 Recommended next feature tasks after workflow is improved:
 1. Stabilise any remaining V52 floating nav/procedure management issues.
