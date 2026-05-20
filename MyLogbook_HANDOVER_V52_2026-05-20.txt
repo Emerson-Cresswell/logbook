@@ -1,0 +1,396 @@
+PROJECT HANDOVER — MyLogbook PWA
+Version covered: V52
+Date prepared: 2026-05-20
+Source of truth for code: GitHub main branch — https://github.com/Emerson-Cresswell/logbook
+Source of truth for this handover: this file should be updated whenever a meaningful code/roadmap/process change is made.
+
+================================================================================
+1. PROJECT SUMMARY
+================================================================================
+MyLogbook is a medical procedure and CPD logbook Progressive Web App. It is currently a static HTML/CSS/JavaScript PWA using localStorage, a manifest, and a service worker. It is currently hosted on GitHub Pages, with a planned move to Firebase Hosting. The app is intended for doctors/clinicians to log procedures, CPD, placements, specialties, locations, hospitals, and related details.
+
+The app must remain polished, safe, and local-first while the data model is still changing. Wider private beta should not start until user accounts and automatic cloud backup/restore are available.
+
+Current confirmed status:
+- Current version: V52.
+- GitHub main branch is fully up to date and is the latest version.
+- Current stack: HTML, CSS, JavaScript, PWA, service worker, manifest, localStorage, Excel export via xlsx.full.min.js.
+- Current hosting: GitHub Pages.
+- Planned hosting: Firebase Hosting, initially still static/local-first.
+- Planned future backend: Firebase Authentication + Firestore/cloud backup later.
+
+================================================================================
+2. CORE PRODUCT PRINCIPLES
+================================================================================
+The user strongly prioritises:
+- Clean premium medical aesthetic.
+- Multiple small safe batches over large risky updates.
+- Future-proof architecture from the beginning.
+- Avoiding hacky permanent migration code.
+- If migration code is required, prefer temporary migration versions and remove migration code later.
+- No patient-identifiable information should be encouraged or required.
+- Manual JSON backup must remain available even after cloud backup exists.
+- Historical entries must remain readable even if placements, specialties, categories, or procedures are hidden, removed, or deleted from management lists.
+
+Important UX preferences:
+- User is very sensitive to visual polish inconsistencies.
+- No native browser popups; all popups should be themed to match the app.
+- Buttons should use consistent spacing, borders, radius, and shadows.
+- Avoid aggressive gradients.
+- Emerald green is the primary action colour.
+- White/secondary buttons should have subtle internal shadow only.
+- Floating nav buttons must feel part of the same design system as normal buttons.
+
+================================================================================
+3. CURRENT CODING RULES
+================================================================================
+When producing a new version:
+- Only send changed files, unless a full replacement is explicitly required.
+- Do not send unchanged files unnecessarily.
+- Always bump the visible version label on the homepage.
+- Always bump the service worker/cache version when deployable files change.
+- Always syntax-check JavaScript before sending.
+- Avoid stale-cache/version mismatch issues.
+- Preserve existing working functionality.
+- Do not casually rewrite architecture.
+- Explain planned batches before coding.
+- Keep batches contained and testable.
+- Think about future Firebase/data model implications.
+- Avoid bloating code unnecessarily.
+
+Recommended additional process rules from V52 onward:
+- Keep this handover as HANDOVER.txt in the repository.
+- Update HANDOVER.txt with every meaningful release or roadmap decision.
+- Keep a CHANGELOG.md or RELEASE_NOTES.md with version-by-version changes.
+- Add a TESTING_CHECKLIST.md with repeatable manual tests.
+- Use branches/pull requests rather than direct edits to main once Firebase preview channels are set up.
+- Use Firebase preview URLs for iPhone testing before merging to live.
+
+================================================================================
+4. CURRENT UI / NAVIGATION RULES
+================================================================================
+Floating nav controls:
+- Orange back button: bottom-left.
+- Green home button: bottom-centre.
+- Red cancel/X button: bottom-right.
+- Home button appears on non-home viewing pages.
+- Home button should not appear during add/edit workflows.
+- Cancel button appears during add/edit workflows.
+- Cancel should trigger a themed warning popup when abandoning an add/edit flow.
+- Back/cancel/home buttons should have perimeter/border styling consistent with normal buttons.
+- Back button icon should be a 180-degree hairpin-style arrow, with a more orange tone.
+- Floating controls should sit slightly in from the screen edges, not tight to the corners.
+
+Important recent polish issues to verify in V52:
+- Back/cancel buttons are slightly further from screen edges.
+- Save changes button only appears after actual edit changes.
+- Home button does not appear during add/edit flows.
+- Cancel button produces the correct warning popup.
+- Add/remove procedures page warns about unsaved changes if navigating home.
+- Floating nav buttons replace old buttons entirely rather than merely hiding old buttons visually.
+
+================================================================================
+5. CURRENT WORKING FEATURE AREAS
+================================================================================
+Known working or partially working feature areas include:
+- Placements system:
+  - Add/edit/delete placements.
+  - Shown/hidden toggle.
+  - Ordering logic: Not linked to placement first; current placements next; then by most recent end date.
+- Specialty/category/procedure structure foundation.
+- Add/remove procedures from categories.
+- Procedure visibility toggles.
+- Entry editing.
+- JSON backup/import.
+- Excel export foundation.
+- Entry summary dropdown.
+- Home button warning popups.
+- User-created procedure concept is planned/partially prepared, but not necessarily fully implemented.
+- Draft support is planned, not yet fully implemented unless V52 added more than the handover captured.
+
+================================================================================
+6. PROCEDURE SYSTEM ARCHITECTURE
+================================================================================
+This is critical.
+
+There are two separate concepts:
+
+A. GLOBAL PROCEDURE LIBRARY
+- App-provided procedures:
+  - Built into the app.
+  - Cannot be deleted from the app by the user.
+  - Can be added to or removed from individual specialty/category assignments.
+  - Can be shown/hidden within categories.
+- User-created procedures:
+  - Fully editable/deletable from the app.
+  - Can be assigned to one or more specialty/category combinations.
+  - If deleted from the custom procedure library, they are removed from every specialty/category where currently used.
+  - Historical entries must remain intact using saved snapshots of procedure names/details.
+
+B. SPECIALTY/CATEGORY ASSIGNMENT
+- Categories contain selected procedures from the global library.
+- Procedures can be added to a category.
+- Procedures can be removed from a category.
+- Procedures can be shown/hidden within a category.
+- Removing a procedure from a category only affects future entries.
+- Historical entries must still display normally.
+
+Restore default logic:
+- Restore default resets a category back to the app-default procedure list.
+- Custom procedures are not deleted from the app.
+- User-added procedures are removed from that category.
+- Restored default procedures become shown/visible.
+
+================================================================================
+7. ADD / REMOVE PROCEDURE FLOW
+================================================================================
+Desired behaviour:
+- Add/Remove procedures pages should support bulk selection.
+- Already-added procedures should be listed first alphabetically, then not-added procedures alphabetically.
+- Procedures should have right-side capsule buttons such as Add, Remove, Selected, Already added.
+- User can tap the capsule to flag/unflag multiple procedures.
+- A Make changes / Add selected procedures / Remove selected procedures button applies all selected changes.
+- Already added procedures should be visible but disabled/marked as Already added when adding.
+- Removing from category must not delete from global library.
+- Create new procedure button should appear near the top of the add-procedure flow.
+- Search box should appear only if the list/category has more than 10 procedures, unless later UX testing suggests always showing it is better.
+
+================================================================================
+8. CUSTOM PROCEDURE PLAN
+================================================================================
+Custom procedure wizard must support:
+- Procedure name.
+- Duplicate warning: warn but allow creation.
+- If duplicate is found while creating from inside Add procedure to category, offer to add the existing procedure instead.
+- If created from Custom Procedures page, do not auto-assign to any category.
+- If created from inside a category, ask/allow adding it to that specialty/category by default.
+
+Custom Procedures page:
+- Accessible from Specialties & procedures.
+- Lists all user-created procedures.
+- Shows usage for each custom procedure, e.g. Emergency Medicine → Joint aspiration, Critical Care → Other, or Not currently used.
+- Tapping a custom procedure opens view/edit/delete.
+- Delete custom procedure removes it from the custom procedure library and all category assignments, but historical entries remain intact using snapshots.
+- Custom Procedures page should allow creation of a custom procedure without assigning it by default.
+- Custom procedure detail page should have Add to Specialty/Category button allowing the user to choose specialty then category.
+
+Procedure wizard page types, version 1:
+- Single-choice button pages.
+- Optional free-text notes page.
+- Multi-choice may be needed for Complications.
+
+Premade/tickable template pages:
+- Site.
+- Technique.
+- Role.
+- Supervision.
+- Outcome.
+- Number of attempts.
+- Complications.
+- Optional notes.
+
+Important page-template decisions:
+- Date performed, Placement, Specialty, Hospital, Location, and Procedure are always assumed for any procedure and should not appear as tickable template options in the custom procedure wizard.
+- Site and Technique should be special named templates, but the user can define the options for each procedure.
+- Role, Supervision, Outcome, and similar standard fields can use app-defined options.
+- Complications should probably have an extensive/default list plus Other free text, but options may need to vary by procedure.
+- Template pages should be filterable/exportable later.
+- Fully custom pages should be exportable but not filterable initially.
+
+================================================================================
+9. SPECIALTIES / PLACEMENTS / WIZARD FLOW
+================================================================================
+Placement decisions:
+- Users can create placements with a name and date range.
+- Placement can be Not linked to placement.
+- Placement applies to procedures and likely CPD.
+- Placement page in add-entry wizard should show user-defined visible placements.
+- Placements button exists on home for add/edit/delete/show/hide.
+- Within the wizard, Add placement and Show/hide placements may exist; deletion should remain on the home Placements management page.
+
+Specialty decisions:
+- Specialties are app-defined initially: Critical Care, Anaesthetics, Emergency Medicine, Acute Medicine.
+- Surgery may come later, not necessarily included now.
+- Specialty page should not have add/delete buttons.
+- Show/hide specialties should exist.
+- Specialties drive specialty-specific procedure/category lists.
+
+Procedure add-entry flow target:
+Date → Placement → Specialty → Hospital → Location → Procedure category → Procedure → procedure-specific follow-up pages.
+
+Procedure page should include a search box when useful, especially for long lists.
+
+================================================================================
+10. DRAFT ENTRY PLAN
+================================================================================
+Drafts should come after the procedure wizard/workflow is stable.
+
+Planned features:
+- Save as draft option during entry.
+- Draft entries stored in the logbook but marked as draft.
+- View Logbook screen has All entries and Drafts views/filters.
+- Drafts appear in date order in All entries but are visually marked, probably subtle red/orange.
+- Drafts can be opened, edited, and completed later.
+- Drafts are important because procedure workflows will become longer.
+
+================================================================================
+11. QUICK ADD ENTRY PLAN
+================================================================================
+Quick add should come after the procedure library and procedure-specific workflows are stable.
+
+Planned features:
+- Homepage button: Quick add entry.
+- User can predefine quick-add settings:
+  - Placement.
+  - Specialty.
+  - Hospital.
+  - Common procedures.
+- Date defaults to today.
+- Flow: Quick add entry → choose one of your quick procedures → wizard opens with date/placement/hospital/specialty/category/procedure pre-filled → user completes only the remaining procedure-specific pages.
+
+================================================================================
+12. EXPORT / SUMMARIES PLAN
+================================================================================
+Filtered Excel export:
+- Export Excel file should open export options first.
+- Filters should include date range, placement, specialty, procedure vs CPD vs all, and later draft/final status if relevant.
+- Default should remain export everything.
+- Goal is to avoid sending years of irrelevant entries to supervisors.
+
+Filtered summaries:
+- Summaries page should allow filtering by date range, placement, specialty, procedure category, and procedure/CPD subgroup.
+- Summaries should reuse the same filtering logic as Excel export.
+
+================================================================================
+13. FIREBASE / BETA ROADMAP
+================================================================================
+Beta goal:
+Get to a safe private beta as soon as possible, but do not invite wider users until accounts and automatic cloud backup/restore are working.
+
+Revised high-level sequence:
+1. Stabilise current V52 situation.
+2. Add permanent handover/versioning/testing workflow.
+3. Move hosting to Firebase Hosting while still static/local-first.
+4. Set up Firebase preview channels and/or GitHub PR preview deployments.
+5. Continue procedure-library work.
+6. Do data robustness/future-proofing pass before cloud data.
+7. Add Firebase Authentication.
+8. Add automatic whole-logbook cloud backup.
+9. Add restore-from-cloud.
+10. Add minimum privacy/security/legal wording.
+11. Small private beta with 3–10 colleagues.
+12. Fix beta issues.
+13. Later: certificate attachments, desktop/review screens, supervisor export/view, donation link, analytics, advanced sync.
+
+Automatic cloud backup target:
+- App works locally.
+- When an entry is added/edited/deleted, the whole logbook is backed up to the user’s Firebase account.
+- Clear statuses: Cloud backup up to date; Cloud backup pending; Last cloud backup date/time; Cloud backup failed — local data is still safe.
+- Manual JSON backup remains available.
+
+Restore-from-cloud target:
+- User installs app on new device.
+- User logs in.
+- User restores cloud backup.
+- If both local and cloud data exist, offer clear choices first; avoid complex merging initially.
+
+Privacy/security before private beta:
+- No patient-identifiable data notice.
+- Privacy policy page.
+- Explain what is stored locally.
+- Explain what is stored in Firebase.
+- Explain manual backup/export options.
+- Make clear users remain responsible for not entering patient-identifiable data.
+
+================================================================================
+14. RECOMMENDED WORKFLOW FROM V52 ONWARD
+================================================================================
+Use ChatGPT for product decisions, roadmap maintenance, architecture review, and test planning.
+Use Codex Cloud/GitHub PRs for direct code changes where possible.
+Use Firebase Hosting preview channels for testing before live deployment.
+
+Recommended branch/deploy workflow:
+1. Create or ask Codex to create a branch for the next small batch.
+2. Codex makes changes on the branch.
+3. Codex opens a pull request.
+4. Firebase Hosting GitHub Action creates a preview URL for that PR.
+5. Test preview URL on iPhone and desktop.
+6. Fix issues on the same branch/PR.
+7. Merge only when tested.
+8. Live channel updates.
+9. Update HANDOVER.txt and CHANGELOG.md.
+
+For now, if not using Codex yet:
+- ChatGPT can continue to produce changed files only.
+- User can paste into GitHub manually, but this is slower and more error-prone.
+- Moving to Codex Cloud and Firebase previews should reduce manual copy/paste and phone cache confusion.
+
+================================================================================
+15. RECOMMENDED REFACTOR PLAN
+================================================================================
+Do not split app.js as a giant first step. That is risky.
+
+Recommended staged approach:
+1. Add repo hygiene files first:
+   - HANDOVER.txt.
+   - CHANGELOG.md or RELEASE_NOTES.md.
+   - TESTING_CHECKLIST.md.
+   - Optional CONTRIBUTING_FOR_CODEX.md / AGENTS.md with coding rules.
+2. Add simple automated checks:
+   - JavaScript syntax check with node --check app.js.
+   - Optional lightweight smoke checks later.
+3. Move to Firebase Hosting and preview channels.
+4. Only then begin modularisation gradually.
+
+Suggested future module boundaries:
+- src/main.js — app bootstrap.
+- src/state.js — state management/localStorage/data version.
+- src/navigation.js — page transitions/floating nav/warnings.
+- src/ui.js — reusable UI rendering helpers/buttons/cards/popups.
+- src/placements.js — placement management.
+- src/specialties.js — specialties and visibility.
+- src/procedures/library.js — global procedure library.
+- src/procedures/categories.js — specialty/category assignments.
+- src/procedures/custom.js — custom procedures.
+- src/entryWizard.js — add/edit entry wizard.
+- src/export.js — Excel/JSON export/import.
+- src/summary.js — summaries/filtering.
+- src/firebase.js — future auth/cloud backup.
+
+Use ES modules if keeping the app build-free, but update index.html and service worker cache carefully. Consider a proper build tool later, but not until the app is stable enough to justify it.
+
+================================================================================
+16. WHAT THE NEXT ASSISTANT SHOULD DO FIRST
+================================================================================
+If starting in a new chat:
+1. Read this HANDOVER.txt.
+2. Treat GitHub main as the current source of truth unless the user says otherwise.
+3. Confirm current visible app version and cache version if inspecting code.
+4. Do not assume older V49 handover details are current if they conflict with V52/GitHub main.
+5. Before coding, inspect current app.js/styles.css/service-worker.js/index.html as needed.
+6. Continue with process optimisation first if not already done.
+7. For app changes, propose a small batch, then produce only changed files with a version/cache bump and syntax check.
+
+================================================================================
+17. IMMEDIATE NEXT TASKS SUGGESTED
+================================================================================
+Recommended next non-feature tasks:
+1. Add HANDOVER.txt to repo.
+2. Add CHANGELOG.md or RELEASE_NOTES.md.
+3. Add TESTING_CHECKLIST.md.
+4. Add AGENTS.md / CODEX_INSTRUCTIONS.md with project rules for Codex.
+5. Move static hosting from GitHub Pages to Firebase Hosting.
+6. Configure Firebase Hosting GitHub Action for PR preview URLs.
+7. Decide whether to use Codex Cloud as the main code-editing workflow.
+
+Recommended next feature tasks after workflow is improved:
+1. Stabilise any remaining V52 floating nav/procedure management issues.
+2. Custom procedures page.
+3. Procedure creation wizard.
+4. Procedure-specific add-entry workflows.
+5. Draft entries.
+6. Quick add entry.
+7. Filtered Excel export.
+8. Filtered summaries.
+9. Data robustness pass.
+10. Firebase Auth + whole-logbook backup + restore.
