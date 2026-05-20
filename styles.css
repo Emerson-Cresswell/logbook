@@ -1028,3 +1028,53 @@ textarea:focus-visible {
 .delete-confirm-item {
   border-color: #9fb0c3;
 }
+
+/* V40: back-swipe page animation */
+.screen-slide-in-left {
+  animation: screenSlideInFromLeft 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+.screen-slide-out-right {
+  animation: screenSlideOutToRight 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+.wizard-gesture-clone {
+  display: block !important;
+  position: fixed !important;
+  z-index: 1000;
+  background: var(--bg);
+  pointer-events: none;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+@keyframes screenSlideInFromLeft {
+  from {
+    transform: translateX(-34%);
+    opacity: 0.92;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes screenSlideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(82%);
+    opacity: 0.82;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-slide-in-left,
+  .screen-slide-out-right {
+    animation: none;
+  }
+}
