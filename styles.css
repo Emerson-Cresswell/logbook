@@ -1333,22 +1333,22 @@ textarea:focus-visible {
 }
 
 .floating-back-button {
-  left: 16px;
-  color: #b45309;
-  background: #fffbeb;
+  left: 32px;
+  color: #c2410c;
+  background: #ffedd5;
+  border-color: #fdba74;
 }
 
 .floating-cancel-button {
-  right: 16px;
+  right: 32px;
   color: #991b1b;
   background: #fff1f2;
-  font-size: 2rem;
-  font-weight: 650;
-  line-height: 1;
+  border-color: #fecdd3;
 }
 
 .home-shortcut-button svg,
-.floating-back-button svg {
+.floating-back-button svg,
+.floating-cancel-button svg {
   width: 22px;
   height: 22px;
   stroke: currentColor;
@@ -1356,6 +1356,18 @@ textarea:focus-visible {
   stroke-linecap: round;
   stroke-linejoin: round;
   fill: none;
+}
+
+.floating-back-button svg {
+  width: 25px;
+  height: 25px;
+  stroke-width: 2.55;
+}
+
+.floating-cancel-button svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.8;
 }
 
 .home-shortcut-button:active {
@@ -1375,4 +1387,10 @@ textarea:focus-visible {
 
 .procedure-top-actions .button + .button {
   margin-top: 0;
+}
+
+
+/* V51: floating navigation and edit-save polish */
+.edit-save-shortcut {
+  margin-top: 12px;
 }
