@@ -166,7 +166,7 @@ h2 {
 #backupNowButton {
   position: absolute;
   top: 16px;
-  right: 16px;
+  right: 32px;
   min-width: 112px;
   padding-left: 12px;
   padding-right: 12px;
@@ -1336,14 +1336,14 @@ textarea:focus-visible {
   left: 32px;
   color: #c2410c;
   background: #ffedd5;
-  border-color: #fdba74;
+  border-color: #9fb0c3;
 }
 
 .floating-cancel-button {
   right: 32px;
   color: #991b1b;
   background: #fff1f2;
-  border-color: #fecdd3;
+  border-color: #9fb0c3;
 }
 
 .home-shortcut-button svg,
