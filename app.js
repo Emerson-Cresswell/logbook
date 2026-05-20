@@ -52,7 +52,8 @@ let backSwipeGesture = {
   underlayScreen: null,
   width: 1,
   originalScreen: "",
-  originalWizardIndex: 0
+  originalWizardIndex: 0,
+  pointerId: null
 };
 let suppressNextClickUntil = 0;
 
@@ -3135,7 +3136,8 @@ function resetBackSwipeGesture() {
     underlayScreen: null,
     width: 1,
     originalScreen: "",
-    originalWizardIndex: 0
+    originalWizardIndex: 0,
+    pointerId: null
   };
 }
 
@@ -3284,93 +3286,147 @@ function finishInteractiveBackSwipe() {
   }, 200);
 }
 
-function attachBackSwipeGesture() {
-  document.addEventListener("touchstart", event => {
-    if (!event.touches || event.touches.length !== 1) return;
-    if (document.querySelector(".dialog-overlay")) return;
-    if (isTextEditingElement(event.target)) return;
+function shouldIgnoreBackSwipeStart(target) {
+  if (!target) return false;
+  if (document.querySelector(".dialog-overlay")) return true;
+  return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
+}
 
-    const context = getBackSwipeContext();
-    if (!context) return;
+function prepareBackSwipeStart(clientX, clientY, pointerId = null) {
+  const context = getBackSwipeContext();
+  if (!context) return false;
 
-    const touch = event.touches[0];
+  backSwipeGesture.possible = true;
+  backSwipeGesture.active = false;
+  backSwipeGesture.startX = clientX;
+  backSwipeGesture.startY = clientY;
+  backSwipeGesture.latestX = clientX;
+  backSwipeGesture.latestY = clientY;
+  backSwipeGesture.startTime = Date.now();
+  backSwipeGesture.context = context;
+  backSwipeGesture.pointerId = pointerId;
+  return true;
+}
 
-    backSwipeGesture.possible = true;
-    backSwipeGesture.active = false;
-    backSwipeGesture.startX = touch.clientX;
-    backSwipeGesture.startY = touch.clientY;
-    backSwipeGesture.latestX = touch.clientX;
-    backSwipeGesture.latestY = touch.clientY;
-    backSwipeGesture.startTime = Date.now();
-    backSwipeGesture.context = context;
-  }, { passive: true });
+function handleBackSwipeMove(clientX, clientY, event = null) {
+  if (!backSwipeGesture.possible) return;
 
-  document.addEventListener("touchmove", event => {
-    if (!backSwipeGesture.possible || !event.touches || event.touches.length !== 1) return;
+  const deltaX = clientX - backSwipeGesture.startX;
+  const deltaY = clientY - backSwipeGesture.startY;
+  const absX = Math.abs(deltaX);
+  const absY = Math.abs(deltaY);
 
-    const touch = event.touches[0];
-    const deltaX = touch.clientX - backSwipeGesture.startX;
-    const deltaY = touch.clientY - backSwipeGesture.startY;
-    const absX = Math.abs(deltaX);
-    const absY = Math.abs(deltaY);
+  backSwipeGesture.latestX = clientX;
+  backSwipeGesture.latestY = clientY;
 
-    backSwipeGesture.latestX = touch.clientX;
-    backSwipeGesture.latestY = touch.clientY;
-
-    if (!backSwipeGesture.active) {
-      if (deltaX < -8 || (absY > 18 && absY > absX * 1.15)) {
-        resetBackSwipeGesture();
-        return;
-      }
-
-      if (deltaX > 12 && absX > absY * 1.08) {
-        if (!beginInteractiveBackSwipe()) {
-          resetBackSwipeGesture();
-          return;
-        }
-      } else {
-        return;
-      }
-    }
-
-    if (event.cancelable) event.preventDefault();
-    updateInteractiveBackSwipe(deltaX);
-  }, { passive: false });
-
-  document.addEventListener("touchend", event => {
-    if (!backSwipeGesture.possible) return;
-
-    suppressNextClickUntil = Date.now() + 350;
-
-    if (!backSwipeGesture.active) {
+  if (!backSwipeGesture.active) {
+    if (deltaX < -8 || (absY > 18 && absY > absX * 1.15)) {
       resetBackSwipeGesture();
       return;
     }
 
-    const touch = event.changedTouches && event.changedTouches.length === 1 ? event.changedTouches[0] : null;
-    const endX = touch ? touch.clientX : backSwipeGesture.latestX;
-    const endY = touch ? touch.clientY : backSwipeGesture.latestY;
-    const deltaX = endX - backSwipeGesture.startX;
-    const deltaY = Math.abs(endY - backSwipeGesture.startY);
-    const elapsed = Date.now() - backSwipeGesture.startTime;
-    const progress = Math.max(0, Math.min(deltaX / (backSwipeGesture.width || 1), 1));
-    const isFastSwipe = deltaX > 64 && elapsed < 320 && deltaY < 90;
-    const shouldComplete = progress >= 0.34 || isFastSwipe;
-
-    if (shouldComplete) {
-      finishInteractiveBackSwipe();
+    if (deltaX > 8 && absX > absY * 1.02) {
+      if (!beginInteractiveBackSwipe()) {
+        resetBackSwipeGesture();
+        return;
+      }
     } else {
-      cancelInteractiveBackSwipe();
+      return;
     }
-  }, { passive: true });
+  }
 
-  document.addEventListener("touchcancel", () => {
-    if (backSwipeGesture.active) {
-      cancelInteractiveBackSwipe();
-    } else {
-      resetBackSwipeGesture();
-    }
-  }, { passive: true });
+  if (event && event.cancelable) event.preventDefault();
+  if (event && typeof event.stopPropagation === "function") event.stopPropagation();
+  updateInteractiveBackSwipe(deltaX);
+}
+
+function handleBackSwipeEnd(clientX = null, clientY = null) {
+  if (!backSwipeGesture.possible) return;
+
+  suppressNextClickUntil = Date.now() + 350;
+
+  if (!backSwipeGesture.active) {
+    resetBackSwipeGesture();
+    return;
+  }
+
+  const endX = typeof clientX === "number" ? clientX : backSwipeGesture.latestX;
+  const endY = typeof clientY === "number" ? clientY : backSwipeGesture.latestY;
+  const deltaX = endX - backSwipeGesture.startX;
+  const deltaY = Math.abs(endY - backSwipeGesture.startY);
+  const elapsed = Date.now() - backSwipeGesture.startTime;
+  const progress = Math.max(0, Math.min(deltaX / (backSwipeGesture.width || 1), 1));
+  const isFastSwipe = deltaX > 58 && elapsed < 340 && deltaY < 95;
+  const shouldComplete = progress >= 0.28 || isFastSwipe;
+
+  if (shouldComplete) {
+    finishInteractiveBackSwipe();
+  } else {
+    cancelInteractiveBackSwipe();
+  }
+}
+
+function attachBackSwipeGesture() {
+  const supportsPointerEvents = "PointerEvent" in window;
+
+  if (supportsPointerEvents) {
+    document.addEventListener("pointerdown", event => {
+      if (event.pointerType && event.pointerType !== "touch") return;
+      if (!event.isPrimary) return;
+      if (shouldIgnoreBackSwipeStart(event.target)) return;
+
+      prepareBackSwipeStart(event.clientX, event.clientY, event.pointerId);
+    }, { passive: true, capture: true });
+
+    document.addEventListener("pointermove", event => {
+      if (!backSwipeGesture.possible) return;
+      if (backSwipeGesture.pointerId !== null && event.pointerId !== backSwipeGesture.pointerId) return;
+      handleBackSwipeMove(event.clientX, event.clientY, event);
+    }, { passive: false, capture: true });
+
+    document.addEventListener("pointerup", event => {
+      if (!backSwipeGesture.possible) return;
+      if (backSwipeGesture.pointerId !== null && event.pointerId !== backSwipeGesture.pointerId) return;
+      handleBackSwipeEnd(event.clientX, event.clientY);
+    }, { passive: true, capture: true });
+
+    document.addEventListener("pointercancel", event => {
+      if (backSwipeGesture.pointerId !== null && event.pointerId !== backSwipeGesture.pointerId) return;
+      if (backSwipeGesture.active) {
+        cancelInteractiveBackSwipe();
+      } else {
+        resetBackSwipeGesture();
+      }
+    }, { passive: true, capture: true });
+  } else {
+    document.addEventListener("touchstart", event => {
+      if (!event.touches || event.touches.length !== 1) return;
+      if (shouldIgnoreBackSwipeStart(event.target)) return;
+
+      const touch = event.touches[0];
+      prepareBackSwipeStart(touch.clientX, touch.clientY);
+    }, { passive: true, capture: true });
+
+    document.addEventListener("touchmove", event => {
+      if (!backSwipeGesture.possible || !event.touches || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      handleBackSwipeMove(touch.clientX, touch.clientY, event);
+    }, { passive: false, capture: true });
+
+    document.addEventListener("touchend", event => {
+      if (!backSwipeGesture.possible) return;
+      const touch = event.changedTouches && event.changedTouches.length === 1 ? event.changedTouches[0] : null;
+      handleBackSwipeEnd(touch ? touch.clientX : null, touch ? touch.clientY : null);
+    }, { passive: true, capture: true });
+
+    document.addEventListener("touchcancel", () => {
+      if (backSwipeGesture.active) {
+        cancelInteractiveBackSwipe();
+      } else {
+        resetBackSwipeGesture();
+      }
+    }, { passive: true, capture: true });
+  }
 
   document.addEventListener("click", event => {
     if (Date.now() < suppressNextClickUntil) {
