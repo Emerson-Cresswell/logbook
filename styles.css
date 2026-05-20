@@ -84,26 +84,12 @@ main {
   display: block;
 }
 
-.back-button {
-  border: none;
-  background: transparent;
-  color: var(--primary);
-  font-size: 1.05rem;
-  font-weight: 700;
-  padding: 10px 0;
-  margin-bottom: 10px;
-}
-
 .wizard-top-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
-}
-
-.wizard-top-row .back-button {
-  margin-bottom: 0;
 }
 
 .step-label {
@@ -122,27 +108,6 @@ main {
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-}
-
-.cancel-edit-link,
-.cancel-entry-link {
-  appearance: none;
-  -webkit-appearance: none;
-  border: none;
-  background: transparent;
-  color: var(--danger-dark);
-  font-size: 0.88rem;
-  font-weight: 800;
-  line-height: 1.15;
-  padding: 0;
-  margin: 0;
-  text-decoration: none;
-  min-width: 0;
-}
-
-.cancel-edit-link:active,
-.cancel-entry-link:active {
-  opacity: 0.65;
 }
 
 h2 {
@@ -315,12 +280,6 @@ h2 {
 
 .button.danger-button::before {
   background: none;
-}
-
-.cancel-edit-button {
-  margin: -4px 0 12px;
-  min-height: 46px;
-  padding: 12px 16px;
 }
 
 .choice-button {
@@ -1314,4 +1273,106 @@ textarea:focus-visible {
 
 .procedure-remove-selected-pill {
   background: #fee2e2;
+}
+
+/* V50: flatter secondary buttons and clean floating navigation controls */
+.wizard-top-row {
+  justify-content: flex-end;
+}
+
+.wizard-top-row .step-label {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.button.secondary,
+.choice-button,
+.filter-button,
+.small-button {
+  background: #ffffff;
+  color: var(--text);
+  text-shadow: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -3px 8px rgba(15, 23, 42, 0.07);
+}
+
+.button.secondary::before,
+.choice-button::before,
+.filter-button::before,
+.small-button::before,
+.button.secondary::after,
+.choice-button::after,
+.filter-button::after,
+.small-button::after {
+  display: none;
+}
+
+.home-shortcut-button,
+.floating-back-button,
+.floating-cancel-button {
+  appearance: none;
+  -webkit-appearance: none;
+  position: fixed;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 100;
+  width: 64px;
+  height: 42px;
+  border: 1px solid #9fb0c3;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -3px 8px rgba(15, 23, 42, 0.07);
+}
+
+.home-shortcut-button {
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--primary);
+}
+
+.floating-back-button {
+  left: 16px;
+  color: #b45309;
+  background: #fffbeb;
+}
+
+.floating-cancel-button {
+  right: 16px;
+  color: #991b1b;
+  background: #fff1f2;
+  font-size: 2rem;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.home-shortcut-button svg,
+.floating-back-button svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.home-shortcut-button:active {
+  transform: translate(-50%, 1px);
+}
+
+.floating-back-button:active,
+.floating-cancel-button:active {
+  transform: translateY(1px);
+}
+
+.procedure-top-actions {
+  display: grid;
+  gap: 12px;
+  margin: 10px 0 14px;
+}
+
+.procedure-top-actions .button + .button {
+  margin-top: 0;
 }
