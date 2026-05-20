@@ -1,4 +1,4 @@
-const CACHE_NAME = "procedure-logbook-v51-nav-edit-fixes";
+const CACHE_NAME = "procedure-logbook-v52-nav-guard-fixes";
 
 const FILES_TO_CACHE = [
   "./",
