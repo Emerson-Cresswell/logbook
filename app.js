@@ -1,5 +1,5 @@
 const STORAGE_KEY = "procedureLogbookData_v1";
-const APP_VERSION = "v45";
+const APP_VERSION = "v46";
 
 let state = {
   entries: [],
@@ -42,6 +42,7 @@ let editReturnScreen = null;
 let editReturnScrollY = 0;
 let placementsBackAction = () => showScreen("homeScreen");
 let specialtiesProceduresBackAction = () => showScreen("homeScreen");
+let activeHomeGuard = null;
 
 const procedureSteps = [
   "date",
@@ -572,6 +573,8 @@ function markBackedUp() {
 }
 
 function showScreen(screenId) {
+  activeHomeGuard = null;
+
   document.querySelectorAll(".screen").forEach(screen => {
     screen.classList.remove("active");
   });
@@ -588,6 +591,8 @@ function showScreen(screenId) {
   if (screenId === "specialtiesProceduresScreen") renderSpecialtiesProceduresHome();
   if (screenId === "homeScreen") renderVersionLabel();
   if (screenId === "homeScreen" || screenId === "backupScreen") renderBackupStatus();
+
+  updateHomeShortcut();
 }
 
 function renderBackupStatus() {
@@ -925,7 +930,7 @@ function renderWizard() {
   help.textContent = "";
   content.innerHTML = "";
 
-  if (step !== "review") {
+  if (step !== "review" && step !== "date") {
     content.appendChild(makeCurrentEntrySummaryStrip());
   }
 
@@ -1201,6 +1206,122 @@ function cancelEntry() {
   draft = {};
   currentEntrySummaryExpanded = false;
   showScreen("homeScreen");
+}
+
+
+function abandonEditToHome() {
+  editingEntryId = null;
+  editReturnScreen = null;
+  editReturnScrollY = 0;
+  currentEntryType = null;
+  wizardSteps = [];
+  wizardIndex = 0;
+  draft = {};
+  currentEntrySummaryExpanded = false;
+  showScreen("homeScreen");
+}
+
+function saveCurrentEntryAsDraftAndGoHome() {
+  if (!draft || !currentEntryType) {
+    showScreen("homeScreen");
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const draftEntry = {
+    ...draft,
+    id: draft.id || makeId(),
+    type: currentEntryType,
+    date: draft.date || todayISO(),
+    isDraft: true,
+    draftSavedAt: now,
+    updatedAt: now,
+    createdAt: draft.createdAt || now
+  };
+
+  state.entries.push(draftEntry);
+  editingEntryId = null;
+  editReturnScreen = null;
+  editReturnScrollY = 0;
+  currentEntryType = null;
+  wizardSteps = [];
+  wizardIndex = 0;
+  draft = {};
+  currentEntrySummaryExpanded = false;
+  saveState();
+  markChanged();
+  showScreen("homeScreen");
+}
+
+function handleHomeShortcutRequest() {
+  if (currentScreen === "homeScreen") return;
+
+  if (currentScreen === "wizardScreen") {
+    if (editingEntryId) {
+      showAppChoiceDialog({
+        title: "Leave edit?",
+        message: "Unsaved changes to this entry will be lost.",
+        actions: [
+          { text: "Keep editing", className: "button secondary wizard-action-button", action: () => {} },
+          { text: "Discard changes", className: "button danger-button wizard-action-button", action: abandonEditToHome }
+        ]
+      });
+      return;
+    }
+
+    showAppChoiceDialog({
+      title: "Leave entry?",
+      message: "You can discard this entry, save it as a draft, or continue entering it.",
+      actions: [
+        { text: "Continue entry", className: "button secondary wizard-action-button", action: () => {} },
+        { text: "Save draft", className: "button primary wizard-action-button", action: saveCurrentEntryAsDraftAndGoHome },
+        { text: "Discard entry", className: "button danger-button wizard-action-button", action: cancelEntry }
+      ]
+    });
+    return;
+  }
+
+  if (typeof activeHomeGuard === "function") {
+    activeHomeGuard();
+    return;
+  }
+
+  showScreen("homeScreen");
+}
+
+function updateHomeShortcut() {
+  document.querySelectorAll(".home-shortcut-button").forEach(button => button.remove());
+
+  if (currentScreen === "homeScreen") return;
+
+  const screen = document.getElementById(currentScreen);
+  if (!screen) return;
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "home-shortcut-button";
+  button.setAttribute("aria-label", "Return home");
+  button.innerHTML = `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M3.8 11.2 12 4.4l8.2 6.8" />
+      <path d="M6.5 10.7v8.1h4.1v-4.9h2.8v4.9h4.1v-8.1" />
+    </svg>
+  `;
+  button.addEventListener("click", handleHomeShortcutRequest);
+  screen.appendChild(button);
+}
+
+function setUnsavedFormHomeGuard(message = "Unsaved changes on this page will be lost.", leaveAction = null) {
+  activeHomeGuard = () => {
+    showAppChoiceDialog({
+      title: "Return home?",
+      message,
+      actions: [
+        { text: "Stay here", className: "button secondary wizard-action-button", action: () => {} },
+        { text: "Return home", className: "button danger-button wizard-action-button", action: leaveAction || (() => showScreen("homeScreen")) }
+      ]
+    });
+  };
 }
 
 function cancelEdit() {
@@ -1525,6 +1646,42 @@ function getProcedureById(id) {
   const defaultMatch = defaultProcedureLibrary.find(procedure => procedure.id === id);
   if (defaultMatch) return defaultMatch;
   return (state.procedureSettings.customProcedures || []).find(procedure => procedure.id === id) || null;
+}
+
+
+function isUserAddedProcedure(procedureId) {
+  return (state.procedureSettings.customProcedures || []).some(procedure => procedure.id === procedureId);
+}
+
+function deleteUserAddedProcedure(procedureId) {
+  if (!isUserAddedProcedure(procedureId)) return false;
+
+  state.procedureSettings.customProcedures = (state.procedureSettings.customProcedures || [])
+    .filter(procedure => procedure.id !== procedureId);
+
+  state.procedureSettings.customAssignments = (state.procedureSettings.customAssignments || [])
+    .filter(assignment => assignment.procedureId !== procedureId);
+
+  state.procedureSettings.hiddenAssignments = (state.procedureSettings.hiddenAssignments || [])
+    .filter(key => !key.endsWith(`|${procedureId}`));
+
+  markChanged();
+  return true;
+}
+
+function showDeleteProcedureDialog(procedure, specialtyId, categoryId) {
+  if (!procedure || !isUserAddedProcedure(procedure.id)) return;
+
+  showAppConfirm({
+    title: "Delete procedure?",
+    message: `Delete ${procedure.name}? This removes it from all specialties and categories. Existing saved logbook entries will not be changed.`,
+    confirmText: "Delete",
+    confirmClass: "button danger-button wizard-action-button",
+    onConfirm: () => {
+      deleteUserAddedProcedure(procedure.id);
+      renderProceduresForCategory(specialtyId, categoryId);
+    }
+  });
 }
 
 function getProcedureCategoryName(categoryId) {
@@ -2185,6 +2342,7 @@ function renderVersionLabel() {
 function renderSpecialtiesProceduresHome() {
   const container = document.getElementById("specialtiesProceduresContent");
   if (!container) return;
+  activeHomeGuard = null;
 
   setSpecialtiesProceduresTitle("Specialties & procedures");
   setSpecialtiesProceduresBackAction(() => showScreen("homeScreen"));
@@ -2218,6 +2376,7 @@ function renderSpecialtiesProceduresHome() {
 function renderProcedureCategoriesForSpecialty(specialtyId) {
   const container = document.getElementById("specialtiesProceduresContent");
   if (!container) return;
+  activeHomeGuard = null;
 
   const specialtyName = getSpecialtyNameById(specialtyId) || "Specialty";
   setSpecialtiesProceduresTitle(specialtyName);
@@ -2255,6 +2414,7 @@ function renderProcedureCategoriesForSpecialty(specialtyId) {
 function renderProceduresForCategory(specialtyId, categoryId) {
   const container = document.getElementById("specialtiesProceduresContent");
   if (!container) return;
+  activeHomeGuard = null;
 
   const specialtyName = getSpecialtyNameById(specialtyId) || "Specialty";
   const categoryName = getProcedureCategoryName(categoryId);
@@ -2267,11 +2427,20 @@ function renderProceduresForCategory(specialtyId, categoryId) {
   context.textContent = `${specialtyName} • ${categoryName}`;
   container.appendChild(context);
 
-  const search = document.createElement("input");
-  search.className = "search-input";
-  search.type = "search";
-  search.placeholder = "Search procedures";
-  container.appendChild(search);
+  const allAssignedProcedures = getAssignedProcedureIds(specialtyId, categoryId)
+    .map(getProcedureById)
+    .filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  let search = null;
+
+  if (allAssignedProcedures.length > 10) {
+    search = document.createElement("input");
+    search.className = "search-input";
+    search.type = "search";
+    search.placeholder = "Search procedures";
+    container.appendChild(search);
+  }
 
   const list = document.createElement("div");
   list.className = "management-list";
@@ -2279,12 +2448,9 @@ function renderProceduresForCategory(specialtyId, categoryId) {
 
   const renderProcedureList = () => {
     list.innerHTML = "";
-    const query = normaliseText(search.value);
-    const procedures = getAssignedProcedureIds(specialtyId, categoryId)
-      .map(getProcedureById)
-      .filter(Boolean)
-      .filter(procedure => !query || normaliseText(procedure.name).includes(query))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const query = search ? normaliseText(search.value) : "";
+    const procedures = allAssignedProcedures
+      .filter(procedure => !query || normaliseText(procedure.name).includes(query));
 
     if (procedures.length === 0) {
       const empty = document.createElement("p");
@@ -2296,20 +2462,37 @@ function renderProceduresForCategory(specialtyId, categoryId) {
 
     procedures.forEach(procedure => {
       const hidden = isProcedureAssignmentHidden(specialtyId, categoryId, procedure.id);
-      list.appendChild(makeManagementCard({
+      const isCustom = isUserAddedProcedure(procedure.id);
+      const card = makeManagementCard({
         title: procedure.name,
-        subtitle: hidden ? "Hidden from new entries" : "Shown when adding entries",
+        subtitle: isCustom
+          ? (hidden ? "User-added • Hidden from new entries" : "User-added • Shown when adding entries")
+          : (hidden ? "Default • Hidden from new entries" : "Default • Shown when adding entries"),
         hidden,
         onOpen: null,
         onToggle: () => {
           setProcedureAssignmentHidden(specialtyId, categoryId, procedure.id, !hidden);
           renderProcedureList();
         }
-      }));
+      });
+
+      if (isCustom) {
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "procedure-delete-button";
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", event => {
+          event.stopPropagation();
+          showDeleteProcedureDialog(procedure, specialtyId, categoryId);
+        });
+        card.appendChild(deleteButton);
+      }
+
+      list.appendChild(card);
     });
   };
 
-  search.addEventListener("input", renderProcedureList);
+  if (search) search.addEventListener("input", renderProcedureList);
   renderProcedureList();
 
   container.appendChild(makeButton("Add procedure", "button secondary wizard-action-button", () => {
@@ -2320,6 +2503,7 @@ function renderProceduresForCategory(specialtyId, categoryId) {
 function renderAddProcedureToCategory(specialtyId, categoryId) {
   const container = document.getElementById("specialtiesProceduresContent");
   if (!container) return;
+  activeHomeGuard = null;
 
   const specialtyName = getSpecialtyNameById(specialtyId) || "Specialty";
   const categoryName = getProcedureCategoryName(categoryId);
@@ -2384,6 +2568,7 @@ function renderAddProcedureToCategory(specialtyId, categoryId) {
 function renderCreateProcedureScreen(specialtyId, categoryId) {
   const container = document.getElementById("specialtiesProceduresContent");
   if (!container) return;
+  setUnsavedFormHomeGuard("Unsaved procedure details will be lost.");
 
   setSpecialtiesProceduresTitle("Create new procedure");
   setSpecialtiesProceduresBackAction(() => renderAddProcedureToCategory(specialtyId, categoryId));
@@ -2593,6 +2778,45 @@ function showAppConfirm({
   cancelButton.focus();
 }
 
+
+function showAppChoiceDialog({ title = "Choose an option", message = "", actions = [] } = {}) {
+  closeAppDialog();
+
+  const overlay = document.createElement("div");
+  overlay.className = "dialog-overlay";
+  overlay.setAttribute("role", "presentation");
+
+  const dialog = document.createElement("div");
+  dialog.className = "app-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+
+  const body = document.createElement("p");
+  body.className = "app-dialog-message";
+  body.textContent = String(message || "");
+
+  const actionRow = document.createElement("div");
+  actionRow.className = actions.length > 2 ? "dialog-stacked-actions" : "action-row dialog-action-row";
+
+  actions.forEach(item => {
+    const button = makeButton(item.text, item.className || "button secondary wizard-action-button", () => {
+      closeAppDialog();
+      if (typeof item.action === "function") item.action();
+    });
+    actionRow.appendChild(button);
+  });
+
+  dialog.append(heading, body, actionRow);
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+
+  const firstButton = actionRow.querySelector("button");
+  if (firstButton) firstButton.focus();
+}
+
 function makeButton(text, className, onClick) {
   const button = document.createElement("button");
   button.type = "button";
@@ -2648,6 +2872,7 @@ function togglePlacementVisibility(placement) {
 function renderPlacements() {
   const container = document.getElementById("placementsContent");
   if (!container) return;
+  activeHomeGuard = null;
 
   setPlacementsTitle("Placements");
   setPlacementsBackAction(() => showScreen("homeScreen"));
@@ -2711,6 +2936,7 @@ function renderPlacements() {
 function renderAddPlacementScreen() {
   const container = document.getElementById("placementsContent");
   if (!container) return;
+  setUnsavedFormHomeGuard("Unsaved placement details will be lost.");
 
   setPlacementsTitle("Add placement");
   setPlacementsBackAction(renderPlacements);
@@ -2800,6 +3026,7 @@ function renderAddPlacementScreen() {
 function renderEditPlacementScreen(placementId) {
   const container = document.getElementById("placementsContent");
   if (!container) return;
+  setUnsavedFormHomeGuard("Unsaved changes to this placement will be lost.");
 
   const placement = state.placements.find(item => item.id === placementId);
 
