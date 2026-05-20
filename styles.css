@@ -1159,3 +1159,75 @@ textarea:focus-visible {
 .app-dialog-message {
   white-space: pre-line;
 }
+
+/* V46 home shortcut, procedure delete controls and procedure-page search rule support */
+.screen {
+  position: relative;
+}
+
+.home-shortcut-button {
+  appearance: none;
+  -webkit-appearance: none;
+  position: absolute;
+  top: 2px;
+  right: 0;
+  z-index: 20;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #9fb0c3;
+  border-radius: 12px;
+  background: var(--paper-glass-button);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96), inset 0 -4px 9px rgba(30, 41, 59, 0.07);
+}
+
+.home-shortcut-button svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.home-shortcut-button:active {
+  transform: translateY(1px);
+}
+
+.wizard-top-row {
+  padding-right: 46px;
+}
+
+.dialog-stacked-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.dialog-stacked-actions .button {
+  width: 100%;
+}
+
+.procedure-delete-button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #9fb0c3;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1;
+  padding: 8px 10px;
+  min-width: 70px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), inset 0 -2px 5px rgba(127, 29, 29, 0.06);
+}
+
+.procedure-delete-button:active {
+  transform: translateY(1px);
+}
