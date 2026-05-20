@@ -1,5 +1,5 @@
 const STORAGE_KEY = "procedureLogbookData_v1";
-const APP_VERSION = "v44";
+const APP_VERSION = "v45";
 
 let state = {
   entries: [],
@@ -305,6 +305,7 @@ function emptyOptionStore() {
 
 function emptyProcedureSettings() {
   return {
+    hiddenCategories: [],
     hiddenAssignments: [],
     customProcedures: [],
     customAssignments: []
@@ -355,6 +356,7 @@ function cleanProcedureSettings(settings) {
   const input = settings || {};
   const output = emptyProcedureSettings();
 
+  output.hiddenCategories = cleanArray(input.hiddenCategories || []);
   output.hiddenAssignments = cleanArray(input.hiddenAssignments || []);
 
   output.customProcedures = Array.isArray(input.customProcedures)
@@ -552,7 +554,7 @@ function loadState() {
     ensureStateShape();
   } catch (error) {
     console.error("There was a problem loading saved data.", error);
-    alert("There was a problem loading saved data. The app will open with a blank local copy. Your existing browser data has not been deleted.");
+    showAppAlert("There was a problem loading saved data. The app will open with a blank local copy. Your existing browser data has not been deleted.");
   }
 }
 
@@ -674,12 +676,12 @@ function addUserOption(field, value, procedureName = "") {
   const text = String(value || "").trim();
 
   if (!text) {
-    alert("Please enter an option.");
+    showAppAlert("Please enter an option.");
     return false;
   }
 
   if (optionExists(field, text, procedureName)) {
-    alert("This option already exists.");
+    showAppAlert("This option already exists.");
     return false;
   }
 
@@ -807,7 +809,7 @@ function editEntry(entryId) {
   const entry = state.entries.find(item => item.id === entryId);
 
   if (!entry) {
-    alert("Could not find this entry.");
+    showAppAlert("Could not find this entry.");
     return;
   }
 
@@ -1401,12 +1403,12 @@ function renderAddPlacementFromWizard(wrapper) {
     const endDate = endInput.value;
 
     if (!name) {
-      alert("Please enter a placement name.");
+      showAppAlert("Please enter a placement name.");
       return;
     }
 
     if (startDate && endDate && startDate > endDate) {
-      alert("The end date cannot be before the start date.");
+      showAppAlert("The end date cannot be before the start date.");
       return;
     }
 
@@ -1417,7 +1419,7 @@ function renderAddPlacementFromWizard(wrapper) {
     });
 
     if (duplicate) {
-      alert("This placement already exists.");
+      showAppAlert("This placement already exists.");
       return;
     }
 
@@ -1530,12 +1532,102 @@ function getProcedureCategoryName(categoryId) {
   return match ? match.name : "Uncategorised";
 }
 
+function makeCategoryKey(specialtyId, categoryId) {
+  return `${specialtyId}|${categoryId}`;
+}
+
+function makeAssignmentKey(specialtyId, categoryId, procedureId) {
+  return `${specialtyId}|${categoryId}|${procedureId}`;
+}
+
+function isSpecialtyHiddenById(specialtyId) {
+  const specialty = getSpecialtyNameById(specialtyId);
+  if (!specialty) return false;
+  return getStoredOptionList("hiddenDefaultOptions", "specialty")
+    .map(normaliseText)
+    .includes(normaliseText(specialty));
+}
+
+function isCategoryHidden(specialtyId, categoryId) {
+  return (state.procedureSettings.hiddenCategories || []).includes(makeCategoryKey(specialtyId, categoryId));
+}
+
+function setCategoryHidden(specialtyId, categoryId, hidden) {
+  const key = makeCategoryKey(specialtyId, categoryId);
+  const current = state.procedureSettings.hiddenCategories || [];
+  state.procedureSettings.hiddenCategories = hidden
+    ? [...new Set([...current, key])]
+    : current.filter(item => item !== key);
+  markChanged();
+}
+
+function isProcedureAssignmentHidden(specialtyId, categoryId, procedureId) {
+  return (state.procedureSettings.hiddenAssignments || []).includes(makeAssignmentKey(specialtyId, categoryId, procedureId));
+}
+
+function setProcedureAssignmentHidden(specialtyId, categoryId, procedureId, hidden) {
+  const key = makeAssignmentKey(specialtyId, categoryId, procedureId);
+  const current = state.procedureSettings.hiddenAssignments || [];
+  state.procedureSettings.hiddenAssignments = hidden
+    ? [...new Set([...current, key])]
+    : current.filter(item => item !== key);
+  markChanged();
+}
+
+function getAllProcedureLibraryItems() {
+  const seen = new Set();
+  return [...defaultProcedureLibrary, ...(state.procedureSettings.customProcedures || [])]
+    .filter(procedure => {
+      const key = procedure.id;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function isProcedureAssignedToCategory(specialtyId, categoryId, procedureId) {
+  return getAssignedProcedureIds(specialtyId, categoryId).includes(procedureId);
+}
+
+function addProcedureAssignment(specialtyId, categoryId, procedureId) {
+  if (!specialtyId || !categoryId || !procedureId) return false;
+  if (isProcedureAssignedToCategory(specialtyId, categoryId, procedureId)) return false;
+
+  state.procedureSettings.customAssignments.push({
+    procedureId,
+    specialtyId,
+    categoryId
+  });
+
+  setProcedureAssignmentHidden(specialtyId, categoryId, procedureId, false);
+  markChanged();
+  return true;
+}
+
+function makeProcedureIdFromName(name) {
+  const base = normaliseText(name)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "procedure";
+
+  const existingIds = new Set(getAllProcedureLibraryItems().map(procedure => procedure.id));
+  let candidate = base;
+  let count = 2;
+
+  while (existingIds.has(candidate)) {
+    candidate = `${base}-${count}`;
+    count += 1;
+  }
+
+  return candidate;
+}
+
 function getAssignedProcedureIds(specialtyId, categoryId) {
   const defaultIds = (((defaultSpecialtyProcedureAssignments[specialtyId] || {})[categoryId]) || []);
   const customIds = (state.procedureSettings.customAssignments || [])
     .filter(item => item.specialtyId === specialtyId && item.categoryId === categoryId)
     .map(item => item.procedureId);
-  return [...defaultIds, ...customIds];
+  return [...new Set([...defaultIds, ...customIds])];
 }
 
 function getCategoryRowsForSpecialty(specialtyId) {
@@ -1706,14 +1798,14 @@ function renderAddHospitalScreen(wrapper) {
     const name = input.value.trim();
 
     if (!name) {
-      alert("Please enter a hospital name.");
+      showAppAlert("Please enter a hospital name.");
       return;
     }
 
     const exists = state.hospitals.some(hospital => hospital.toLowerCase() === name.toLowerCase());
 
     if (exists) {
-      alert("This hospital already exists.");
+      showAppAlert("This hospital already exists.");
       return;
     }
 
@@ -1737,16 +1829,18 @@ function renderDeleteHospitalScreen(wrapper) {
 
   state.hospitals.forEach(hospital => {
     wrapper.appendChild(makeButton(hospital, "choice-button danger", () => {
-      const confirmed = confirm(
-        `Delete ${hospital} from your quick-select hospital list?\n\nExisting logbook records will not be changed.`
-      );
-
-      if (!confirmed) return;
-
-      state.hospitals = state.hospitals.filter(item => item !== hospital);
-      if (draft.hospital === hospital) delete draft.hospital;
-      markChanged();
-      renderWizard();
+      showAppConfirm({
+        title: "Delete hospital?",
+        message: `Delete ${hospital} from your quick-select hospital list?\n\nExisting logbook records will not be changed.`,
+        confirmText: "Delete",
+        confirmClass: "button danger-button wizard-action-button",
+        onConfirm: () => {
+          state.hospitals = state.hospitals.filter(item => item !== hospital);
+          if (draft.hospital === hospital) delete draft.hospital;
+          markChanged();
+          renderWizard();
+        }
+      });
     }));
   });
 
@@ -1841,14 +1935,16 @@ function renderDeleteOptionScreen(wrapper, field, procedureName = "") {
 
   options.forEach(option => {
     wrapper.appendChild(makeButton(option, "choice-button danger", () => {
-      const confirmed = confirm(
-        `Delete "${option}" from the ${label} quick-select list?\n\nExisting logbook records will not be changed.`
-      );
-
-      if (!confirmed) return;
-
-      deleteUserOption(field, option, procedureName);
-      renderWizard();
+      showAppConfirm({
+        title: `Delete ${label}?`,
+        message: `Delete "${option}" from the ${label} quick-select list?\n\nExisting logbook records will not be changed.`,
+        confirmText: "Delete",
+        confirmClass: "button danger-button wizard-action-button",
+        onConfirm: () => {
+          deleteUserOption(field, option, procedureName);
+          renderWizard();
+        }
+      });
     }));
   });
 
@@ -1867,7 +1963,7 @@ function renderOtherInput(wrapper, field, option) {
     const value = input.value.trim();
 
     if (!value) {
-      alert("Please enter a value.");
+      showAppAlert("Please enter a value.");
       return;
     }
 
@@ -1991,7 +2087,7 @@ function makeDetailsScreen() {
     draft.cpdLocation = locationInput.value.trim();
 
     if (!draft.cpdTitle) {
-      alert("Please enter a title.");
+      showAppAlert("Please enter a title.");
       return;
     }
 
@@ -2094,85 +2190,407 @@ function renderSpecialtiesProceduresHome() {
   setSpecialtiesProceduresBackAction(() => showScreen("homeScreen"));
   container.innerHTML = "";
 
-  const intro = document.createElement("p");
-  intro.className = "help-text";
-  intro.textContent = "Manage which specialties and procedures appear when adding new procedure entries.";
-
-  container.append(
-    intro,
-    makeButton("Show/hide specialties", "button secondary wizard-action-button", renderSpecialtyVisibilityManagement),
-    makeButton("Show/hide procedures", "button secondary wizard-action-button", () => renderProcedureFoundationPreview("Show/hide procedures")),
-    makeButton("Manage procedures", "button secondary wizard-action-button", () => renderProcedureFoundationPreview("Manage procedures"))
-  );
-}
-
-function renderSpecialtyVisibilityManagement() {
-  const container = document.getElementById("specialtiesProceduresContent");
-  if (!container) return;
-
-  setSpecialtiesProceduresTitle("Show/hide specialties");
-  setSpecialtiesProceduresBackAction(renderSpecialtiesProceduresHome);
-  container.innerHTML = "";
-
   const message = document.createElement("p");
   message.className = "help-text";
-  message.textContent = "Tap a specialty to switch it between shown and hidden.";
+  message.textContent = "Tap a specialty to manage its categories and procedures. Use the Shown/Hidden capsule to control whether it appears when adding entries.";
   container.appendChild(message);
 
-  const hidden = getStoredOptionList("hiddenDefaultOptions", "specialty").map(normaliseText);
+  const list = document.createElement("div");
+  list.className = "management-list";
 
-  defaultProcedureOptions.specialty.forEach(specialty => {
-    const isHidden = hidden.includes(normaliseText(specialty));
-    container.appendChild(makeSpecialtyVisibilityButton(specialty, isHidden, () => {
-      setSpecialtyHidden(specialty, !isHidden);
-      renderSpecialtyVisibilityManagement();
+  defaultSpecialties.forEach(specialty => {
+    const hidden = isSpecialtyHiddenById(specialty.id);
+    list.appendChild(makeManagementCard({
+      title: specialty.name,
+      subtitle: hidden ? "Hidden from new entries" : "Shown when adding entries",
+      hidden,
+      onOpen: () => renderProcedureCategoriesForSpecialty(specialty.id),
+      onToggle: () => {
+        setSpecialtyHidden(specialty.name, !hidden);
+        renderSpecialtiesProceduresHome();
+      }
     }));
   });
 
-  container.appendChild(makeButton("Done", "button primary wizard-action-button", renderSpecialtiesProceduresHome));
+  container.appendChild(list);
 }
 
-function renderProcedureFoundationPreview(titleText) {
+function renderProcedureCategoriesForSpecialty(specialtyId) {
   const container = document.getElementById("specialtiesProceduresContent");
   if (!container) return;
 
-  setSpecialtiesProceduresTitle(titleText);
+  const specialtyName = getSpecialtyNameById(specialtyId) || "Specialty";
+  setSpecialtiesProceduresTitle(specialtyName);
   setSpecialtiesProceduresBackAction(renderSpecialtiesProceduresHome);
   container.innerHTML = "";
 
   const message = document.createElement("p");
   message.className = "help-text";
-  message.textContent = "The procedure library structure is now in place. The next update will make this page interactive.";
+  message.textContent = "Tap a category to manage its procedures. Use the Shown/Hidden capsule to control whether the category appears when adding entries.";
   container.appendChild(message);
 
-  defaultSpecialties.forEach(specialty => {
-    const card = document.createElement("div");
-    card.className = "procedure-foundation-card";
+  const list = document.createElement("div");
+  list.className = "management-list";
 
-    const heading = document.createElement("h3");
-    heading.textContent = specialty.name;
-    card.appendChild(heading);
+  defaultProcedureCategories.forEach(category => {
+    const hidden = isCategoryHidden(specialtyId, category.id);
+    const count = getAssignedProcedureIds(specialtyId, category.id).length;
+    const subtitle = `${count} ${count === 1 ? "procedure" : "procedures"}`;
 
-    const categories = getCategoryRowsForSpecialty(specialty.id);
-
-    if (categories.length === 0) {
-      const empty = document.createElement("p");
-      empty.textContent = "No procedures configured yet.";
-      card.appendChild(empty);
-    } else {
-      categories.forEach(category => {
-        const row = document.createElement("p");
-        const categoryName = document.createElement("strong");
-        categoryName.textContent = category.name;
-        row.append(categoryName, `: ${category.procedures.map(procedure => procedure.name).join(", ")}`);
-        card.appendChild(row);
-      });
-    }
-
-    container.appendChild(card);
+    list.appendChild(makeManagementCard({
+      title: category.name,
+      subtitle: hidden ? `${subtitle} • Hidden from new entries` : `${subtitle} • Shown when adding entries`,
+      hidden,
+      onOpen: () => renderProceduresForCategory(specialtyId, category.id),
+      onToggle: () => {
+        setCategoryHidden(specialtyId, category.id, !hidden);
+        renderProcedureCategoriesForSpecialty(specialtyId);
+      }
+    }));
   });
 
-  container.appendChild(makeButton("Back", "button secondary wizard-action-button", renderSpecialtiesProceduresHome));
+  container.appendChild(list);
+}
+
+function renderProceduresForCategory(specialtyId, categoryId) {
+  const container = document.getElementById("specialtiesProceduresContent");
+  if (!container) return;
+
+  const specialtyName = getSpecialtyNameById(specialtyId) || "Specialty";
+  const categoryName = getProcedureCategoryName(categoryId);
+  setSpecialtiesProceduresTitle(categoryName);
+  setSpecialtiesProceduresBackAction(() => renderProcedureCategoriesForSpecialty(specialtyId));
+  container.innerHTML = "";
+
+  const context = document.createElement("p");
+  context.className = "help-text";
+  context.textContent = `${specialtyName} • ${categoryName}`;
+  container.appendChild(context);
+
+  const search = document.createElement("input");
+  search.className = "search-input";
+  search.type = "search";
+  search.placeholder = "Search procedures";
+  container.appendChild(search);
+
+  const list = document.createElement("div");
+  list.className = "management-list";
+  container.appendChild(list);
+
+  const renderProcedureList = () => {
+    list.innerHTML = "";
+    const query = normaliseText(search.value);
+    const procedures = getAssignedProcedureIds(specialtyId, categoryId)
+      .map(getProcedureById)
+      .filter(Boolean)
+      .filter(procedure => !query || normaliseText(procedure.name).includes(query))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (procedures.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "help-text";
+      empty.textContent = "No procedures found in this category.";
+      list.appendChild(empty);
+      return;
+    }
+
+    procedures.forEach(procedure => {
+      const hidden = isProcedureAssignmentHidden(specialtyId, categoryId, procedure.id);
+      list.appendChild(makeManagementCard({
+        title: procedure.name,
+        subtitle: hidden ? "Hidden from new entries" : "Shown when adding entries",
+        hidden,
+        onOpen: null,
+        onToggle: () => {
+          setProcedureAssignmentHidden(specialtyId, categoryId, procedure.id, !hidden);
+          renderProcedureList();
+        }
+      }));
+    });
+  };
+
+  search.addEventListener("input", renderProcedureList);
+  renderProcedureList();
+
+  container.appendChild(makeButton("Add procedure", "button secondary wizard-action-button", () => {
+    renderAddProcedureToCategory(specialtyId, categoryId);
+  }));
+}
+
+function renderAddProcedureToCategory(specialtyId, categoryId) {
+  const container = document.getElementById("specialtiesProceduresContent");
+  if (!container) return;
+
+  const specialtyName = getSpecialtyNameById(specialtyId) || "Specialty";
+  const categoryName = getProcedureCategoryName(categoryId);
+  setSpecialtiesProceduresTitle("Add procedure");
+  setSpecialtiesProceduresBackAction(() => renderProceduresForCategory(specialtyId, categoryId));
+  container.innerHTML = "";
+
+  const context = document.createElement("p");
+  context.className = "help-text";
+  context.textContent = `${specialtyName} • ${categoryName}\nSearch existing procedures from any specialty, or create a new one.`;
+  container.appendChild(context);
+
+  const search = document.createElement("input");
+  search.className = "search-input";
+  search.type = "search";
+  search.placeholder = "Search all procedures";
+  container.appendChild(search);
+
+  const list = document.createElement("div");
+  list.className = "management-list";
+  container.appendChild(list);
+
+  const renderSearchResults = () => {
+    list.innerHTML = "";
+    const query = normaliseText(search.value);
+    const procedures = getAllProcedureLibraryItems()
+      .filter(procedure => !query || normaliseText(procedure.name).includes(query))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (procedures.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "help-text";
+      empty.textContent = "No matching procedures found.";
+      list.appendChild(empty);
+      return;
+    }
+
+    procedures.forEach(procedure => {
+      const alreadyAdded = isProcedureAssignedToCategory(specialtyId, categoryId, procedure.id);
+      const button = makeButton(
+        alreadyAdded ? `${procedure.name} — already added` : procedure.name,
+        alreadyAdded ? "choice-button disabled-choice" : "choice-button",
+        () => {
+          if (alreadyAdded) return;
+          addProcedureAssignment(specialtyId, categoryId, procedure.id);
+          renderProceduresForCategory(specialtyId, categoryId);
+        }
+      );
+      if (alreadyAdded) button.disabled = true;
+      list.appendChild(button);
+    });
+  };
+
+  search.addEventListener("input", renderSearchResults);
+  renderSearchResults();
+
+  container.appendChild(makeButton("Create new procedure", "button secondary wizard-action-button", () => {
+    renderCreateProcedureScreen(specialtyId, categoryId);
+  }));
+}
+
+function renderCreateProcedureScreen(specialtyId, categoryId) {
+  const container = document.getElementById("specialtiesProceduresContent");
+  if (!container) return;
+
+  setSpecialtiesProceduresTitle("Create new procedure");
+  setSpecialtiesProceduresBackAction(() => renderAddProcedureToCategory(specialtyId, categoryId));
+  container.innerHTML = "";
+
+  const instructions = document.createElement("p");
+  instructions.className = "help-text";
+  instructions.textContent = "Create a new procedure and add it to this specialty/category.";
+
+  const nameInput = document.createElement("input");
+  nameInput.className = "text-input";
+  nameInput.placeholder = "Procedure name";
+
+  const siteLabel = makeCheckboxRow("Show Site page for this procedure", false);
+  const techniqueLabel = makeCheckboxRow("Show Technique page for this procedure", false);
+
+  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", () => {
+    renderAddProcedureToCategory(specialtyId, categoryId);
+  });
+
+  const createButton = makeButton("Create procedure", "button primary wizard-action-button", () => {
+    const name = nameInput.value.trim();
+
+    if (!name) {
+      showAppAlert("Please enter a procedure name.");
+      return;
+    }
+
+    const existing = getAllProcedureLibraryItems().find(procedure => normaliseText(procedure.name) === normaliseText(name));
+
+    if (existing) {
+      addProcedureAssignment(specialtyId, categoryId, existing.id);
+      renderProceduresForCategory(specialtyId, categoryId);
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const procedure = {
+      id: makeProcedureIdFromName(name),
+      name,
+      needsSite: siteLabel.input.checked,
+      needsTechnique: techniqueLabel.input.checked,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    state.procedureSettings.customProcedures.push(procedure);
+    state.procedureSettings.customAssignments.push({
+      procedureId: procedure.id,
+      specialtyId,
+      categoryId
+    });
+    markChanged();
+    renderProceduresForCategory(specialtyId, categoryId);
+  });
+
+  container.append(
+    instructions,
+    nameInput,
+    siteLabel.row,
+    techniqueLabel.row,
+    makeActionRow([cancelButton, createButton])
+  );
+}
+
+function makeCheckboxRow(text, checked) {
+  const row = document.createElement("label");
+  row.className = "checkbox-row";
+
+  const input = document.createElement("input");
+  input.type = "checkbox";
+  input.checked = Boolean(checked);
+
+  const label = document.createElement("span");
+  label.textContent = text;
+
+  row.append(input, label);
+  return { row, input };
+}
+
+function makeManagementCard({ title, subtitle, hidden, onOpen, onToggle }) {
+  const card = document.createElement("div");
+  card.className = hidden ? "management-card management-hidden" : "management-card";
+
+  if (typeof onOpen === "function") {
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.addEventListener("click", onOpen);
+    card.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onOpen();
+      }
+    });
+  }
+
+  const text = document.createElement("div");
+  text.className = "management-card-text";
+
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+
+  const detail = document.createElement("p");
+  detail.textContent = subtitle || "";
+
+  text.append(heading, detail);
+
+  const status = document.createElement("button");
+  status.type = "button";
+  status.className = hidden ? "status-pill status-hidden" : "status-pill status-shown";
+  status.textContent = hidden ? "Hidden" : "Shown";
+  status.addEventListener("click", event => {
+    event.stopPropagation();
+    if (typeof onToggle === "function") onToggle();
+  });
+
+  card.append(text, status);
+  return card;
+}
+
+function closeAppDialog() {
+  const existingDialog = document.querySelector(".dialog-overlay");
+  if (existingDialog) existingDialog.remove();
+}
+
+function showAppAlert(message, title = "Notice", onClose = null) {
+  closeAppDialog();
+
+  const overlay = document.createElement("div");
+  overlay.className = "dialog-overlay";
+  overlay.setAttribute("role", "presentation");
+
+  const dialog = document.createElement("div");
+  dialog.className = "app-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+
+  const body = document.createElement("p");
+  body.className = "app-dialog-message";
+  body.textContent = String(message || "");
+
+  const okButton = makeButton("OK", "button primary wizard-action-button", () => {
+    closeAppDialog();
+    if (typeof onClose === "function") onClose();
+  });
+
+  const actionRow = document.createElement("div");
+  actionRow.className = "action-row single-action dialog-action-row";
+  actionRow.appendChild(okButton);
+
+  dialog.append(heading, body, actionRow);
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+  okButton.focus();
+}
+
+function showAppConfirm({
+  title = "Confirm",
+  message = "",
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  confirmClass = "button primary wizard-action-button",
+  onConfirm = null,
+  onCancel = null,
+  content = null
+} = {}) {
+  closeAppDialog();
+
+  const overlay = document.createElement("div");
+  overlay.className = "dialog-overlay";
+  overlay.setAttribute("role", "presentation");
+
+  const dialog = document.createElement("div");
+  dialog.className = "app-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+
+  const body = document.createElement("p");
+  body.className = "app-dialog-message";
+  body.textContent = String(message || "");
+
+  const cancelButton = makeButton(cancelText, "button secondary wizard-action-button", () => {
+    closeAppDialog();
+    if (typeof onCancel === "function") onCancel();
+  });
+
+  const confirmButton = makeButton(confirmText, confirmClass, () => {
+    closeAppDialog();
+    if (typeof onConfirm === "function") onConfirm();
+  });
+
+  const actionRow = document.createElement("div");
+  actionRow.className = "action-row dialog-action-row";
+  actionRow.append(cancelButton, confirmButton);
+
+  dialog.append(heading, body);
+  if (content) dialog.appendChild(content);
+  dialog.appendChild(actionRow);
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+  cancelButton.focus();
 }
 
 function makeButton(text, className, onClick) {
@@ -2322,17 +2740,17 @@ function renderAddPlacementScreen() {
     const endDate = endInput.value;
 
     if (!name) {
-      alert("Please enter a placement name.");
+      showAppAlert("Please enter a placement name.");
       return;
     }
 
     if (!startDate || !endDate) {
-      alert("Please enter both a start date and an end date.");
+      showAppAlert("Please enter both a start date and an end date.");
       return;
     }
 
     if (endDate < startDate) {
-      alert("The end date cannot be before the start date.");
+      showAppAlert("The end date cannot be before the start date.");
       return;
     }
 
@@ -2343,7 +2761,7 @@ function renderAddPlacementScreen() {
     });
 
     if (duplicate) {
-      alert("This placement already exists.");
+      showAppAlert("This placement already exists.");
       return;
     }
 
@@ -2423,17 +2841,17 @@ function renderEditPlacementScreen(placementId) {
     const endDate = endInput.value;
 
     if (!name) {
-      alert("Please enter a placement name.");
+      showAppAlert("Please enter a placement name.");
       return;
     }
 
     if (!startDate || !endDate) {
-      alert("Please enter both a start date and an end date.");
+      showAppAlert("Please enter both a start date and an end date.");
       return;
     }
 
     if (endDate < startDate) {
-      alert("The end date cannot be before the start date.");
+      showAppAlert("The end date cannot be before the start date.");
       return;
     }
 
@@ -2445,7 +2863,7 @@ function renderEditPlacementScreen(placementId) {
     });
 
     if (duplicate) {
-      alert("This placement already exists.");
+      showAppAlert("This placement already exists.");
       return;
     }
 
@@ -2479,34 +2897,12 @@ function renderEditPlacementScreen(placementId) {
 }
 
 function closePlacementDialog() {
-  const existingDialog = document.querySelector(".dialog-overlay");
-  if (existingDialog) {
-    existingDialog.remove();
-  }
+  closeAppDialog();
 }
 
 function showDeletePlacementDialog(placementId) {
   const placement = state.placements.find(item => item.id === placementId);
   if (!placement) return;
-
-  closePlacementDialog();
-
-  const overlay = document.createElement("div");
-  overlay.className = "dialog-overlay";
-  overlay.setAttribute("role", "presentation");
-
-  const dialog = document.createElement("div");
-  dialog.className = "app-dialog";
-  dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-modal", "true");
-  dialog.setAttribute("aria-labelledby", "deletePlacementDialogTitle");
-
-  const title = document.createElement("h3");
-  title.id = "deletePlacementDialogTitle";
-  title.textContent = "Delete placement?";
-
-  const message = document.createElement("p");
-  message.textContent = "Are you sure you want to delete this placement?";
 
   const placementName = document.createElement("div");
   placementName.className = "dialog-placement-name";
@@ -2519,26 +2915,19 @@ function showDeletePlacementDialog(placementId) {
 
   placementName.append(placementTitle, placementDates);
 
-  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", closePlacementDialog);
-
-  const deleteButton = makeButton("Delete", "button danger-button wizard-action-button", () => {
-    state.placements = state.placements.filter(item => item.id !== placement.id);
-    markChanged();
-    closePlacementDialog();
-    renderPlacements();
+  showAppConfirm({
+    title: "Delete placement?",
+    message: "Are you sure you want to delete this placement?",
+    confirmText: "Delete",
+    confirmClass: "button danger-button wizard-action-button",
+    content: placementName,
+    onConfirm: () => {
+      state.placements = state.placements.filter(item => item.id !== placement.id);
+      markChanged();
+      renderPlacements();
+    }
   });
-
-  const actionRow = document.createElement("div");
-  actionRow.className = "action-row dialog-action-row";
-  actionRow.append(cancelButton, deleteButton);
-
-  dialog.append(title, message, placementName, actionRow);
-  overlay.appendChild(dialog);
-  document.body.appendChild(overlay);
-
-  cancelButton.focus();
 }
-
 
 function makeFieldLabel(text) {
   const label = document.createElement("label");
@@ -2597,7 +2986,7 @@ function renderLogbook() {
     actions.className = "card-actions";
 
     actions.appendChild(makeButton("View", "small-button", () => {
-      alert(entrySummary(entry));
+      showAppAlert(entrySummary(entry));
     }));
 
     actions.appendChild(makeButton("Edit", "small-button", () => {
@@ -2605,13 +2994,18 @@ function renderLogbook() {
     }));
 
     actions.appendChild(makeButton("Delete", "small-button delete", () => {
-      const confirmed = confirm("Delete this entry? This cannot be undone.");
-      if (!confirmed) return;
-
-      state.entries = state.entries.filter(item => item.id !== entry.id);
-      saveState();
-      markChanged();
-      renderLogbook();
+      showAppConfirm({
+        title: "Delete entry?",
+        message: "Delete this entry? This cannot be undone.",
+        confirmText: "Delete",
+        confirmClass: "button danger-button wizard-action-button",
+        onConfirm: () => {
+          state.entries = state.entries.filter(item => item.id !== entry.id);
+          saveState();
+          markChanged();
+          renderLogbook();
+        }
+      });
     }));
 
     card.append(text, actions);
@@ -2770,17 +3164,18 @@ async function downloadJsonBackup() {
   downloadBlob(blob, filename);
 
   setTimeout(() => {
-    const saved = confirm(
-      "The backup file should now have downloaded or opened the save prompt.\n\nIf you saved the backup file successfully, tap OK to mark your backup as up to date.\n\nIf you cancelled or are not sure, tap Cancel."
-    );
-
-    if (saved) markBackedUp();
+    showAppConfirm({
+      title: "Backup saved?",
+      message: "The backup file should now have downloaded or opened the save prompt.\n\nIf you saved the backup file successfully, tap Mark as backed up.\n\nIf you cancelled or are not sure, tap Cancel.",
+      confirmText: "Mark as backed up",
+      onConfirm: markBackedUp
+    });
   }, 1500);
 }
 
 function downloadExcelWorkbook() {
   if (typeof XLSX === "undefined") {
-    alert("The Excel export library has not loaded.\nPlease refresh the app and try again.");
+    showAppAlert("The Excel export library has not loaded.\nPlease refresh the app and try again.");
     return;
   }
 
@@ -3010,34 +3405,36 @@ function importJsonBackup(file) {
       const imported = JSON.parse(event.target.result);
 
       if (!Array.isArray(imported.entries)) {
-        alert("This does not look like a valid logbook backup.");
+        showAppAlert("This does not look like a valid logbook backup.");
         return;
       }
 
-      const confirmed = confirm(
-        "Import this backup?\n\nThis will replace the current entries, hospital list, and custom option lists on this device."
-      );
+      showAppConfirm({
+        title: "Import backup?",
+        message: "This will replace the current entries, hospital list, placements, and custom option lists on this device.",
+        confirmText: "Import",
+        confirmClass: "button danger-button wizard-action-button",
+        onConfirm: () => {
+          state.entries = imported.entries || [];
+          state.hospitals = imported.hospitals || [];
+          state.placements = imported.placements || [];
+          state.procedureSettings = imported.procedureSettings || emptyProcedureSettings();
+          state.customOptions = imported.customOptions || emptyOptionStore();
+          state.hiddenDefaultOptions = imported.hiddenDefaultOptions || emptyOptionStore();
+          state.backup = {
+            lastBackupAt: new Date().toISOString(),
+            changeCountSinceBackup: 0
+          };
 
-      if (!confirmed) return;
-
-      state.entries = imported.entries || [];
-      state.hospitals = imported.hospitals || [];
-      state.placements = imported.placements || [];
-      state.procedureSettings = imported.procedureSettings || emptyProcedureSettings();
-      state.customOptions = imported.customOptions || emptyOptionStore();
-      state.hiddenDefaultOptions = imported.hiddenDefaultOptions || emptyOptionStore();
-      state.backup = {
-        lastBackupAt: new Date().toISOString(),
-        changeCountSinceBackup: 0
-      };
-
-      ensureStateShape();
-      saveState();
-      renderBackupStatus();
-      alert("Backup imported successfully.");
-      showScreen("homeScreen");
+          ensureStateShape();
+          saveState();
+          renderBackupStatus();
+          showScreen("homeScreen");
+          showAppAlert("Backup imported successfully.", "Backup imported");
+        }
+      });
     } catch {
-      alert("Could not import this file.");
+      showAppAlert("Could not import this file.");
     }
   };
 
@@ -3159,7 +3556,7 @@ function init() {
     ensureStateShape();
   } catch (error) {
     console.error("App initialisation failed while preparing saved data.", error);
-    alert("There was a problem preparing saved data. The app has still loaded so you can export or inspect what is available.");
+    showAppAlert("There was a problem preparing saved data. The app has still loaded so you can export or inspect what is available.");
   }
 
   try {
