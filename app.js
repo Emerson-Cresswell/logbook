@@ -39,24 +39,6 @@ let editingEntryId = null;
 let editReturnScreen = null;
 let editReturnScrollY = 0;
 let placementsBackAction = () => showScreen("homeScreen");
-let backSwipeGesture = {
-  possible: false,
-  active: false,
-  startX: 0,
-  startY: 0,
-  latestX: 0,
-  latestY: 0,
-  startTime: 0,
-  context: null,
-  frontClone: null,
-  underlayScreen: null,
-  width: 1,
-  originalScreen: "",
-  originalWizardIndex: 0,
-  pointerId: null
-};
-let suppressNextClickUntil = 0;
-
 
 const procedureSteps = [
   "date",
@@ -495,55 +477,21 @@ function markBackedUp() {
   renderBackupStatus();
 }
 
-function prefersReducedMotion() {
-  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
+function showScreen(screenId) {
+  document.querySelectorAll(".screen").forEach(screen => {
+    screen.classList.remove("active");
+  });
 
-function renderScreenSideEffects(screenId) {
+  const screen = document.getElementById(screenId);
+  if (!screen) return;
+
+  screen.classList.add("active");
+  currentScreen = screenId;
+
   if (screenId === "logbookScreen") renderLogbook();
   if (screenId === "summariesScreen") renderSummaries();
   if (screenId === "placementsScreen") renderPlacements();
   if (screenId === "homeScreen" || screenId === "backupScreen") renderBackupStatus();
-}
-
-function animateScreenBackTransition(previousScreen, nextScreen) {
-  if (!previousScreen || !nextScreen || previousScreen === nextScreen || prefersReducedMotion()) return;
-
-  const rect = previousScreen.getBoundingClientRect();
-  const oldPage = previousScreen.cloneNode(true);
-  oldPage.removeAttribute("id");
-  oldPage.classList.add("wizard-gesture-clone", "screen-slide-out-right");
-  oldPage.style.top = `${rect.top}px`;
-  oldPage.style.left = `${rect.left}px`;
-  oldPage.style.width = `${rect.width}px`;
-  oldPage.style.minHeight = `${rect.height}px`;
-
-  document.body.appendChild(oldPage);
-  nextScreen.classList.add("screen-slide-in-left");
-
-  window.setTimeout(() => {
-    oldPage.remove();
-    nextScreen.classList.remove("screen-slide-in-left");
-  }, 260);
-}
-
-function showScreen(screenId, options = {}) {
-  const animationDirection = typeof options === "string" ? options : options.direction;
-  const previousScreen = document.querySelector(".screen.active");
-  const screen = document.getElementById(screenId);
-  if (!screen) return;
-
-  document.querySelectorAll(".screen").forEach(item => {
-    item.classList.remove("active");
-  });
-
-  screen.classList.add("active");
-  currentScreen = screenId;
-  renderScreenSideEffects(screenId);
-
-  if (previousScreen && previousScreen !== screen && animationDirection === "back") {
-    animateScreenBackTransition(previousScreen, screen);
-  }
 }
 
 function renderBackupStatus() {
@@ -787,29 +735,24 @@ function editEntry(entryId) {
   renderWizard();
 }
 
-function goWizardBack(options = {}) {
+function goWizardBack() {
   const previousIndex = findNextRelevantIndex(wizardIndex, -1);
-  const animated = Boolean(options && options.animated);
 
   if (previousIndex !== null) {
-    if (animated) {
-      renderWizardBackStep(previousIndex);
-    } else {
-      wizardIndex = previousIndex;
-      renderWizard();
-    }
+    wizardIndex = previousIndex;
+    renderWizard();
     return;
   }
 
   if (editingEntryId && editReturnScreen === "logbookScreen") {
-    showScreen("logbookScreen", animated ? { direction: "back" } : {});
+    showScreen("logbookScreen");
     requestAnimationFrame(() => {
       window.scrollTo(0, editReturnScrollY);
     });
     return;
   }
 
-  showScreen("entryTypeScreen", animated ? { direction: "back" } : {});
+  showScreen("entryTypeScreen");
 }
 
 function nextWizardStep() {
@@ -819,42 +762,6 @@ function nextWizardStep() {
     wizardIndex = nextIndex;
     renderWizard();
   }
-}
-
-function renderWizardBackStep(previousIndex) {
-  if (prefersReducedMotion()) {
-    wizardIndex = previousIndex;
-    renderWizard();
-    return;
-  }
-
-  const wizardScreen = document.getElementById("wizardScreen");
-
-  if (!wizardScreen || !wizardScreen.classList.contains("active")) {
-    wizardIndex = previousIndex;
-    renderWizard();
-    return;
-  }
-
-  const rect = wizardScreen.getBoundingClientRect();
-  const oldPage = wizardScreen.cloneNode(true);
-  oldPage.removeAttribute("id");
-  oldPage.classList.add("wizard-gesture-clone", "screen-slide-out-right");
-  oldPage.style.top = `${rect.top}px`;
-  oldPage.style.left = `${rect.left}px`;
-  oldPage.style.width = `${rect.width}px`;
-  oldPage.style.minHeight = `${rect.height}px`;
-
-  document.body.appendChild(oldPage);
-
-  wizardIndex = previousIndex;
-  renderWizard();
-  wizardScreen.classList.add("screen-slide-in-left");
-
-  window.setTimeout(() => {
-    oldPage.remove();
-    wizardScreen.classList.remove("screen-slide-in-left");
-  }, 260);
 }
 
 function getOriginalEditingEntry() {
@@ -3025,417 +2932,6 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function navigateBackOnePage(options = {}) {
-  const animated = Boolean(options && options.animated);
-
-  if (currentScreen === "wizardScreen") {
-    goWizardBack({ animated });
-    return;
-  }
-
-  if (currentScreen === "entryTypeScreen") {
-    showScreen("homeScreen", animated ? { direction: "back" } : {});
-    return;
-  }
-
-  if (currentScreen === "logbookScreen") {
-    showScreen("homeScreen", animated ? { direction: "back" } : {});
-    return;
-  }
-
-  if (currentScreen === "summariesScreen") {
-    showScreen("homeScreen", animated ? { direction: "back" } : {});
-    return;
-  }
-
-  if (currentScreen === "backupScreen") {
-    showScreen("homeScreen", animated ? { direction: "back" } : {});
-    return;
-  }
-
-  if (currentScreen === "placementsScreen") {
-    placementsBackAction();
-  }
-}
-
-function isTextEditingElement(element) {
-  return Boolean(element && element.closest("input, textarea, select, [contenteditable='true']"));
-}
-
-function getBackSwipeContext() {
-  if (currentScreen === "homeScreen") return null;
-
-  if (currentScreen === "wizardScreen") {
-    const previousIndex = findNextRelevantIndex(wizardIndex, -1);
-
-    if (previousIndex !== null) {
-      return {
-        kind: "wizard-step",
-        originalScreen: "wizardScreen",
-        originalWizardIndex: wizardIndex,
-        previousWizardIndex: previousIndex
-      };
-    }
-
-    if (editingEntryId && editReturnScreen === "logbookScreen") {
-      return {
-        kind: "screen",
-        originalScreen: "wizardScreen",
-        targetScreen: "logbookScreen",
-        afterCommit: () => window.scrollTo(0, editReturnScrollY)
-      };
-    }
-
-    return {
-      kind: "screen",
-      originalScreen: "wizardScreen",
-      targetScreen: "entryTypeScreen"
-    };
-  }
-
-  if (["entryTypeScreen", "logbookScreen", "summariesScreen", "backupScreen"].includes(currentScreen)) {
-    return {
-      kind: "screen",
-      originalScreen: currentScreen,
-      targetScreen: "homeScreen"
-    };
-  }
-
-  return null;
-}
-
-function clearBackSwipeInlineStyles() {
-  if (backSwipeGesture.underlayScreen) {
-    backSwipeGesture.underlayScreen.classList.remove("screen-swipe-underlay");
-    backSwipeGesture.underlayScreen.style.transition = "";
-    backSwipeGesture.underlayScreen.style.transform = "";
-    backSwipeGesture.underlayScreen.style.opacity = "";
-    backSwipeGesture.underlayScreen.style.pointerEvents = "";
-  }
-
-  document.body.classList.remove("swipe-back-active");
-}
-
-function resetBackSwipeGesture() {
-  if (backSwipeGesture.frontClone) {
-    backSwipeGesture.frontClone.remove();
-  }
-
-  clearBackSwipeInlineStyles();
-
-  backSwipeGesture = {
-    possible: false,
-    active: false,
-    startX: 0,
-    startY: 0,
-    latestX: 0,
-    latestY: 0,
-    startTime: 0,
-    context: null,
-    frontClone: null,
-    underlayScreen: null,
-    width: 1,
-    originalScreen: "",
-    originalWizardIndex: 0,
-    pointerId: null
-  };
-}
-
-function makeSwipeFrontClone(activeScreen) {
-  const rect = activeScreen.getBoundingClientRect();
-  const clone = activeScreen.cloneNode(true);
-
-  clone.removeAttribute("id");
-  clone.classList.add("screen-swipe-front");
-  clone.style.top = `${rect.top}px`;
-  clone.style.left = `${rect.left}px`;
-  clone.style.width = `${rect.width}px`;
-  clone.style.minHeight = `${Math.max(rect.height, window.innerHeight)}px`;
-  clone.style.transition = "none";
-  clone.style.transform = "translate3d(0, 0, 0)";
-
-  document.body.appendChild(clone);
-  return clone;
-}
-
-function beginInteractiveBackSwipe() {
-  if (!backSwipeGesture.possible || backSwipeGesture.active || !backSwipeGesture.context) return false;
-  if (prefersReducedMotion()) return false;
-
-  const activeScreen = document.querySelector(".screen.active");
-  if (!activeScreen) return false;
-
-  const context = backSwipeGesture.context;
-  const frontClone = makeSwipeFrontClone(activeScreen);
-
-  backSwipeGesture.frontClone = frontClone;
-  backSwipeGesture.originalScreen = context.originalScreen;
-  backSwipeGesture.originalWizardIndex = typeof context.originalWizardIndex === "number" ? context.originalWizardIndex : wizardIndex;
-  backSwipeGesture.width = Math.max(window.innerWidth || 0, activeScreen.getBoundingClientRect().width || 0, 1);
-
-  if (context.kind === "wizard-step") {
-    wizardIndex = context.previousWizardIndex;
-    renderWizard();
-    backSwipeGesture.underlayScreen = document.getElementById("wizardScreen");
-  } else if (context.kind === "screen") {
-    showScreen(context.targetScreen);
-    if (context.targetScreen === "wizardScreen") renderWizard();
-    backSwipeGesture.underlayScreen = document.getElementById(context.targetScreen);
-  }
-
-  if (!backSwipeGesture.underlayScreen) {
-    resetBackSwipeGesture();
-    return false;
-  }
-
-  backSwipeGesture.underlayScreen.classList.add("screen-swipe-underlay");
-  backSwipeGesture.underlayScreen.style.transition = "none";
-  backSwipeGesture.underlayScreen.style.transform = "translate3d(-32%, 0, 0)";
-  backSwipeGesture.underlayScreen.style.opacity = "0.92";
-  backSwipeGesture.underlayScreen.style.pointerEvents = "none";
-
-  document.body.classList.add("swipe-back-active");
-  backSwipeGesture.active = true;
-  return true;
-}
-
-function updateInteractiveBackSwipe(deltaX) {
-  if (!backSwipeGesture.active || !backSwipeGesture.frontClone || !backSwipeGesture.underlayScreen) return;
-
-  const width = backSwipeGesture.width || 1;
-  const clampedX = Math.max(0, Math.min(deltaX, width));
-  const progress = Math.max(0, Math.min(clampedX / width, 1));
-  const underlayOffset = -32 + progress * 32;
-  const underlayOpacity = 0.92 + progress * 0.08;
-
-  backSwipeGesture.frontClone.style.transform = `translate3d(${clampedX}px, 0, 0)`;
-  backSwipeGesture.underlayScreen.style.transform = `translate3d(${underlayOffset}%, 0, 0)`;
-  backSwipeGesture.underlayScreen.style.opacity = String(underlayOpacity);
-}
-
-function cancelInteractiveBackSwipe() {
-  if (!backSwipeGesture.active) {
-    resetBackSwipeGesture();
-    return;
-  }
-
-  const frontClone = backSwipeGesture.frontClone;
-  const underlayScreen = backSwipeGesture.underlayScreen;
-  const originalScreen = backSwipeGesture.originalScreen;
-  const originalWizardIndex = backSwipeGesture.originalWizardIndex;
-
-  if (frontClone) {
-    frontClone.style.transition = "transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1)";
-    frontClone.style.transform = "translate3d(0, 0, 0)";
-  }
-
-  if (underlayScreen) {
-    underlayScreen.style.transition = "transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 180ms ease";
-    underlayScreen.style.transform = "translate3d(-32%, 0, 0)";
-    underlayScreen.style.opacity = "0.92";
-  }
-
-  window.setTimeout(() => {
-    if (frontClone) frontClone.remove();
-    clearBackSwipeInlineStyles();
-
-    if (originalScreen === "wizardScreen") {
-      wizardIndex = originalWizardIndex;
-      showScreen("wizardScreen");
-      renderWizard();
-    } else if (originalScreen) {
-      showScreen(originalScreen);
-    }
-
-    resetBackSwipeGesture();
-  }, 190);
-}
-
-function finishInteractiveBackSwipe() {
-  if (!backSwipeGesture.active) {
-    resetBackSwipeGesture();
-    return;
-  }
-
-  const frontClone = backSwipeGesture.frontClone;
-  const underlayScreen = backSwipeGesture.underlayScreen;
-  const context = backSwipeGesture.context;
-  const width = backSwipeGesture.width || window.innerWidth || 1;
-
-  if (frontClone) {
-    frontClone.style.transition = "transform 190ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 190ms ease";
-    frontClone.style.transform = `translate3d(${width}px, 0, 0)`;
-    frontClone.style.opacity = "0.86";
-  }
-
-  if (underlayScreen) {
-    underlayScreen.style.transition = "transform 190ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 190ms ease";
-    underlayScreen.style.transform = "translate3d(0, 0, 0)";
-    underlayScreen.style.opacity = "1";
-  }
-
-  window.setTimeout(() => {
-    if (frontClone) frontClone.remove();
-    clearBackSwipeInlineStyles();
-
-    if (context && typeof context.afterCommit === "function") {
-      requestAnimationFrame(context.afterCommit);
-    }
-
-    resetBackSwipeGesture();
-  }, 200);
-}
-
-function shouldIgnoreBackSwipeStart(target) {
-  if (!target) return false;
-  if (document.querySelector(".dialog-overlay")) return true;
-  return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
-}
-
-function prepareBackSwipeStart(clientX, clientY, pointerId = null) {
-  const context = getBackSwipeContext();
-  if (!context) return false;
-
-  backSwipeGesture.possible = true;
-  backSwipeGesture.active = false;
-  backSwipeGesture.startX = clientX;
-  backSwipeGesture.startY = clientY;
-  backSwipeGesture.latestX = clientX;
-  backSwipeGesture.latestY = clientY;
-  backSwipeGesture.startTime = Date.now();
-  backSwipeGesture.context = context;
-  backSwipeGesture.pointerId = pointerId;
-  return true;
-}
-
-function handleBackSwipeMove(clientX, clientY, event = null) {
-  if (!backSwipeGesture.possible) return;
-
-  const deltaX = clientX - backSwipeGesture.startX;
-  const deltaY = clientY - backSwipeGesture.startY;
-  const absX = Math.abs(deltaX);
-  const absY = Math.abs(deltaY);
-
-  backSwipeGesture.latestX = clientX;
-  backSwipeGesture.latestY = clientY;
-
-  if (!backSwipeGesture.active) {
-    if (deltaX < -8 || (absY > 18 && absY > absX * 1.15)) {
-      resetBackSwipeGesture();
-      return;
-    }
-
-    if (deltaX > 8 && absX > absY * 1.02) {
-      if (!beginInteractiveBackSwipe()) {
-        resetBackSwipeGesture();
-        return;
-      }
-    } else {
-      return;
-    }
-  }
-
-  if (event && event.cancelable) event.preventDefault();
-  if (event && typeof event.stopPropagation === "function") event.stopPropagation();
-  updateInteractiveBackSwipe(deltaX);
-}
-
-function handleBackSwipeEnd(clientX = null, clientY = null) {
-  if (!backSwipeGesture.possible) return;
-
-  suppressNextClickUntil = Date.now() + 350;
-
-  if (!backSwipeGesture.active) {
-    resetBackSwipeGesture();
-    return;
-  }
-
-  const endX = typeof clientX === "number" ? clientX : backSwipeGesture.latestX;
-  const endY = typeof clientY === "number" ? clientY : backSwipeGesture.latestY;
-  const deltaX = endX - backSwipeGesture.startX;
-  const deltaY = Math.abs(endY - backSwipeGesture.startY);
-  const elapsed = Date.now() - backSwipeGesture.startTime;
-  const progress = Math.max(0, Math.min(deltaX / (backSwipeGesture.width || 1), 1));
-  const isFastSwipe = deltaX > 58 && elapsed < 340 && deltaY < 95;
-  const shouldComplete = progress >= 0.28 || isFastSwipe;
-
-  if (shouldComplete) {
-    finishInteractiveBackSwipe();
-  } else {
-    cancelInteractiveBackSwipe();
-  }
-}
-
-function attachBackSwipeGesture() {
-  const supportsPointerEvents = "PointerEvent" in window;
-
-  if (supportsPointerEvents) {
-    document.addEventListener("pointerdown", event => {
-      if (event.pointerType && event.pointerType !== "touch") return;
-      if (!event.isPrimary) return;
-      if (shouldIgnoreBackSwipeStart(event.target)) return;
-
-      prepareBackSwipeStart(event.clientX, event.clientY, event.pointerId);
-    }, { passive: true, capture: true });
-
-    document.addEventListener("pointermove", event => {
-      if (!backSwipeGesture.possible) return;
-      if (backSwipeGesture.pointerId !== null && event.pointerId !== backSwipeGesture.pointerId) return;
-      handleBackSwipeMove(event.clientX, event.clientY, event);
-    }, { passive: false, capture: true });
-
-    document.addEventListener("pointerup", event => {
-      if (!backSwipeGesture.possible) return;
-      if (backSwipeGesture.pointerId !== null && event.pointerId !== backSwipeGesture.pointerId) return;
-      handleBackSwipeEnd(event.clientX, event.clientY);
-    }, { passive: true, capture: true });
-
-    document.addEventListener("pointercancel", event => {
-      if (backSwipeGesture.pointerId !== null && event.pointerId !== backSwipeGesture.pointerId) return;
-      if (backSwipeGesture.active) {
-        cancelInteractiveBackSwipe();
-      } else {
-        resetBackSwipeGesture();
-      }
-    }, { passive: true, capture: true });
-  } else {
-    document.addEventListener("touchstart", event => {
-      if (!event.touches || event.touches.length !== 1) return;
-      if (shouldIgnoreBackSwipeStart(event.target)) return;
-
-      const touch = event.touches[0];
-      prepareBackSwipeStart(touch.clientX, touch.clientY);
-    }, { passive: true, capture: true });
-
-    document.addEventListener("touchmove", event => {
-      if (!backSwipeGesture.possible || !event.touches || event.touches.length !== 1) return;
-      const touch = event.touches[0];
-      handleBackSwipeMove(touch.clientX, touch.clientY, event);
-    }, { passive: false, capture: true });
-
-    document.addEventListener("touchend", event => {
-      if (!backSwipeGesture.possible) return;
-      const touch = event.changedTouches && event.changedTouches.length === 1 ? event.changedTouches[0] : null;
-      handleBackSwipeEnd(touch ? touch.clientX : null, touch ? touch.clientY : null);
-    }, { passive: true, capture: true });
-
-    document.addEventListener("touchcancel", () => {
-      if (backSwipeGesture.active) {
-        cancelInteractiveBackSwipe();
-      } else {
-        resetBackSwipeGesture();
-      }
-    }, { passive: true, capture: true });
-  }
-
-  document.addEventListener("click", event => {
-    if (Date.now() < suppressNextClickUntil) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }, true);
-}
-
 function bindClick(id, handler) {
   const element = document.getElementById(id);
   if (!element) {
@@ -3526,7 +3022,6 @@ if ("serviceWorker" in navigator) {
 
 function init() {
   attachEvents();
-  attachBackSwipeGesture();
 
   try {
     loadState();
