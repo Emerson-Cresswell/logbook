@@ -1,5 +1,5 @@
 const STORAGE_KEY = "procedureLogbookData_v1";
-const APP_VERSION = "v51";
+const APP_VERSION = "v52";
 
 let state = {
   entries: [],
@@ -40,6 +40,7 @@ let logbookFilter = "all";
 let editingEntryId = null;
 let editReturnScreen = null;
 let editReturnScrollY = 0;
+let editOriginalComparableData = null;
 let placementsBackAction = () => showScreen("homeScreen");
 let specialtiesProceduresBackAction = () => showScreen("homeScreen");
 let activeHomeGuard = null;
@@ -794,6 +795,7 @@ function startEntry(type) {
   editingEntryId = null;
   editReturnScreen = null;
   editReturnScrollY = 0;
+  editOriginalComparableData = null;
   draft = {
     id: makeId(),
     type,
@@ -830,6 +832,8 @@ function editEntry(entryId) {
   if (draft.type === "procedure" && !draft.context && draft.location) {
     draft.context = draft.location;
   }
+
+  editOriginalComparableData = getComparableEntryData(draft);
 
   wizardSteps = entry.type === "procedure" ? procedureSteps : cpdSteps;
   wizardIndex = 0;
@@ -945,12 +949,9 @@ function getComparableEntryData(entry) {
 }
 
 function hasUnsavedEditChanges() {
-  if (!editingEntryId) return false;
+  if (!editingEntryId || !draft || !editOriginalComparableData) return false;
 
-  const original = getOriginalEditingEntry();
-  if (!original || !draft) return false;
-
-  return JSON.stringify(getComparableEntryData(draft)) !== JSON.stringify(getComparableEntryData(original));
+  return JSON.stringify(getComparableEntryData(draft)) !== JSON.stringify(editOriginalComparableData);
 }
 
 function updateEditSaveShortcuts() {
@@ -1258,6 +1259,7 @@ function cancelEntry() {
   editingEntryId = null;
   editReturnScreen = null;
   editReturnScrollY = 0;
+  editOriginalComparableData = null;
   currentEntryType = null;
   wizardSteps = [];
   wizardIndex = 0;
@@ -1271,6 +1273,7 @@ function abandonEditToHome() {
   editingEntryId = null;
   editReturnScreen = null;
   editReturnScrollY = 0;
+  editOriginalComparableData = null;
   currentEntryType = null;
   wizardSteps = [];
   wizardIndex = 0;
@@ -1301,6 +1304,7 @@ function saveCurrentEntryAsDraftAndGoHome() {
   editingEntryId = null;
   editReturnScreen = null;
   editReturnScrollY = 0;
+  editOriginalComparableData = null;
   currentEntryType = null;
   wizardSteps = [];
   wizardIndex = 0;
@@ -1389,31 +1393,44 @@ function updateFloatingNavigationControls() {
     screen.appendChild(backButton);
   }
 
-  const homeButton = document.createElement("button");
-  homeButton.type = "button";
-  homeButton.className = "home-shortcut-button";
-  homeButton.setAttribute("aria-label", "Return home");
-  homeButton.innerHTML = `
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M3.8 11.2 12 4.4l8.2 6.8" />
-      <path d="M6.5 10.7v8.1h4.1v-4.9h2.8v4.9h4.1v-8.1" />
-    </svg>
-  `;
-  homeButton.addEventListener("click", handleHomeShortcutRequest);
-  screen.appendChild(homeButton);
+  const shouldShowFloatingCancel = currentScreen === "wizardScreen" || typeof activeHomeGuard === "function";
 
-  if (currentScreen === "wizardScreen") {
+  if (!shouldShowFloatingCancel) {
+    const homeButton = document.createElement("button");
+    homeButton.type = "button";
+    homeButton.className = "home-shortcut-button";
+    homeButton.setAttribute("aria-label", "Return home");
+    homeButton.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M3.8 11.2 12 4.4l8.2 6.8" />
+        <path d="M6.5 10.7v8.1h4.1v-4.9h2.8v4.9h4.1v-8.1" />
+      </svg>
+    `;
+    homeButton.addEventListener("click", handleHomeShortcutRequest);
+    screen.appendChild(homeButton);
+  }
+
+  if (shouldShowFloatingCancel) {
     const cancelButton = document.createElement("button");
     cancelButton.type = "button";
     cancelButton.className = "floating-cancel-button";
-    cancelButton.setAttribute("aria-label", editingEntryId ? "Cancel edit" : "Cancel entry");
+    cancelButton.setAttribute("aria-label", currentScreen === "wizardScreen" ? (editingEntryId ? "Cancel edit" : "Cancel entry") : "Cancel");
     cancelButton.innerHTML = `
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path d="M7 7l10 10" />
         <path d="M17 7 7 17" />
       </svg>
     `;
-    cancelButton.addEventListener("click", editingEntryId ? cancelEdit : cancelEntry);
+    cancelButton.addEventListener("click", () => {
+      if (currentScreen === "wizardScreen") {
+        handleHomeShortcutRequest();
+        return;
+      }
+
+      if (typeof activeHomeGuard === "function") {
+        activeHomeGuard();
+      }
+    });
     screen.appendChild(cancelButton);
   }
 }
@@ -1429,6 +1446,7 @@ function setUnsavedFormHomeGuard(message = "Unsaved changes on this page will be
       ]
     });
   };
+  updateFloatingNavigationControls();
 }
 
 function cancelEdit() {
@@ -1458,6 +1476,7 @@ function saveEditedDraft() {
   editingEntryId = null;
   editReturnScreen = null;
   editReturnScrollY = 0;
+  editOriginalComparableData = null;
   saveState();
   markChanged();
 
@@ -2469,6 +2488,7 @@ function makeReviewScreen() {
       editingEntryId = null;
       editReturnScreen = null;
       editReturnScrollY = 0;
+      editOriginalComparableData = null;
       saveState();
       markChanged();
       showScreen("homeScreen");
@@ -2710,6 +2730,7 @@ function renderAddRemoveProceduresForCategory(specialtyId, categoryId) {
       setUnsavedFormHomeGuard("Unapplied procedure changes will be lost.");
     } else {
       activeHomeGuard = null;
+      updateFloatingNavigationControls();
     }
   };
 
