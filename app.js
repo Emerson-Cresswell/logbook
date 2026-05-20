@@ -39,6 +39,11 @@ let editingEntryId = null;
 let editReturnScreen = null;
 let editReturnScrollY = 0;
 let placementsBackAction = () => showScreen("homeScreen");
+let touchStartX = 0;
+let touchStartY = 0;
+let touchStartTime = 0;
+let touchTrackingBackSwipe = false;
+
 
 const procedureSteps = [
   "date",
@@ -477,21 +482,55 @@ function markBackedUp() {
   renderBackupStatus();
 }
 
-function showScreen(screenId) {
-  document.querySelectorAll(".screen").forEach(screen => {
-    screen.classList.remove("active");
-  });
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
-  const screen = document.getElementById(screenId);
-  if (!screen) return;
-
-  screen.classList.add("active");
-  currentScreen = screenId;
-
+function renderScreenSideEffects(screenId) {
   if (screenId === "logbookScreen") renderLogbook();
   if (screenId === "summariesScreen") renderSummaries();
   if (screenId === "placementsScreen") renderPlacements();
   if (screenId === "homeScreen" || screenId === "backupScreen") renderBackupStatus();
+}
+
+function animateScreenBackTransition(previousScreen, nextScreen) {
+  if (!previousScreen || !nextScreen || previousScreen === nextScreen || prefersReducedMotion()) return;
+
+  const rect = previousScreen.getBoundingClientRect();
+  const oldPage = previousScreen.cloneNode(true);
+  oldPage.removeAttribute("id");
+  oldPage.classList.add("wizard-gesture-clone", "screen-slide-out-right");
+  oldPage.style.top = `${rect.top}px`;
+  oldPage.style.left = `${rect.left}px`;
+  oldPage.style.width = `${rect.width}px`;
+  oldPage.style.minHeight = `${rect.height}px`;
+
+  document.body.appendChild(oldPage);
+  nextScreen.classList.add("screen-slide-in-left");
+
+  window.setTimeout(() => {
+    oldPage.remove();
+    nextScreen.classList.remove("screen-slide-in-left");
+  }, 260);
+}
+
+function showScreen(screenId, options = {}) {
+  const animationDirection = typeof options === "string" ? options : options.direction;
+  const previousScreen = document.querySelector(".screen.active");
+  const screen = document.getElementById(screenId);
+  if (!screen) return;
+
+  document.querySelectorAll(".screen").forEach(item => {
+    item.classList.remove("active");
+  });
+
+  screen.classList.add("active");
+  currentScreen = screenId;
+  renderScreenSideEffects(screenId);
+
+  if (previousScreen && previousScreen !== screen && animationDirection === "back") {
+    animateScreenBackTransition(previousScreen, screen);
+  }
 }
 
 function renderBackupStatus() {
@@ -735,24 +774,29 @@ function editEntry(entryId) {
   renderWizard();
 }
 
-function goWizardBack() {
+function goWizardBack(options = {}) {
   const previousIndex = findNextRelevantIndex(wizardIndex, -1);
+  const animated = Boolean(options && options.animated);
 
   if (previousIndex !== null) {
-    wizardIndex = previousIndex;
-    renderWizard();
+    if (animated) {
+      renderWizardBackStep(previousIndex);
+    } else {
+      wizardIndex = previousIndex;
+      renderWizard();
+    }
     return;
   }
 
   if (editingEntryId && editReturnScreen === "logbookScreen") {
-    showScreen("logbookScreen");
+    showScreen("logbookScreen", animated ? { direction: "back" } : {});
     requestAnimationFrame(() => {
       window.scrollTo(0, editReturnScrollY);
     });
     return;
   }
 
-  showScreen("entryTypeScreen");
+  showScreen("entryTypeScreen", animated ? { direction: "back" } : {});
 }
 
 function nextWizardStep() {
@@ -762,6 +806,42 @@ function nextWizardStep() {
     wizardIndex = nextIndex;
     renderWizard();
   }
+}
+
+function renderWizardBackStep(previousIndex) {
+  if (prefersReducedMotion()) {
+    wizardIndex = previousIndex;
+    renderWizard();
+    return;
+  }
+
+  const wizardScreen = document.getElementById("wizardScreen");
+
+  if (!wizardScreen || !wizardScreen.classList.contains("active")) {
+    wizardIndex = previousIndex;
+    renderWizard();
+    return;
+  }
+
+  const rect = wizardScreen.getBoundingClientRect();
+  const oldPage = wizardScreen.cloneNode(true);
+  oldPage.removeAttribute("id");
+  oldPage.classList.add("wizard-gesture-clone", "screen-slide-out-right");
+  oldPage.style.top = `${rect.top}px`;
+  oldPage.style.left = `${rect.left}px`;
+  oldPage.style.width = `${rect.width}px`;
+  oldPage.style.minHeight = `${rect.height}px`;
+
+  document.body.appendChild(oldPage);
+
+  wizardIndex = previousIndex;
+  renderWizard();
+  wizardScreen.classList.add("screen-slide-in-left");
+
+  window.setTimeout(() => {
+    oldPage.remove();
+    wizardScreen.classList.remove("screen-slide-in-left");
+  }, 260);
 }
 
 function getOriginalEditingEntry() {
@@ -2903,7 +2983,10 @@ function importJsonBackup(file) {
       state.placements = imported.placements || [];
       state.customOptions = imported.customOptions || emptyOptionStore();
       state.hiddenDefaultOptions = imported.hiddenDefaultOptions || emptyOptionStore();
-      state.backup = imported.backup || { lastBackupAt: null, changeCountSinceBackup: 0 };
+      state.backup = {
+        lastBackupAt: new Date().toISOString(),
+        changeCountSinceBackup: 0
+      };
 
       ensureStateShape();
       saveState();
@@ -2927,6 +3010,89 @@ function downloadBlob(blob, filename) {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function navigateBackOnePage(options = {}) {
+  const animated = Boolean(options && options.animated);
+
+  if (currentScreen === "wizardScreen") {
+    goWizardBack({ animated });
+    return;
+  }
+
+  if (currentScreen === "entryTypeScreen") {
+    showScreen("homeScreen", animated ? { direction: "back" } : {});
+    return;
+  }
+
+  if (currentScreen === "logbookScreen") {
+    showScreen("homeScreen", animated ? { direction: "back" } : {});
+    return;
+  }
+
+  if (currentScreen === "summariesScreen") {
+    showScreen("homeScreen", animated ? { direction: "back" } : {});
+    return;
+  }
+
+  if (currentScreen === "backupScreen") {
+    showScreen("homeScreen", animated ? { direction: "back" } : {});
+    return;
+  }
+
+  if (currentScreen === "placementsScreen") {
+    placementsBackAction();
+  }
+}
+
+function isInteractiveElement(element) {
+  return Boolean(element && element.closest("button, a, input, textarea, select, summary, label"));
+}
+
+function attachBackSwipeGesture() {
+  document.addEventListener("touchstart", event => {
+    if (!event.touches || event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchStartTime = Date.now();
+    touchTrackingBackSwipe = touch.clientX <= 44 && !isInteractiveElement(event.target);
+  }, { passive: true });
+
+  document.addEventListener("touchmove", event => {
+    if (!touchTrackingBackSwipe || !event.touches || event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = Math.abs(touch.clientY - touchStartY);
+
+    if (deltaX > 12 && deltaY < 36 && event.cancelable) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+
+  document.addEventListener("touchend", event => {
+    if (!touchTrackingBackSwipe || !event.changedTouches || event.changedTouches.length !== 1) {
+      touchTrackingBackSwipe = false;
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = Math.abs(touch.clientY - touchStartY);
+    const elapsed = Date.now() - touchStartTime;
+
+    touchTrackingBackSwipe = false;
+
+    if (deltaX >= 72 && deltaY <= 70 && elapsed <= 900) {
+      navigateBackOnePage({ animated: true });
+    }
+  }, { passive: true });
+
+  document.addEventListener("touchcancel", () => {
+    touchTrackingBackSwipe = false;
+  }, { passive: true });
 }
 
 function bindClick(id, handler) {
@@ -3019,6 +3185,7 @@ if ("serviceWorker" in navigator) {
 
 function init() {
   attachEvents();
+  attachBackSwipeGesture();
 
   try {
     loadState();
