@@ -1,4 +1,4 @@
-const CACHE_NAME = "procedure-logbook-v48";
+const CACHE_NAME = "procedure-logbook-v49-force";
 
 const FILES_TO_CACHE = [
   "./",
@@ -35,10 +35,44 @@ self.addEventListener("activate", event => {
   );
 });
 
+function isAppShellRequest(request) {
+  const url = new URL(request.url);
+  if (request.mode === "navigate") return true;
+  if (url.origin !== self.location.origin) return false;
+
+  return [
+    "/logbook/",
+    "/logbook/index.html",
+    "/logbook/app.js",
+    "/logbook/styles.css",
+    "/logbook/manifest.json",
+    "/logbook/service-worker.js"
+  ].includes(url.pathname);
+}
+
 self.addEventListener("fetch", event => {
+  if (event.request.method !== "GET") return;
+
+  if (isAppShellRequest(event.request)) {
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" })
+        .then(networkResponse => {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
-      return cachedResponse || fetch(event.request);
+      return cachedResponse || fetch(event.request).then(networkResponse => {
+        const responseClone = networkResponse.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+        return networkResponse;
+      });
     })
   );
 });
