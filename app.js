@@ -1,5 +1,5 @@
 const STORAGE_KEY = "procedureLogbookData_v1";
-const APP_VERSION = "v48";
+const APP_VERSION = "v49";
 
 let state = {
   entries: [],
