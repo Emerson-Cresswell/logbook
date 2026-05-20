@@ -1,9 +1,11 @@
 const STORAGE_KEY = "procedureLogbookData_v1";
+const APP_VERSION = "v44";
 
 let state = {
   entries: [],
   hospitals: [],
   placements: [],
+  procedureSettings: emptyProcedureSettings(),
   customOptions: {
     specialty: [],
     context: [],
@@ -39,6 +41,7 @@ let editingEntryId = null;
 let editReturnScreen = null;
 let editReturnScrollY = 0;
 let placementsBackAction = () => showScreen("homeScreen");
+let specialtiesProceduresBackAction = () => showScreen("homeScreen");
 
 const procedureSteps = [
   "date",
@@ -71,13 +74,59 @@ const cpdSteps = [
   "review"
 ];
 
+const defaultSpecialties = [
+  { id: "critical-care", name: "Critical Care" },
+  { id: "anaesthetics", name: "Anaesthetics" },
+  { id: "emergency-medicine", name: "Emergency Medicine" },
+  { id: "acute-medicine", name: "Acute Medicine" }
+];
+
+const defaultProcedureCategories = [
+  { id: "vascular-access", name: "Line insertion" },
+  { id: "airway", name: "Airway" },
+  { id: "ultrasound", name: "Ultrasound" },
+  { id: "drains", name: "Drains" },
+  { id: "halo", name: "HALO procedures" },
+  { id: "other", name: "Other procedures" }
+];
+
+const defaultProcedureLibrary = [
+  { id: "central-venous-catheter", name: "Central venous catheter", needsSite: true, needsTechnique: false },
+  { id: "arterial-line", name: "Arterial line", needsSite: true, needsTechnique: true },
+  { id: "intubation", name: "Intubation", needsSite: false, needsTechnique: false },
+  { id: "chest-drain", name: "Chest drain", needsSite: true, needsTechnique: false },
+  { id: "lumbar-puncture", name: "Lumbar puncture", needsSite: false, needsTechnique: false },
+  { id: "ascitic-drain", name: "Ascitic drain", needsSite: true, needsTechnique: false },
+  { id: "bronchoscopy", name: "Bronchoscopy", needsSite: false, needsTechnique: false },
+  { id: "tracheostomy-related-procedure", name: "Tracheostomy-related procedure", needsSite: false, needsTechnique: false },
+  { id: "other", name: "Other", needsSite: false, needsTechnique: false }
+];
+
+const defaultSpecialtyProcedureAssignments = {
+  "critical-care": {
+    "vascular-access": ["central-venous-catheter", "arterial-line"],
+    "airway": ["intubation", "tracheostomy-related-procedure", "bronchoscopy"],
+    "drains": ["chest-drain", "ascitic-drain"],
+    "other": ["lumbar-puncture", "other"]
+  },
+  "anaesthetics": {
+    "airway": ["intubation"],
+    "vascular-access": ["arterial-line", "central-venous-catheter"],
+    "other": ["other"]
+  },
+  "emergency-medicine": {
+    "halo": ["intubation", "chest-drain"],
+    "vascular-access": ["arterial-line", "central-venous-catheter"],
+    "other": ["lumbar-puncture", "other"]
+  },
+  "acute-medicine": {
+    "drains": ["ascitic-drain", "chest-drain"],
+    "other": ["lumbar-puncture", "other"]
+  }
+};
+
 const defaultProcedureOptions = {
-  specialty: [
-    "Critical Care",
-    "Anaesthetics",
-    "Emergency Medicine",
-    "Acute Medicine"
-  ],
+  specialty: defaultSpecialties.map(specialty => specialty.name),
   procedure: [
     "Central venous catheter",
     "Arterial line",
@@ -253,6 +302,14 @@ function emptyOptionStore() {
   };
 }
 
+function emptyProcedureSettings() {
+  return {
+    hiddenAssignments: [],
+    customProcedures: [],
+    customAssignments: []
+  };
+}
+
 function cleanArray(value) {
   if (!Array.isArray(value)) return [];
 
@@ -292,6 +349,38 @@ function cleanOptionStore(store) {
   return base;
 }
 
+function cleanProcedureSettings(settings) {
+  const input = settings || {};
+  const output = emptyProcedureSettings();
+
+  output.hiddenAssignments = cleanArray(input.hiddenAssignments || []);
+
+  output.customProcedures = Array.isArray(input.customProcedures)
+    ? input.customProcedures
+        .map(item => ({
+          id: String(item && item.id ? item.id : makeId()),
+          name: String(item && item.name ? item.name : "").trim(),
+          needsSite: Boolean(item && item.needsSite),
+          needsTechnique: Boolean(item && item.needsTechnique),
+          createdAt: item && item.createdAt ? item.createdAt : new Date().toISOString(),
+          updatedAt: item && item.updatedAt ? item.updatedAt : new Date().toISOString()
+        }))
+        .filter(item => item.name)
+    : [];
+
+  output.customAssignments = Array.isArray(input.customAssignments)
+    ? input.customAssignments
+        .map(item => ({
+          procedureId: String(item && item.procedureId ? item.procedureId : ""),
+          specialtyId: String(item && item.specialtyId ? item.specialtyId : ""),
+          categoryId: String(item && item.categoryId ? item.categoryId : "")
+        }))
+        .filter(item => item.procedureId && item.specialtyId && item.categoryId)
+    : [];
+
+  return output;
+}
+
 
 function cleanPlacements(value) {
   if (!Array.isArray(value)) return [];
@@ -300,8 +389,8 @@ function cleanPlacements(value) {
   const cleaned = [];
 
   value.forEach((item, index) => {
-    const source = typeof item === "string" ? { name: item } : (item || {});
-    const name = String(source.name || source.title || "").trim();
+    const source = item || {};
+    const name = String(source.name || "").trim();
     const startDate = String(source.startDate || "").trim();
     const endDate = String(source.endDate || "").trim();
 
@@ -421,6 +510,7 @@ function ensureStateShape() {
   state.entries = Array.isArray(state.entries) ? state.entries : [];
   state.hospitals = cleanArray(state.hospitals).sort((a, b) => a.localeCompare(b));
   state.placements = cleanPlacements(state.placements);
+  state.procedureSettings = cleanProcedureSettings(state.procedureSettings);
   state.customOptions = cleanOptionStore(state.customOptions);
   state.hiddenDefaultOptions = cleanOptionStore(state.hiddenDefaultOptions);
   state.backup = state.backup || { lastBackupAt: null, changeCountSinceBackup: 0 };
@@ -453,6 +543,7 @@ function loadState() {
       entries: parsed.entries || [],
       hospitals: parsed.hospitals || [],
       placements: parsed.placements || [],
+      procedureSettings: parsed.procedureSettings || emptyProcedureSettings(),
       customOptions: parsed.customOptions || emptyOptionStore(),
       hiddenDefaultOptions: parsed.hiddenDefaultOptions || emptyOptionStore(),
       backup: parsed.backup || { lastBackupAt: null, changeCountSinceBackup: 0 }
@@ -491,6 +582,8 @@ function showScreen(screenId) {
   if (screenId === "logbookScreen") renderLogbook();
   if (screenId === "summariesScreen") renderSummaries();
   if (screenId === "placementsScreen") renderPlacements();
+  if (screenId === "specialtiesProceduresScreen") renderSpecialtiesProceduresHome();
+  if (screenId === "homeScreen") renderVersionLabel();
   if (screenId === "homeScreen" || screenId === "backupScreen") renderBackupStatus();
 }
 
@@ -724,9 +817,6 @@ function editEntry(entryId) {
   currentEntryType = entry.type;
   draft = { ...entry };
 
-  if (draft.type === "procedure" && !draft.context && draft.location) {
-    draft.context = draft.location;
-  }
 
   wizardSteps = entry.type === "procedure" ? procedureSteps : cpdSteps;
   wizardIndex = 0;
@@ -1000,7 +1090,7 @@ function getCurrentEntrySummaryItems() {
   if (currentEntryType === "procedure") {
     add("specialty", "Specialty", draft.specialty, original ? original.specialty : undefined);
     add("hospital", "Hospital", draft.hospital, original ? original.hospital : undefined);
-    add("context", "Location", draft.context, original ? (original.context || original.location) : undefined);
+    add("context", "Location", draft.context, original ? original.context : undefined);
     add("procedure", "Procedure", draft.procedure, original ? original.procedure : undefined);
 
     if (procedureSupportsSite(draft.procedure) || (original && procedureSupportsSite(original.procedure))) {
@@ -1414,6 +1504,46 @@ function renderShowHidePlacementsFromWizard(wrapper) {
   wrapper.appendChild(makeButton("Done", "button primary wizard-action-button", renderWizard));
 }
 
+
+function getSpecialtyIdByName(name) {
+  const match = defaultSpecialties.find(specialty => normaliseText(specialty.name) === normaliseText(name));
+  return match ? match.id : "";
+}
+
+function getSpecialtyNameById(id) {
+  const match = defaultSpecialties.find(specialty => specialty.id === id);
+  return match ? match.name : "";
+}
+
+function getProcedureById(id) {
+  const defaultMatch = defaultProcedureLibrary.find(procedure => procedure.id === id);
+  if (defaultMatch) return defaultMatch;
+  return (state.procedureSettings.customProcedures || []).find(procedure => procedure.id === id) || null;
+}
+
+function getProcedureCategoryName(categoryId) {
+  const match = defaultProcedureCategories.find(category => category.id === categoryId);
+  return match ? match.name : "Uncategorised";
+}
+
+function getAssignedProcedureIds(specialtyId, categoryId) {
+  const defaultIds = (((defaultSpecialtyProcedureAssignments[specialtyId] || {})[categoryId]) || []);
+  const customIds = (state.procedureSettings.customAssignments || [])
+    .filter(item => item.specialtyId === specialtyId && item.categoryId === categoryId)
+    .map(item => item.procedureId);
+  return [...defaultIds, ...customIds];
+}
+
+function getCategoryRowsForSpecialty(specialtyId) {
+  return defaultProcedureCategories
+    .map(category => {
+      const procedures = getAssignedProcedureIds(specialtyId, category.id)
+        .map(getProcedureById)
+        .filter(Boolean);
+      return { ...category, procedures };
+    })
+    .filter(category => category.procedures.length > 0);
+}
 
 function getVisibleSpecialties() {
   const hidden = getStoredOptionList("hiddenDefaultOptions", "specialty").map(normaliseText);
@@ -1937,6 +2067,107 @@ function makeReviewScreen() {
   return wrapper;
 }
 
+function setSpecialtiesProceduresBackAction(action) {
+  specialtiesProceduresBackAction = typeof action === "function" ? action : () => showScreen("homeScreen");
+}
+
+function setSpecialtiesProceduresTitle(text) {
+  const title = document.querySelector("#specialtiesProceduresScreen h2");
+  if (title) title.textContent = text;
+}
+
+function renderVersionLabel() {
+  const label = document.getElementById("appVersionLabel");
+  if (label) label.textContent = APP_VERSION;
+}
+
+function renderSpecialtiesProceduresHome() {
+  const container = document.getElementById("specialtiesProceduresContent");
+  if (!container) return;
+
+  setSpecialtiesProceduresTitle("Specialties & procedures");
+  setSpecialtiesProceduresBackAction(() => showScreen("homeScreen"));
+  container.innerHTML = "";
+
+  const intro = document.createElement("p");
+  intro.className = "help-text";
+  intro.textContent = "Manage which specialties and procedures appear when adding new procedure entries.";
+
+  container.append(
+    intro,
+    makeButton("Show/hide specialties", "button secondary wizard-action-button", renderSpecialtyVisibilityManagement),
+    makeButton("Show/hide procedures", "button secondary wizard-action-button", () => renderProcedureFoundationPreview("Show/hide procedures")),
+    makeButton("Manage procedures", "button secondary wizard-action-button", () => renderProcedureFoundationPreview("Manage procedures"))
+  );
+}
+
+function renderSpecialtyVisibilityManagement() {
+  const container = document.getElementById("specialtiesProceduresContent");
+  if (!container) return;
+
+  setSpecialtiesProceduresTitle("Show/hide specialties");
+  setSpecialtiesProceduresBackAction(renderSpecialtiesProceduresHome);
+  container.innerHTML = "";
+
+  const message = document.createElement("p");
+  message.className = "help-text";
+  message.textContent = "Tap a specialty to switch it between shown and hidden.";
+  container.appendChild(message);
+
+  const hidden = getStoredOptionList("hiddenDefaultOptions", "specialty").map(normaliseText);
+
+  defaultProcedureOptions.specialty.forEach(specialty => {
+    const isHidden = hidden.includes(normaliseText(specialty));
+    container.appendChild(makeSpecialtyVisibilityButton(specialty, isHidden, () => {
+      setSpecialtyHidden(specialty, !isHidden);
+      renderSpecialtyVisibilityManagement();
+    }));
+  });
+
+  container.appendChild(makeButton("Done", "button primary wizard-action-button", renderSpecialtiesProceduresHome));
+}
+
+function renderProcedureFoundationPreview(titleText) {
+  const container = document.getElementById("specialtiesProceduresContent");
+  if (!container) return;
+
+  setSpecialtiesProceduresTitle(titleText);
+  setSpecialtiesProceduresBackAction(renderSpecialtiesProceduresHome);
+  container.innerHTML = "";
+
+  const message = document.createElement("p");
+  message.className = "help-text";
+  message.textContent = "The procedure library structure is now in place. The next update will make this page interactive.";
+  container.appendChild(message);
+
+  defaultSpecialties.forEach(specialty => {
+    const card = document.createElement("div");
+    card.className = "procedure-foundation-card";
+
+    const heading = document.createElement("h3");
+    heading.textContent = specialty.name;
+    card.appendChild(heading);
+
+    const categories = getCategoryRowsForSpecialty(specialty.id);
+
+    if (categories.length === 0) {
+      const empty = document.createElement("p");
+      empty.textContent = "No procedures configured yet.";
+      card.appendChild(empty);
+    } else {
+      categories.forEach(category => {
+        const row = document.createElement("p");
+        row.innerHTML = `<strong>${category.name}</strong>: ${category.procedures.map(procedure => procedure.name).join(", ")}`;
+        card.appendChild(row);
+      });
+    }
+
+    container.appendChild(card);
+  });
+
+  container.appendChild(makeButton("Back", "button secondary wizard-action-button", renderSpecialtiesProceduresHome));
+}
+
 function makeButton(text, className, onClick) {
   const button = document.createElement("button");
   button.type = "button";
@@ -1966,20 +2197,6 @@ function setPlacementsBackAction(action) {
 function setPlacementsTitle(text) {
   const title = document.querySelector("#placementsScreen h2");
   if (title) title.textContent = text;
-}
-
-function makePlacementCancelLink() {
-  const wrapper = document.createElement("div");
-  wrapper.className = "placement-top-action";
-
-  const cancelButton = document.createElement("button");
-  cancelButton.type = "button";
-  cancelButton.className = "cancel-edit-link placement-cancel-link";
-  cancelButton.textContent = "Cancel";
-  cancelButton.addEventListener("click", renderPlacements);
-
-  wrapper.appendChild(cancelButton);
-  return wrapper;
 }
 
 function togglePlacementVisibility(placement) {
@@ -2302,130 +2519,6 @@ function showDeletePlacementDialog(placementId) {
 }
 
 
-function renderDeletePlacementsScreen(selectedIds = []) {
-  const container = document.getElementById("placementsContent");
-  if (!container) return;
-
-  const selectedPlacementIds = new Set(selectedIds);
-
-  setPlacementsTitle("Delete placements");
-  setPlacementsBackAction(renderPlacements);
-  container.innerHTML = "";
-
-  const message = document.createElement("p");
-  message.className = "help-text";
-  message.textContent = "Select one or more placements to delete.";
-
-  const list = document.createElement("div");
-  list.className = "delete-placement-list";
-
-  state.placements.forEach(placement => {
-    const isSelected = selectedPlacementIds.has(placement.id);
-    const button = makeButton(
-      formatPlacementLabel(placement),
-      isSelected ? "choice-button delete-select-button selected" : "choice-button delete-select-button",
-      () => {
-        if (selectedPlacementIds.has(placement.id)) {
-          selectedPlacementIds.delete(placement.id);
-        } else {
-          selectedPlacementIds.add(placement.id);
-        }
-
-        renderDeletePlacementsScreen(Array.from(selectedPlacementIds));
-      }
-    );
-
-    list.appendChild(button);
-  });
-
-  const deleteSelectedButton = makeButton(
-    "Delete selected placements",
-    selectedPlacementIds.size > 0
-      ? "button danger-button wizard-action-button"
-      : "button secondary wizard-action-button disabled-action-button",
-    () => {
-      if (selectedPlacementIds.size === 0) return;
-      renderConfirmDeletePlacementsScreen(Array.from(selectedPlacementIds));
-    }
-  );
-  deleteSelectedButton.disabled = selectedPlacementIds.size === 0;
-
-  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderPlacements);
-
-  const actionRow = document.createElement("div");
-  actionRow.className = "action-row";
-  actionRow.append(cancelButton, deleteSelectedButton);
-
-  container.append(
-    message,
-    list,
-    actionRow
-  );
-}
-
-function renderConfirmDeletePlacementsScreen(selectedIds = []) {
-  const container = document.getElementById("placementsContent");
-  if (!container) return;
-
-  const selectedPlacementIds = new Set(selectedIds);
-  const selectedPlacements = state.placements.filter(placement => selectedPlacementIds.has(placement.id));
-
-  if (selectedPlacements.length === 0) {
-    renderDeletePlacementsScreen();
-    return;
-  }
-
-  setPlacementsTitle("Confirm deletion");
-  setPlacementsBackAction(() => renderDeletePlacementsScreen(selectedIds));
-  container.innerHTML = "";
-
-  const message = document.createElement("p");
-  message.className = "help-text";
-  message.textContent = "These placements will be deleted. Existing logbook records will not be changed.";
-
-  const list = document.createElement("div");
-  list.className = "delete-confirm-list";
-
-  selectedPlacements.forEach(placement => {
-    const item = document.createElement("div");
-    item.className = "delete-confirm-item";
-
-    const name = document.createElement("h3");
-    name.textContent = placement.name;
-
-    const dates = document.createElement("p");
-    dates.textContent = formatPlacementRange(placement);
-
-    item.append(name, dates);
-    list.appendChild(item);
-  });
-
-  const confirmButton = makeButton("Confirm deletion", "button danger-button wizard-action-button", () => {
-    state.placements = state.placements.filter(placement => !selectedPlacementIds.has(placement.id));
-    markChanged();
-    renderPlacements();
-  });
-
-  const cancelButton = makeButton("Cancel", "button secondary wizard-action-button", renderPlacements);
-
-  const actionRow = document.createElement("div");
-  actionRow.className = "action-row";
-  actionRow.append(cancelButton, confirmButton);
-
-  container.append(
-    message,
-    list,
-    actionRow
-  );
-}
-
-function makeFieldLabel(text) {
-  const label = document.createElement("label");
-  label.className = "field-label";
-  label.textContent = text;
-  return label;
-}
-
 function renderLogbook() {
   const searchInput = document.getElementById("searchInput");
   const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
@@ -2610,6 +2703,7 @@ function buildBackupObject() {
     entries: state.entries,
     hospitals: state.hospitals,
     placements: state.placements,
+    procedureSettings: state.procedureSettings,
     customOptions: state.customOptions,
     hiddenDefaultOptions: state.hiddenDefaultOptions,
     backup: state.backup
@@ -2901,6 +2995,7 @@ function importJsonBackup(file) {
       state.entries = imported.entries || [];
       state.hospitals = imported.hospitals || [];
       state.placements = imported.placements || [];
+      state.procedureSettings = imported.procedureSettings || emptyProcedureSettings();
       state.customOptions = imported.customOptions || emptyOptionStore();
       state.hiddenDefaultOptions = imported.hiddenDefaultOptions || emptyOptionStore();
       state.backup = {
@@ -2958,8 +3053,16 @@ function attachEvents() {
     showScreen("placementsScreen");
   });
 
+  bindClick("manageSpecialtiesProceduresButton", () => {
+    showScreen("specialtiesProceduresScreen");
+  });
+
   bindClick("placementsBackButton", () => {
     placementsBackAction();
+  });
+
+  bindClick("specialtiesProceduresBackButton", () => {
+    specialtiesProceduresBackAction();
   });
 
   bindClick("viewBackupButton", () => {
@@ -3033,6 +3136,7 @@ function init() {
 
   try {
     renderBackupStatus();
+    renderVersionLabel();
     showScreen("homeScreen");
   } catch (error) {
     console.error("App initialisation failed while rendering the home screen.", error);
