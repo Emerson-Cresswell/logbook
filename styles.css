@@ -1029,7 +1029,7 @@ textarea:focus-visible {
   border-color: #9fb0c3;
 }
 
-/* V44 procedure foundation and version label */
+/* V45 procedure management, version label and app-native dialogs */
 #homeScreen {
   position: relative;
   min-height: calc(100dvh - 120px);
@@ -1071,4 +1071,91 @@ textarea:focus-visible {
 
 .procedure-foundation-card strong {
   color: var(--text);
+}
+
+.management-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.management-card {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 46%, #edf2f7 100%);
+  border: 1px solid #b4c2d1;
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+}
+
+.management-card:active {
+  transform: translateY(1px);
+}
+
+.management-card.management-hidden {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.management-card-text {
+  min-width: 0;
+}
+
+.management-card h3 {
+  margin: 0 0 3px;
+  font-size: 1rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.management-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkbox-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  background: var(--paper-glass-button);
+  border: 1px solid #aebdcb;
+  border-radius: 14px;
+  padding: 13px 14px;
+  margin-bottom: 12px;
+  color: var(--text);
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96), inset 0 -4px 9px rgba(30, 41, 59, 0.07);
+}
+
+.checkbox-row input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.disabled-choice {
+  opacity: 0.58;
+}
+
+.app-dialog-message {
+  white-space: pre-line;
 }
