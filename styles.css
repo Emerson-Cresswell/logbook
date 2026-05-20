@@ -548,7 +548,7 @@ h2 {
 .warning-text {
   margin-top: 18px;
   padding: 12px;
-  border-radius: 12px;
+  border-radius: 999px;
   background: #fff7ed;
   color: #9a3412;
   font-weight: 600;
@@ -980,7 +980,7 @@ textarea:focus-visible {
   margin-bottom: 14px;
   padding: 12px;
   overflow-wrap: anywhere;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96), inset 0 -4px 9px rgba(30, 41, 59, 0.07);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.96), inset 0 -4px 9px rgba(30, 41, 59, 0.07);
 }
 
 .dialog-placement-name h4 {
@@ -1168,13 +1168,13 @@ textarea:focus-visible {
 .home-shortcut-button {
   appearance: none;
   -webkit-appearance: none;
-  position: absolute;
-  top: 2px;
+  position: fixed;
   left: 50%;
-  z-index: 20;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 100;
   transform: translateX(-50%);
-  width: 38px;
-  height: 38px;
+  width: 64px;
+  height: 42px;
   border: 1px solid #9fb0c3;
   border-radius: 12px;
   background: var(--paper-glass-button);
@@ -1200,9 +1200,6 @@ textarea:focus-visible {
   transform: translate(-50%, 1px);
 }
 
-.wizard-top-row {
-  padding-right: 46px;
-}
 
 .dialog-stacked-actions {
   display: grid;
@@ -1276,4 +1273,45 @@ textarea:focus-visible {
 
 .procedure-select-pill:active:not(:disabled) {
   transform: translateY(1px);
+}
+
+
+/* V48 floating home shortcut and add/remove procedures */
+.screen:not(#homeScreen) {
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+}
+
+.procedure-top-actions {
+  margin: 10px 0 14px;
+}
+
+.procedure-top-actions .button + .button {
+  margin-top: 12px;
+}
+
+.procedure-change-add {
+  background: #eefcf7;
+}
+
+.procedure-change-remove {
+  background: #fff1f2;
+}
+
+.procedure-add-pill,
+.procedure-selected-pill,
+.procedure-remove-pill,
+.procedure-remove-selected-pill {
+  color: var(--text);
+}
+
+.procedure-selected-pill {
+  background: #dcfce7;
+}
+
+.procedure-remove-pill {
+  background: #fff7ed;
+}
+
+.procedure-remove-selected-pill {
+  background: #fee2e2;
 }
