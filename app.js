@@ -1,5 +1,5 @@
 const STORAGE_KEY = "procedureLogbookData_v1";
-const APP_VERSION = "v45";
+const APP_VERSION = "v46";
 
 let state = {
   entries: [],
@@ -2241,6 +2241,13 @@ function makeActionRow(buttons) {
   row.className = buttons.length === 1 ? "action-row single-action" : "action-row";
   buttons.forEach(button => row.appendChild(button));
   return row;
+}
+
+function makeFieldLabel(text) {
+  const label = document.createElement("label");
+  label.className = "field-label";
+  label.textContent = text;
+  return label;
 }
 
 
