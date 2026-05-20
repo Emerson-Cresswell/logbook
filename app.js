@@ -73,12 +73,10 @@ const cpdSteps = [
 
 const defaultProcedureOptions = {
   specialty: [
-    "ICU",
+    "Critical Care",
     "Anaesthetics",
     "Emergency Medicine",
-    "Acute Medicine",
-    "Surgery",
-    "Other"
+    "Acute Medicine"
   ],
   procedure: [
     "Central venous catheter",
@@ -183,7 +181,6 @@ const defaultCpdOptions = {
 };
 
 const configurableFields = [
-  "specialty",
   "context",
   "procedure",
   "site",
@@ -856,7 +853,7 @@ function renderWizard() {
 
   if (step === "specialty") {
     title.textContent = "Specialty";
-    content.appendChild(makeChoiceScreen("specialty"));
+    content.appendChild(makeSpecialtyScreen());
     return;
   }
 
@@ -1411,6 +1408,111 @@ function renderShowHidePlacementsFromWizard(wrapper) {
       placement.updatedAt = new Date().toISOString();
       markChanged();
       renderShowHidePlacementsFromWizard(wrapper);
+    }));
+  });
+
+  wrapper.appendChild(makeButton("Done", "button primary wizard-action-button", renderWizard));
+}
+
+
+function getVisibleSpecialties() {
+  const hidden = getStoredOptionList("hiddenDefaultOptions", "specialty").map(normaliseText);
+  return defaultProcedureOptions.specialty.filter(specialty => !hidden.includes(normaliseText(specialty)));
+}
+
+function setSpecialtyHidden(specialty, hidden) {
+  const currentHidden = getStoredOptionList("hiddenDefaultOptions", "specialty");
+  const key = normaliseText(specialty);
+  let nextHidden = currentHidden.filter(item => normaliseText(item) !== key);
+
+  if (hidden) {
+    nextHidden.push(specialty);
+  }
+
+  setStoredOptionList("hiddenDefaultOptions", "specialty", nextHidden);
+  markChanged();
+}
+
+function makeSpecialtyScreen() {
+  const wrapper = document.createElement("div");
+  const specialties = getVisibleSpecialties();
+
+  if (editingEntryId && draft.specialty) {
+    wrapper.appendChild(makeButton(`Keep current: ${draft.specialty}`, "choice-button keep-current-button", () => {
+      nextWizardStep();
+    }));
+  }
+
+  if (specialties.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "help-text";
+    empty.textContent = "All specialties are currently hidden. Use Show/hide specialties below to make specialties visible again.";
+    wrapper.appendChild(empty);
+  }
+
+  specialties.forEach(specialty => {
+    wrapper.appendChild(makeButton(specialty, "choice-button", () => {
+      draft.specialty = specialty;
+      delete draft.procedure;
+      delete draft.site;
+      delete draft.technique;
+      nextWizardStep();
+    }));
+  });
+
+  wrapper.appendChild(makeButton("Show/hide specialties", "button secondary wizard-action-button", () => {
+    renderShowHideSpecialtiesFromWizard(wrapper);
+  }));
+
+  return appendEditSaveButton(wrapper);
+}
+
+function makeSpecialtyVisibilityButton(specialty, hidden, onClick) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = hidden
+    ? "choice-button visibility-option hidden-option"
+    : "choice-button visibility-option shown-option";
+
+  const content = document.createElement("span");
+  content.className = "visibility-option-content";
+
+  const text = document.createElement("span");
+  text.className = "visibility-option-text";
+
+  const name = document.createElement("strong");
+  name.textContent = specialty;
+
+  const description = document.createElement("small");
+  description.textContent = hidden ? "Hidden from new entries" : "Shown when adding entries";
+
+  text.append(name, description);
+
+  const status = document.createElement("span");
+  status.className = hidden ? "status-pill status-hidden" : "status-pill status-shown";
+  status.textContent = hidden ? "Hidden" : "Shown";
+
+  content.append(text, status);
+  button.appendChild(content);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function renderShowHideSpecialtiesFromWizard(wrapper) {
+  wrapper.innerHTML = "";
+
+  const message = document.createElement("p");
+  message.className = "help-text";
+  message.textContent = "Tap a specialty to switch it between shown and hidden.";
+  wrapper.appendChild(message);
+
+  const hidden = getStoredOptionList("hiddenDefaultOptions", "specialty").map(normaliseText);
+
+  defaultProcedureOptions.specialty.forEach(specialty => {
+    const isHidden = hidden.includes(normaliseText(specialty));
+    wrapper.appendChild(makeSpecialtyVisibilityButton(specialty, isHidden, () => {
+      setSpecialtyHidden(specialty, !isHidden);
+      renderShowHideSpecialtiesFromWizard(wrapper);
     }));
   });
 
