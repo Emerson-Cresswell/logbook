@@ -1,5 +1,5 @@
 const STORAGE_KEY = "procedureLogbookData_v1";
-const APP_VERSION = "v44";
+const APP_VERSION = "v45";
 
 let state = {
   entries: [],
@@ -382,6 +382,38 @@ function cleanProcedureSettings(settings) {
 }
 
 
+function extractPlacementName(source) {
+  if (typeof source === "string") return source.trim();
+
+  if (!source || typeof source !== "object") return "";
+
+  return String(
+    source.name ||
+    source.title ||
+    source.label ||
+    source.value ||
+    source.placementName ||
+    source.specialtyPlacement ||
+    source.specialty ||
+    ""
+  ).trim();
+}
+
+function extractPlacementDate(source, key) {
+  if (!source || typeof source !== "object") return "";
+
+  const aliases = key === "start"
+    ? ["startDate", "fromDate", "from", "dateFrom", "placementStartDate"]
+    : ["endDate", "toDate", "to", "dateTo", "placementEndDate"];
+
+  for (const alias of aliases) {
+    const value = String(source[alias] || "").trim();
+    if (value) return value;
+  }
+
+  return "";
+}
+
 function cleanPlacements(value) {
   if (!Array.isArray(value)) return [];
 
@@ -390,9 +422,9 @@ function cleanPlacements(value) {
 
   value.forEach((item, index) => {
     const source = item || {};
-    const name = String(source.name || "").trim();
-    const startDate = String(source.startDate || "").trim();
-    const endDate = String(source.endDate || "").trim();
+    const name = extractPlacementName(source);
+    const startDate = extractPlacementDate(source, "start");
+    const endDate = extractPlacementDate(source, "end");
 
     if (!name) return;
 
@@ -401,7 +433,7 @@ function cleanPlacements(value) {
     seen.add(key);
 
     cleaned.push({
-      id: String(source.id || `placement-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`),
+      id: String(source.id || source.placementId || `placement-${Date.now()}-${index}-${Math.random().toString(16).slice(2)}`),
       name,
       startDate,
       endDate,
@@ -520,6 +552,26 @@ function ensureStateShape() {
   }
 }
 
+function runTemporaryV45Migration() {
+  // One-off migration for early test data created before the placements/procedure foundation was settled.
+  // This normalises placement objects and saves the cleaned shape so the next version can remove this helper.
+  ensureStateShape();
+
+  const migratedState = {
+    ...state,
+    temporaryMigrationCompletedAt: new Date().toISOString(),
+    dataVersion: 45
+  };
+
+  state = migratedState;
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.error("Unable to save migrated data.", error);
+  }
+}
+
 function saveState() {
   ensureStateShape();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -548,7 +600,7 @@ function loadState() {
       hiddenDefaultOptions: parsed.hiddenDefaultOptions || emptyOptionStore(),
       backup: parsed.backup || { lastBackupAt: null, changeCountSinceBackup: 0 }
     };
-    ensureStateShape();
+    runTemporaryV45Migration();
   } catch (error) {
     console.error("There was a problem loading saved data.", error);
     alert("There was a problem loading saved data. The app will open with a blank local copy. Your existing browser data has not been deleted.");
@@ -2157,7 +2209,9 @@ function renderProcedureFoundationPreview(titleText) {
     } else {
       categories.forEach(category => {
         const row = document.createElement("p");
-        row.innerHTML = `<strong>${category.name}</strong>: ${category.procedures.map(procedure => procedure.name).join(", ")}`;
+        const categoryName = document.createElement("strong");
+        categoryName.textContent = category.name;
+        row.append(categoryName, `: ${category.procedures.map(procedure => procedure.name).join(", ")}`);
         card.appendChild(row);
       });
     }
