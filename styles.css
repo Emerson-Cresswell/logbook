@@ -1029,7 +1029,29 @@ textarea:focus-visible {
   border-color: #9fb0c3;
 }
 
-/* V40: back-swipe page animation */
+/* V41: interactive back-swipe page animation */
+.swipe-back-active {
+  overflow: hidden;
+}
+
+.screen-swipe-front {
+  display: block !important;
+  position: fixed !important;
+  z-index: 1000;
+  background: var(--bg);
+  pointer-events: none;
+  overflow: hidden;
+  box-shadow: none;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.screen-swipe-underlay {
+  display: block !important;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
 .screen-slide-in-left {
   animation: screenSlideInFromLeft 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
   will-change: transform, opacity;
