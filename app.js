@@ -39,10 +39,22 @@ let editingEntryId = null;
 let editReturnScreen = null;
 let editReturnScrollY = 0;
 let placementsBackAction = () => showScreen("homeScreen");
-let touchStartX = 0;
-let touchStartY = 0;
-let touchStartTime = 0;
-let touchTrackingBackSwipe = false;
+let backSwipeGesture = {
+  possible: false,
+  active: false,
+  startX: 0,
+  startY: 0,
+  latestX: 0,
+  latestY: 0,
+  startTime: 0,
+  context: null,
+  frontClone: null,
+  underlayScreen: null,
+  width: 1,
+  originalScreen: "",
+  originalWizardIndex: 0
+};
+let suppressNextClickUntil = 0;
 
 
 const procedureSteps = [
@@ -3045,54 +3057,327 @@ function navigateBackOnePage(options = {}) {
   }
 }
 
-function isInteractiveElement(element) {
-  return Boolean(element && element.closest("button, a, input, textarea, select, summary, label"));
+function isTextEditingElement(element) {
+  return Boolean(element && element.closest("input, textarea, select, [contenteditable='true']"));
+}
+
+function getBackSwipeContext() {
+  if (currentScreen === "homeScreen") return null;
+
+  if (currentScreen === "wizardScreen") {
+    const previousIndex = findNextRelevantIndex(wizardIndex, -1);
+
+    if (previousIndex !== null) {
+      return {
+        kind: "wizard-step",
+        originalScreen: "wizardScreen",
+        originalWizardIndex: wizardIndex,
+        previousWizardIndex: previousIndex
+      };
+    }
+
+    if (editingEntryId && editReturnScreen === "logbookScreen") {
+      return {
+        kind: "screen",
+        originalScreen: "wizardScreen",
+        targetScreen: "logbookScreen",
+        afterCommit: () => window.scrollTo(0, editReturnScrollY)
+      };
+    }
+
+    return {
+      kind: "screen",
+      originalScreen: "wizardScreen",
+      targetScreen: "entryTypeScreen"
+    };
+  }
+
+  if (["entryTypeScreen", "logbookScreen", "summariesScreen", "backupScreen"].includes(currentScreen)) {
+    return {
+      kind: "screen",
+      originalScreen: currentScreen,
+      targetScreen: "homeScreen"
+    };
+  }
+
+  return null;
+}
+
+function clearBackSwipeInlineStyles() {
+  if (backSwipeGesture.underlayScreen) {
+    backSwipeGesture.underlayScreen.classList.remove("screen-swipe-underlay");
+    backSwipeGesture.underlayScreen.style.transition = "";
+    backSwipeGesture.underlayScreen.style.transform = "";
+    backSwipeGesture.underlayScreen.style.opacity = "";
+    backSwipeGesture.underlayScreen.style.pointerEvents = "";
+  }
+
+  document.body.classList.remove("swipe-back-active");
+}
+
+function resetBackSwipeGesture() {
+  if (backSwipeGesture.frontClone) {
+    backSwipeGesture.frontClone.remove();
+  }
+
+  clearBackSwipeInlineStyles();
+
+  backSwipeGesture = {
+    possible: false,
+    active: false,
+    startX: 0,
+    startY: 0,
+    latestX: 0,
+    latestY: 0,
+    startTime: 0,
+    context: null,
+    frontClone: null,
+    underlayScreen: null,
+    width: 1,
+    originalScreen: "",
+    originalWizardIndex: 0
+  };
+}
+
+function makeSwipeFrontClone(activeScreen) {
+  const rect = activeScreen.getBoundingClientRect();
+  const clone = activeScreen.cloneNode(true);
+
+  clone.removeAttribute("id");
+  clone.classList.add("screen-swipe-front");
+  clone.style.top = `${rect.top}px`;
+  clone.style.left = `${rect.left}px`;
+  clone.style.width = `${rect.width}px`;
+  clone.style.minHeight = `${Math.max(rect.height, window.innerHeight)}px`;
+  clone.style.transition = "none";
+  clone.style.transform = "translate3d(0, 0, 0)";
+
+  document.body.appendChild(clone);
+  return clone;
+}
+
+function beginInteractiveBackSwipe() {
+  if (!backSwipeGesture.possible || backSwipeGesture.active || !backSwipeGesture.context) return false;
+  if (prefersReducedMotion()) return false;
+
+  const activeScreen = document.querySelector(".screen.active");
+  if (!activeScreen) return false;
+
+  const context = backSwipeGesture.context;
+  const frontClone = makeSwipeFrontClone(activeScreen);
+
+  backSwipeGesture.frontClone = frontClone;
+  backSwipeGesture.originalScreen = context.originalScreen;
+  backSwipeGesture.originalWizardIndex = typeof context.originalWizardIndex === "number" ? context.originalWizardIndex : wizardIndex;
+  backSwipeGesture.width = Math.max(window.innerWidth || 0, activeScreen.getBoundingClientRect().width || 0, 1);
+
+  if (context.kind === "wizard-step") {
+    wizardIndex = context.previousWizardIndex;
+    renderWizard();
+    backSwipeGesture.underlayScreen = document.getElementById("wizardScreen");
+  } else if (context.kind === "screen") {
+    showScreen(context.targetScreen);
+    if (context.targetScreen === "wizardScreen") renderWizard();
+    backSwipeGesture.underlayScreen = document.getElementById(context.targetScreen);
+  }
+
+  if (!backSwipeGesture.underlayScreen) {
+    resetBackSwipeGesture();
+    return false;
+  }
+
+  backSwipeGesture.underlayScreen.classList.add("screen-swipe-underlay");
+  backSwipeGesture.underlayScreen.style.transition = "none";
+  backSwipeGesture.underlayScreen.style.transform = "translate3d(-32%, 0, 0)";
+  backSwipeGesture.underlayScreen.style.opacity = "0.92";
+  backSwipeGesture.underlayScreen.style.pointerEvents = "none";
+
+  document.body.classList.add("swipe-back-active");
+  backSwipeGesture.active = true;
+  return true;
+}
+
+function updateInteractiveBackSwipe(deltaX) {
+  if (!backSwipeGesture.active || !backSwipeGesture.frontClone || !backSwipeGesture.underlayScreen) return;
+
+  const width = backSwipeGesture.width || 1;
+  const clampedX = Math.max(0, Math.min(deltaX, width));
+  const progress = Math.max(0, Math.min(clampedX / width, 1));
+  const underlayOffset = -32 + progress * 32;
+  const underlayOpacity = 0.92 + progress * 0.08;
+
+  backSwipeGesture.frontClone.style.transform = `translate3d(${clampedX}px, 0, 0)`;
+  backSwipeGesture.underlayScreen.style.transform = `translate3d(${underlayOffset}%, 0, 0)`;
+  backSwipeGesture.underlayScreen.style.opacity = String(underlayOpacity);
+}
+
+function cancelInteractiveBackSwipe() {
+  if (!backSwipeGesture.active) {
+    resetBackSwipeGesture();
+    return;
+  }
+
+  const frontClone = backSwipeGesture.frontClone;
+  const underlayScreen = backSwipeGesture.underlayScreen;
+  const originalScreen = backSwipeGesture.originalScreen;
+  const originalWizardIndex = backSwipeGesture.originalWizardIndex;
+
+  if (frontClone) {
+    frontClone.style.transition = "transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1)";
+    frontClone.style.transform = "translate3d(0, 0, 0)";
+  }
+
+  if (underlayScreen) {
+    underlayScreen.style.transition = "transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 180ms ease";
+    underlayScreen.style.transform = "translate3d(-32%, 0, 0)";
+    underlayScreen.style.opacity = "0.92";
+  }
+
+  window.setTimeout(() => {
+    if (frontClone) frontClone.remove();
+    clearBackSwipeInlineStyles();
+
+    if (originalScreen === "wizardScreen") {
+      wizardIndex = originalWizardIndex;
+      showScreen("wizardScreen");
+      renderWizard();
+    } else if (originalScreen) {
+      showScreen(originalScreen);
+    }
+
+    resetBackSwipeGesture();
+  }, 190);
+}
+
+function finishInteractiveBackSwipe() {
+  if (!backSwipeGesture.active) {
+    resetBackSwipeGesture();
+    return;
+  }
+
+  const frontClone = backSwipeGesture.frontClone;
+  const underlayScreen = backSwipeGesture.underlayScreen;
+  const context = backSwipeGesture.context;
+  const width = backSwipeGesture.width || window.innerWidth || 1;
+
+  if (frontClone) {
+    frontClone.style.transition = "transform 190ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 190ms ease";
+    frontClone.style.transform = `translate3d(${width}px, 0, 0)`;
+    frontClone.style.opacity = "0.86";
+  }
+
+  if (underlayScreen) {
+    underlayScreen.style.transition = "transform 190ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 190ms ease";
+    underlayScreen.style.transform = "translate3d(0, 0, 0)";
+    underlayScreen.style.opacity = "1";
+  }
+
+  window.setTimeout(() => {
+    if (frontClone) frontClone.remove();
+    clearBackSwipeInlineStyles();
+
+    if (context && typeof context.afterCommit === "function") {
+      requestAnimationFrame(context.afterCommit);
+    }
+
+    resetBackSwipeGesture();
+  }, 200);
 }
 
 function attachBackSwipeGesture() {
   document.addEventListener("touchstart", event => {
     if (!event.touches || event.touches.length !== 1) return;
+    if (document.querySelector(".dialog-overlay")) return;
+    if (isTextEditingElement(event.target)) return;
+
+    const context = getBackSwipeContext();
+    if (!context) return;
 
     const touch = event.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-    touchStartTime = Date.now();
-    touchTrackingBackSwipe = touch.clientX <= 44 && !isInteractiveElement(event.target);
+
+    backSwipeGesture.possible = true;
+    backSwipeGesture.active = false;
+    backSwipeGesture.startX = touch.clientX;
+    backSwipeGesture.startY = touch.clientY;
+    backSwipeGesture.latestX = touch.clientX;
+    backSwipeGesture.latestY = touch.clientY;
+    backSwipeGesture.startTime = Date.now();
+    backSwipeGesture.context = context;
   }, { passive: true });
 
   document.addEventListener("touchmove", event => {
-    if (!touchTrackingBackSwipe || !event.touches || event.touches.length !== 1) return;
+    if (!backSwipeGesture.possible || !event.touches || event.touches.length !== 1) return;
 
     const touch = event.touches[0];
-    const deltaX = touch.clientX - touchStartX;
-    const deltaY = Math.abs(touch.clientY - touchStartY);
+    const deltaX = touch.clientX - backSwipeGesture.startX;
+    const deltaY = touch.clientY - backSwipeGesture.startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
 
-    if (deltaX > 12 && deltaY < 36 && event.cancelable) {
-      event.preventDefault();
+    backSwipeGesture.latestX = touch.clientX;
+    backSwipeGesture.latestY = touch.clientY;
+
+    if (!backSwipeGesture.active) {
+      if (deltaX < -8 || (absY > 18 && absY > absX * 1.15)) {
+        resetBackSwipeGesture();
+        return;
+      }
+
+      if (deltaX > 12 && absX > absY * 1.08) {
+        if (!beginInteractiveBackSwipe()) {
+          resetBackSwipeGesture();
+          return;
+        }
+      } else {
+        return;
+      }
     }
+
+    if (event.cancelable) event.preventDefault();
+    updateInteractiveBackSwipe(deltaX);
   }, { passive: false });
 
   document.addEventListener("touchend", event => {
-    if (!touchTrackingBackSwipe || !event.changedTouches || event.changedTouches.length !== 1) {
-      touchTrackingBackSwipe = false;
+    if (!backSwipeGesture.possible) return;
+
+    suppressNextClickUntil = Date.now() + 350;
+
+    if (!backSwipeGesture.active) {
+      resetBackSwipeGesture();
       return;
     }
 
-    const touch = event.changedTouches[0];
-    const deltaX = touch.clientX - touchStartX;
-    const deltaY = Math.abs(touch.clientY - touchStartY);
-    const elapsed = Date.now() - touchStartTime;
+    const touch = event.changedTouches && event.changedTouches.length === 1 ? event.changedTouches[0] : null;
+    const endX = touch ? touch.clientX : backSwipeGesture.latestX;
+    const endY = touch ? touch.clientY : backSwipeGesture.latestY;
+    const deltaX = endX - backSwipeGesture.startX;
+    const deltaY = Math.abs(endY - backSwipeGesture.startY);
+    const elapsed = Date.now() - backSwipeGesture.startTime;
+    const progress = Math.max(0, Math.min(deltaX / (backSwipeGesture.width || 1), 1));
+    const isFastSwipe = deltaX > 64 && elapsed < 320 && deltaY < 90;
+    const shouldComplete = progress >= 0.34 || isFastSwipe;
 
-    touchTrackingBackSwipe = false;
-
-    if (deltaX >= 72 && deltaY <= 70 && elapsed <= 900) {
-      navigateBackOnePage({ animated: true });
+    if (shouldComplete) {
+      finishInteractiveBackSwipe();
+    } else {
+      cancelInteractiveBackSwipe();
     }
   }, { passive: true });
 
   document.addEventListener("touchcancel", () => {
-    touchTrackingBackSwipe = false;
+    if (backSwipeGesture.active) {
+      cancelInteractiveBackSwipe();
+    } else {
+      resetBackSwipeGesture();
+    }
   }, { passive: true });
+
+  document.addEventListener("click", event => {
+    if (Date.now() < suppressNextClickUntil) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, true);
 }
 
 function bindClick(id, handler) {
