@@ -1,5 +1,5 @@
 const STORAGE_KEY = "procedureLogbookData_v1";
-const APP_VERSION = "v50";
+const APP_VERSION = "v51";
 
 let state = {
   entries: [],
@@ -895,6 +895,75 @@ function valuesAreDifferent(currentValue, originalValue) {
   return String(currentValue || "").trim() !== String(originalValue || "").trim();
 }
 
+function getComparableEntryData(entry) {
+  if (!entry) return null;
+
+  const commonKeys = [
+    "type",
+    "date",
+    "placementId",
+    "placementName",
+    "placementStartDate",
+    "placementEndDate"
+  ];
+
+  const procedureKeys = [
+    "specialty",
+    "hospital",
+    "context",
+    "procedure",
+    "site",
+    "technique",
+    "role",
+    "supervision",
+    "outcome",
+    "attempts",
+    "complication",
+    "notes"
+  ];
+
+  const cpdKeys = [
+    "cpdType",
+    "cpdFormat",
+    "cpdTopic",
+    "cpdTitle",
+    "cpdProvider",
+    "cpdLocation",
+    "cpdTime",
+    "cpdReflection",
+    "cpdEvidence"
+  ];
+
+  const keys = entry.type === "cpd"
+    ? [...commonKeys, ...cpdKeys]
+    : [...commonKeys, ...procedureKeys];
+
+  return keys.reduce((result, key) => {
+    result[key] = String(entry[key] ?? "").trim();
+    return result;
+  }, {});
+}
+
+function hasUnsavedEditChanges() {
+  if (!editingEntryId) return false;
+
+  const original = getOriginalEditingEntry();
+  if (!original || !draft) return false;
+
+  return JSON.stringify(getComparableEntryData(draft)) !== JSON.stringify(getComparableEntryData(original));
+}
+
+function updateEditSaveShortcuts() {
+  const shouldShow = hasUnsavedEditChanges();
+  document.querySelectorAll(".edit-save-shortcut").forEach(button => {
+    button.classList.toggle("hidden", !shouldShow);
+  });
+}
+
+function syncDraftChange() {
+  updateEditSaveShortcuts();
+}
+
 function renderWizard() {
   const step = wizardSteps[wizardIndex];
 
@@ -1263,7 +1332,7 @@ function handleHomeShortcutRequest() {
       message: "You can discard this entry, save it as a draft, or continue entering it.",
       actions: [
         { text: "Continue entry", className: "button secondary wizard-action-button", action: () => {} },
-        { text: "Save draft", className: "button primary wizard-action-button", action: saveCurrentEntryAsDraftAndGoHome },
+        { text: "Save as draft", className: "button primary wizard-action-button", action: saveCurrentEntryAsDraftAndGoHome },
         { text: "Discard entry", className: "button danger-button wizard-action-button", action: cancelEntry }
       ]
     });
@@ -1309,7 +1378,8 @@ function updateFloatingNavigationControls() {
     backButton.setAttribute("aria-label", "Go back");
     backButton.innerHTML = `
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M14.5 5.5 8 12l6.5 6.5" />
+        <path d="M17.5 18.5v-7.2c0-2.5-2-4.5-4.5-4.5H6.6" />
+        <path d="M9.6 3.9 6.4 6.8l3.2 2.9" />
       </svg>
     `;
     backButton.addEventListener("click", () => {
@@ -1337,7 +1407,12 @@ function updateFloatingNavigationControls() {
     cancelButton.type = "button";
     cancelButton.className = "floating-cancel-button";
     cancelButton.setAttribute("aria-label", editingEntryId ? "Cancel edit" : "Cancel entry");
-    cancelButton.textContent = "×";
+    cancelButton.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M7 7l10 10" />
+        <path d="M17 7 7 17" />
+      </svg>
+    `;
     cancelButton.addEventListener("click", editingEntryId ? cancelEdit : cancelEntry);
     screen.appendChild(cancelButton);
   }
@@ -1400,7 +1475,9 @@ function saveEditedDraft() {
 function appendEditSaveButton(wrapper) {
   if (!editingEntryId || !wrapper) return wrapper;
 
-  wrapper.appendChild(makeButton("Save changes", "button primary wizard-action-button edit-save-shortcut", saveEditedDraft));
+  const button = makeButton("Save changes", "button primary wizard-action-button edit-save-shortcut", saveEditedDraft);
+  wrapper.appendChild(button);
+  updateEditSaveShortcuts();
   return wrapper;
 }
 
@@ -1416,6 +1493,7 @@ function makeDateScreen() {
 
   input.addEventListener("change", () => {
     draft.date = input.value;
+    syncDraftChange();
   });
 
   const nextButton = makeButton("Next", "button primary wizard-action-button date-confirm-button", () => {
@@ -2257,6 +2335,7 @@ function makeTextAreaScreen(field, placeholder, options = {}) {
   textarea.value = draft[field] || "";
   textarea.addEventListener("input", () => {
     draft[field] = textarea.value.trim();
+    syncDraftChange();
   });
 
   const saveButton = makeButton("Next", "button primary wizard-action-button", () => {
@@ -2302,9 +2381,14 @@ function makeDetailsScreen() {
     draft.cpdLocation = locationInput.value.trim();
   };
 
-  titleInput.addEventListener("input", syncDetailsDraft);
-  providerInput.addEventListener("input", syncDetailsDraft);
-  locationInput.addEventListener("input", syncDetailsDraft);
+  const handleDetailsInput = () => {
+    syncDetailsDraft();
+    syncDraftChange();
+  };
+
+  titleInput.addEventListener("input", handleDetailsInput);
+  providerInput.addEventListener("input", handleDetailsInput);
+  locationInput.addEventListener("input", handleDetailsInput);
 
   const nextButton = makeButton("Next", "button primary wizard-action-button", () => {
     draft.cpdTitle = titleInput.value.trim();
@@ -2371,23 +2455,25 @@ function makeReviewScreen() {
 
   wrapper.appendChild(review);
 
-  const saveButtonText = editingEntryId ? "Save changes" : "Save entry";
-  wrapper.appendChild(makeButton(saveButtonText, "button primary wizard-action-button", () => {
-    if (editingEntryId) {
-      saveEditedDraft();
-      return;
-    }
+  if (!editingEntryId || hasUnsavedEditChanges()) {
+    const saveButtonText = editingEntryId ? "Save changes" : "Save entry";
+    wrapper.appendChild(makeButton(saveButtonText, "button primary wizard-action-button", () => {
+      if (editingEntryId) {
+        saveEditedDraft();
+        return;
+      }
 
-    draft.updatedAt = new Date().toISOString();
-    state.entries.push({ ...draft });
+      draft.updatedAt = new Date().toISOString();
+      state.entries.push({ ...draft });
 
-    editingEntryId = null;
-    editReturnScreen = null;
-    editReturnScrollY = 0;
-    saveState();
-    markChanged();
-    showScreen("homeScreen");
-  }));
+      editingEntryId = null;
+      editReturnScreen = null;
+      editReturnScrollY = 0;
+      saveState();
+      markChanged();
+      showScreen("homeScreen");
+    }));
+  }
 
   return wrapper;
 }
@@ -2619,6 +2705,12 @@ function renderAddRemoveProceduresForCategory(specialtyId, categoryId) {
     makeChangesButton.textContent = changeCount === 0
       ? "Make changes"
       : `Make ${changeCount} ${changeCount === 1 ? "change" : "changes"}`;
+
+    if (changeCount > 0) {
+      setUnsavedFormHomeGuard("Unapplied procedure changes will be lost.");
+    } else {
+      activeHomeGuard = null;
+    }
   };
 
   const makeSelectableProcedureCard = procedure => {
