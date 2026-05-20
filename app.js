@@ -1,5 +1,5 @@
 const STORAGE_KEY = "procedureLogbookData_v1";
-const APP_VERSION = "v49";
+const APP_VERSION = "v50";
 
 let state = {
   entries: [],
@@ -594,7 +594,7 @@ function showScreen(screenId) {
   if (screenId === "homeScreen") renderVersionLabel();
   if (screenId === "homeScreen" || screenId === "backupScreen") renderBackupStatus();
 
-  updateHomeShortcut();
+  updateFloatingNavigationControls();
 }
 
 function renderBackupStatus() {
@@ -879,20 +879,7 @@ function renderWizardStepLabel(stepLabel, text) {
   stepText.textContent = text;
   stepLabel.appendChild(stepText);
 
-  const cancelButton = document.createElement("button");
-  cancelButton.type = "button";
-
-  if (editingEntryId) {
-    cancelButton.className = "cancel-edit-link";
-    cancelButton.textContent = "Cancel edit";
-    cancelButton.addEventListener("click", cancelEdit);
-  } else {
-    cancelButton.className = "cancel-entry-link";
-    cancelButton.textContent = "Cancel entry";
-    cancelButton.addEventListener("click", cancelEntry);
-  }
-
-  stepLabel.appendChild(cancelButton);
+  updateFloatingNavigationControls();
 }
 
 function formatAttemptText(value) {
@@ -1291,26 +1278,69 @@ function handleHomeShortcutRequest() {
   showScreen("homeScreen");
 }
 
-function updateHomeShortcut() {
-  document.querySelectorAll(".home-shortcut-button").forEach(button => button.remove());
+function getActiveScreenElement() {
+  return document.getElementById(currentScreen);
+}
+
+function getCurrentScreenBackAction() {
+  if (currentScreen === "entryTypeScreen") return () => showScreen("homeScreen");
+  if (currentScreen === "wizardScreen") return goWizardBack;
+  if (currentScreen === "logbookScreen") return () => showScreen("homeScreen");
+  if (currentScreen === "summariesScreen") return () => showScreen("homeScreen");
+  if (currentScreen === "placementsScreen") return placementsBackAction;
+  if (currentScreen === "specialtiesProceduresScreen") return specialtiesProceduresBackAction;
+  if (currentScreen === "backupScreen") return () => showScreen("homeScreen");
+  return null;
+}
+
+function updateFloatingNavigationControls() {
+  document.querySelectorAll(".home-shortcut-button, .floating-back-button, .floating-cancel-button").forEach(button => button.remove());
 
   if (currentScreen === "homeScreen") return;
 
-  const screen = document.getElementById(currentScreen);
+  const screen = getActiveScreenElement();
   if (!screen) return;
 
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "home-shortcut-button";
-  button.setAttribute("aria-label", "Return home");
-  button.innerHTML = `
+  const backAction = getCurrentScreenBackAction();
+  if (backAction) {
+    const backButton = document.createElement("button");
+    backButton.type = "button";
+    backButton.className = "floating-back-button";
+    backButton.setAttribute("aria-label", "Go back");
+    backButton.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M14.5 5.5 8 12l6.5 6.5" />
+      </svg>
+    `;
+    backButton.addEventListener("click", () => {
+      const action = getCurrentScreenBackAction();
+      if (action) action();
+    });
+    screen.appendChild(backButton);
+  }
+
+  const homeButton = document.createElement("button");
+  homeButton.type = "button";
+  homeButton.className = "home-shortcut-button";
+  homeButton.setAttribute("aria-label", "Return home");
+  homeButton.innerHTML = `
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
       <path d="M3.8 11.2 12 4.4l8.2 6.8" />
       <path d="M6.5 10.7v8.1h4.1v-4.9h2.8v4.9h4.1v-8.1" />
     </svg>
   `;
-  button.addEventListener("click", handleHomeShortcutRequest);
-  screen.appendChild(button);
+  homeButton.addEventListener("click", handleHomeShortcutRequest);
+  screen.appendChild(homeButton);
+
+  if (currentScreen === "wizardScreen") {
+    const cancelButton = document.createElement("button");
+    cancelButton.type = "button";
+    cancelButton.className = "floating-cancel-button";
+    cancelButton.setAttribute("aria-label", editingEntryId ? "Cancel edit" : "Cancel entry");
+    cancelButton.textContent = "×";
+    cancelButton.addEventListener("click", editingEntryId ? cancelEdit : cancelEntry);
+    screen.appendChild(cancelButton);
+  }
 }
 
 function setUnsavedFormHomeGuard(message = "Unsaved changes on this page will be lost.", leaveAction = null) {
@@ -1372,10 +1402,6 @@ function appendEditSaveButton(wrapper) {
 
   wrapper.appendChild(makeButton("Save changes", "button primary wizard-action-button edit-save-shortcut", saveEditedDraft));
   return wrapper;
-}
-
-function makeCancelEditButton() {
-  return makeButton("Cancel edit", "button danger-button cancel-edit-button", cancelEdit);
 }
 
 function makeDateScreen() {
@@ -2668,7 +2694,12 @@ function renderAddRemoveProceduresForCategory(specialtyId, categoryId) {
     const query = normaliseText(search.value);
     const procedures = getAllProcedureLibraryItems()
       .filter(procedure => !query || normaliseText(procedure.name).includes(query))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => {
+        const aAdded = isProcedureAssignedToCategory(specialtyId, categoryId, a.id);
+        const bAdded = isProcedureAssignedToCategory(specialtyId, categoryId, b.id);
+        if (aAdded !== bAdded) return aAdded ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
 
     if (procedures.length === 0) {
       const empty = document.createElement("p");
@@ -2969,20 +3000,6 @@ function setPlacementsBackAction(action) {
 function setPlacementsTitle(text) {
   const title = document.querySelector("#placementsScreen h2");
   if (title) title.textContent = text;
-}
-
-function makePlacementCancelLink() {
-  const wrapper = document.createElement("div");
-  wrapper.className = "placement-top-action";
-
-  const cancelButton = document.createElement("button");
-  cancelButton.type = "button";
-  cancelButton.className = "cancel-edit-link placement-cancel-link";
-  cancelButton.textContent = "Cancel";
-  cancelButton.addEventListener("click", renderPlacements);
-
-  wrapper.appendChild(cancelButton);
-  return wrapper;
 }
 
 function togglePlacementVisibility(placement) {
@@ -3832,14 +3849,6 @@ function attachEvents() {
     showScreen("specialtiesProceduresScreen");
   });
 
-  bindClick("placementsBackButton", () => {
-    placementsBackAction();
-  });
-
-  bindClick("specialtiesProceduresBackButton", () => {
-    specialtiesProceduresBackAction();
-  });
-
   bindClick("viewBackupButton", () => {
     showScreen("backupScreen");
   });
@@ -3852,7 +3861,6 @@ function attachEvents() {
     button.addEventListener("click", () => startEntry(button.dataset.entryType));
   });
 
-  bindClick("wizardBackButton", goWizardBack);
   bindClick("backupNowButton", downloadJsonBackup);
   bindClick("downloadJsonButton", downloadJsonBackup);
   bindClick("downloadExcelButton", downloadExcelWorkbook);
