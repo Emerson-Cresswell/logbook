@@ -127,6 +127,30 @@ Template pages:
 - Template pages should be filterable/exportable later.
 - Fully custom pages should be exportable but not filterable initially.
 
+
+## Firebase Hosting / deployment rules
+
+The near-term Firebase task is Hosting only. Keep the app static and local-first. Do not add Firebase Authentication, Firestore, cloud backup, or restore-from-cloud unless the user explicitly starts that phase.
+
+For Firebase Hosting prep:
+
+- Prefer small config/documentation changes before runtime app changes.
+- Do not bump the visible runtime app version or service-worker/cache for documentation/config-only commits.
+- If runtime app files change, follow the normal version/cache rules.
+- Preserve manual JSON backup/import.
+- Remember that localStorage is origin-specific; moving from GitHub Pages to Firebase Hosting means the Firebase URL will not automatically see data stored under the GitHub Pages origin.
+
+## One-time workflow verification rule
+
+After branch/PR workflow is active, perform one temporary branch/PR test to prove the syntax workflow works end-to-end:
+
+1. Introduce a deliberate JavaScript syntax error in `app.js`.
+2. Confirm the `Syntax check` workflow fails.
+3. Remove the syntax error.
+4. Confirm the `Syntax check` workflow passes.
+
+Never perform this deliberate-failure test on `main`.
+
 ## Firebase/cloud roadmap constraints
 
 Near-term Firebase move is Hosting only:

@@ -1,9 +1,43 @@
 PROJECT HANDOVER — MyLogbook PWA
-Version covered: V53 Workflow Foundation
+Version covered: V54 Firebase Hosting Prep
 Date prepared: 2026-05-21
 Source of truth for code: GitHub main branch — https://github.com/Emerson-Cresswell/logbook
-Current confirmed runtime app version before this docs/process package: V52
+Current confirmed runtime app version: V52 (V53/V54 are documentation/process/deployment-prep updates only)
 This handover should be updated every time a meaningful code, roadmap, architecture, testing, deployment, or process decision is made.
+
+
+================================================================================
+0A. V54 FIREBASE HOSTING PREP UPDATE
+================================================================================
+Purpose of V54:
+- Prepare the repository for Firebase Hosting while keeping the app static and local-first.
+- Add Firebase Hosting configuration without adding Firebase Authentication, Firestore, or cloud backup yet.
+- Preserve the current runtime app behaviour; this is a deployment/process-prep batch only.
+- Record the pending one-time GitHub Actions fail/pass verification test so it is not forgotten.
+
+Files added/updated in the V54 Firebase Hosting Prep package:
+- firebase.json — Firebase Hosting configuration using the repository root as the public directory, while ignoring repo/process files that should not be deployed as site assets.
+- FIREBASE_SETUP.md — browser/Cloud-Shell-oriented setup guide for moving hosting to Firebase and later enabling GitHub PR preview channels.
+- HANDOVER.txt — updated with V54 status and the pending syntax-workflow deliberate failure test.
+- CHANGELOG.md — updated with V54.
+- TESTING_CHECKLIST.md — updated with Firebase/preview and GitHub Actions workflow checks.
+- AGENTS.md — updated with Firebase Hosting and branch-based syntax-workflow verification rules.
+
+Important V54 notes:
+- Do not add Firebase Auth/cloud backup in this batch.
+- Do not change app.js, styles.css, index.html, manifest.json, or service-worker.js unless a separate runtime app change is deliberately requested.
+- Do not bump the visible in-app version or service-worker/cache for this documentation/config-only prep batch.
+- Firebase Hosting should initially deploy the same static localStorage PWA currently hosted by GitHub Pages.
+- After Firebase preview channels/GitHub PR workflow are active, perform a one-time workflow verification on a temporary branch/PR only: introduce a deliberate JavaScript syntax error, confirm the Syntax check workflow fails, remove the error, confirm it passes, then close/merge as appropriate. Never perform this deliberate-failure test on main.
+
+Recommended immediate next workflow after committing V54:
+1. Create a Firebase project.
+2. Use Firebase CLI via Google Cloud Shell or another suitable browser-based environment.
+3. Connect the Firebase project to this GitHub repo.
+4. Deploy the static site to Firebase Hosting.
+5. Set up Firebase Hosting GitHub integration for PR preview URLs.
+6. Confirm the live Firebase URL and at least one preview URL work on desktop and iPhone.
+7. Then perform the one-time branch/PR syntax-check fail/pass verification test.
 
 ================================================================================
 0. V53 WORKFLOW FOUNDATION UPDATE
@@ -42,11 +76,11 @@ MyLogbook is a medical procedure and CPD logbook Progressive Web App. It is curr
 The app must remain polished, safe, and local-first while the data model is still changing. Wider private beta should not start until user accounts and automatic cloud backup/restore are available.
 
 Current confirmed status:
-- Current runtime app version: V52 before V53 docs/process files are added.
+- Current runtime app version: V52. V53 and V54 are documentation/process/deployment-prep updates only unless runtime files are separately changed.
 - GitHub main branch is fully up to date and is the latest version of the project.
 - Current stack: HTML, CSS, JavaScript, PWA, service worker, manifest, localStorage, Excel export via xlsx.full.min.js.
-- Current hosting: GitHub Pages.
-- Planned hosting: Firebase Hosting, initially still static/local-first.
+- Current hosting: GitHub Pages until Firebase Hosting setup/deploy is completed.
+- Planned/next hosting: Firebase Hosting, initially still static/local-first.
 - Planned future backend: Firebase Authentication + cloud backup/restore later.
 - Possible later refactor: JavaScript to TypeScript, but not immediately.
 
@@ -375,6 +409,13 @@ Use Firebase Hosting preview channels for:
 - Avoiding GitHub Pages/service-worker cache confusion.
 - Sharing exact preview builds.
 
+One-time GitHub Actions verification still pending after branch/PR workflow exists:
+- On a temporary branch/PR only, deliberately introduce a small JavaScript syntax error in app.js.
+- Confirm the Syntax check workflow fails.
+- Remove the syntax error.
+- Confirm the Syntax check workflow passes.
+- Never run this deliberate failure test on main.
+
 Recommended branch/deploy workflow:
 1. Create or ask Codex to create a branch for the next small batch.
 2. Codex makes changes on the branch.
@@ -460,3 +501,9 @@ Recommended next feature tasks after workflow is improved:
 8. Filtered summaries.
 9. Data robustness pass.
 10. Firebase Auth + whole-logbook backup + restore.
+
+
+================================================================================
+18. PENDING WORKFLOW VERIFICATION
+================================================================================
+After Firebase preview channels/GitHub PR workflow are active, perform a one-time test on a temporary branch/PR only: introduce a deliberate JavaScript syntax error in app.js, confirm the Syntax check workflow fails, remove the error, confirm it passes, then close/merge as appropriate. Never run this deliberate failure test on main.

@@ -9,6 +9,36 @@ This file records meaningful project changes so future chats, Codex tasks, and p
 - Documentation-only/process-only commits do not need a service-worker/cache bump unless runtime files are changed.
 - Keep entries concise but specific enough to support debugging and handover.
 
+
+## V54 — Firebase Hosting prep
+
+Date: 2026-05-21
+Type: Documentation/deployment configuration/process
+Runtime app behaviour changed: No
+Runtime app visible version changed: No
+Service worker/cache changed: No
+
+Added:
+
+- `firebase.json` for Firebase Hosting configuration while keeping the app static and local-first.
+- `FIREBASE_SETUP.md` with Firebase Hosting and GitHub preview-channel setup guidance.
+
+Updated:
+
+- `HANDOVER.txt` with V54 status and Firebase Hosting next steps.
+- `TESTING_CHECKLIST.md` with Firebase deploy/preview checks.
+- `AGENTS.md` with Firebase Hosting constraints and branch-based workflow verification rules.
+
+Important reminder added:
+
+- Once branch/PR workflow is active, run a one-time temporary-branch test where a deliberate JavaScript syntax error is introduced to confirm the Syntax check workflow fails, then remove the error and confirm the workflow passes. Do not do this on `main`.
+
+Notes:
+
+- This batch does not add Firebase Authentication, Firestore, cloud backup, or restore-from-cloud.
+- This batch does not change app runtime files.
+- The next operational task is creating the Firebase project and running the Hosting/GitHub integration setup.
+
 ## V53 — Workflow foundation
 
 Date: 2026-05-21

@@ -136,7 +136,34 @@ Use this section once custom procedure support is implemented.
 - [ ] Scrolling feels normal.
 - [ ] No horizontal overflow.
 
-## 12. Release checks for runtime app versions
+
+## 12. Firebase Hosting / preview-channel checks
+
+Use this section once Firebase Hosting setup begins.
+
+- [ ] Firebase Hosting live URL loads the app on desktop.
+- [ ] Firebase Hosting live URL loads the app on iPhone Safari.
+- [ ] Installed PWA behaviour remains acceptable when installed from the Firebase URL.
+- [ ] No app data is lost when moving from GitHub Pages to Firebase Hosting, noting that existing localStorage is origin-specific and the Firebase URL is a new origin.
+- [ ] Manual JSON backup/export is taken before relying on a new hosting origin.
+- [ ] GitHub pull request preview URL is created automatically once preview channels are configured.
+- [ ] Preview URL loads on desktop.
+- [ ] Preview URL loads on iPhone Safari.
+- [ ] Preview URL updates when another commit is pushed to the same branch/PR.
+- [ ] Live Firebase URL updates only after the intended merge/deploy step.
+
+## 13. One-time GitHub Actions syntax workflow verification
+
+Do this only once branches/PRs are being used. Do not do it on `main`.
+
+- [ ] Create a temporary test branch/PR.
+- [ ] Introduce a deliberate small syntax error in `app.js`.
+- [ ] Confirm the `Syntax check` workflow fails.
+- [ ] Remove the syntax error.
+- [ ] Confirm the `Syntax check` workflow passes.
+- [ ] Close/delete the temporary branch/PR if it exists only for the workflow test.
+
+## 14. Release checks for runtime app versions
 
 - [ ] Visible version label updated.
 - [ ] Service-worker/cache version bumped.
