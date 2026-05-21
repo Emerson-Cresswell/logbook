@@ -43,6 +43,14 @@ function isAppShellRequest(request) {
   if (url.origin !== self.location.origin) return false;
 
   return [
+    "/",
+    "/index.html",
+    "/app.js",
+    "/js/config.js",
+    "/js/utils.js",
+    "/styles.css",
+    "/manifest.json",
+    "/service-worker.js",
     "/logbook/",
     "/logbook/index.html",
     "/logbook/app.js",
