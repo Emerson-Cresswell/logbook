@@ -112,3 +112,4 @@ Never enter patient-identifiable information during testing.
 3. Confirm add/view/edit/export/import flows behave identically to pre-V57 behaviour.
 4. Confirm service-worker serves refreshed runtime assets after hard refresh/reopen on iPhone PWA.
 5. Check browser console for AppConfig/AppUtils startup errors (should be absent in normal load).
+6. Confirm browser console has no `Identifier has already been declared` errors on startup.

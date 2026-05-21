@@ -31,6 +31,8 @@ What was done:
 
 Versioning note:
 - V57 is a structure/workflow refactor with behaviour preserved.
+- Wrapped `js/utils.js` and `js/config.js` in IIFEs so only `window.AppUtils`/`window.AppConfig` are exported and no helper names leak globally.
+
 - Visible runtime label remains V52.
 
 0A. V56 WORKFLOW VALIDATION UPDATE

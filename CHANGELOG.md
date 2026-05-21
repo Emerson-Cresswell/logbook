@@ -31,6 +31,8 @@ Completed:
 - Follow-up hardening: bumped service-worker cache key to prevent stale/mixed asset combinations during rollout.
 - Follow-up hardening: confirmed app-shell network-first matching supports both Firebase root paths and legacy `/logbook` fallback paths.
 
+- Follow-up hardening: wrapped `js/utils.js` and `js/config.js` in IIFEs to prevent global identifier collisions in classic script loading.
+
 ## V56 — Workflow validation
 
 Date: 2026-05-21  
