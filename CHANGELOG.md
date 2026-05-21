@@ -6,96 +6,100 @@ This file records meaningful project changes so future chats, Codex tasks, and p
 
 - Runtime app releases should use visible version labels such as `V53`, `V54`, etc.
 - If runtime app files change, update the visible homepage version label and bump the service-worker/cache version.
-- Documentation-only/process-only commits do not need a service-worker/cache bump unless runtime files are changed.
+- Documentation-only/process-only/infrastructure-only commits do not need a service-worker/cache bump unless runtime files are changed.
 - Keep entries concise but specific enough to support debugging and handover.
 
+## V56 — Workflow validation
+
+Date: 2026-05-21  
+Type: Workflow validation / documentation  
+Runtime app behaviour changed: No  
+Runtime app visible version changed: No  
+Service worker/cache changed: No  
+
+Completed:
+- Created temporary branch `test/syntax-check-failure`.
+- Added a deliberate syntax error to `app.js` on the temporary branch only.
+- Opened a temporary PR titled `Test syntax check failure`.
+- Confirmed the JavaScript syntax-check GitHub Action failed as intended.
+- Confirmed Firebase Hosting PR preview URL generation worked.
+- Removed the deliberate syntax error.
+- Confirmed all PR checks passed after the fix:
+  - Firebase PR build/preview.
+  - JavaScript syntax check.
+  - Firebase Deploy Preview.
+- Closed the PR without merging.
+- Deleted the temporary branch locally.
+- Confirmed the Cloud Shell working tree was clean.
+
+Important:
+- Do not merge deliberate syntax-failure PRs.
+- Never run deliberate failure tests on `main`.
+- This test confirms the branch/PR + Firebase preview workflow is ready for future app changes.
+
+## V55 — Firebase GitHub Actions integration
+
+Date: 2026-05-21  
+Type: Deployment infrastructure / workflow  
+Runtime app behaviour changed: No  
+Runtime app visible version changed: No  
+Service worker/cache changed: No  
+
+Added:
+- `.firebaserc` pointing to Firebase project `mylogbook-app`.
+- `.gitignore` excluding Firebase local deploy cache and other local/generated files.
+- `.github/workflows/firebase-hosting-pull-request.yml`.
+- `.github/workflows/firebase-hosting-merge.yml`.
+
+Completed:
+- Firebase Hosting deployed successfully.
+- Firebase default URL confirmed working: `https://mylogbook-app.web.app`.
+- Custom app domain confirmed working: `https://app.mylogbook.uk`.
+- GitHub Actions integration created via Firebase CLI.
+- Firebase GitHub secret uploaded as `FIREBASE_SERVICE_ACCOUNT_MYLOGBOOK_APP`.
+- Pull-request previews and live deploys on main are now configured.
+
+Notes:
+- Firebase IAM API had to be enabled during setup.
+- Future work should use branches/PRs and Firebase preview URLs before merging.
 
 ## V54 — Firebase Hosting prep
 
-Date: 2026-05-21
-Type: Documentation/deployment configuration/process
-Runtime app behaviour changed: No
-Runtime app visible version changed: No
-Service worker/cache changed: No
+Date: 2026-05-21  
+Type: Documentation/deployment configuration/process  
+Runtime app behaviour changed: No  
+Runtime app visible version changed: No  
+Service worker/cache changed: No  
 
 Added:
-
 - `firebase.json` for Firebase Hosting configuration while keeping the app static and local-first.
 - `FIREBASE_SETUP.md` with Firebase Hosting and GitHub preview-channel setup guidance.
 
 Updated:
-
-- `HANDOVER.txt` with V54 status and Firebase Hosting next steps.
-- `TESTING_CHECKLIST.md` with Firebase deploy/preview checks.
-- `AGENTS.md` with Firebase Hosting constraints and branch-based workflow verification rules.
-
-Important reminder added:
-
-- Once branch/PR workflow is active, run a one-time temporary-branch test where a deliberate JavaScript syntax error is introduced to confirm the Syntax check workflow fails, then remove the error and confirm the workflow passes. Do not do this on `main`.
+- `HANDOVER.txt`.
+- `CHANGELOG.md`.
+- `TESTING_CHECKLIST.md`.
+- `AGENTS.md`.
 
 Notes:
-
-- This batch does not add Firebase Authentication, Firestore, cloud backup, or restore-from-cloud.
-- This batch does not change app runtime files.
-- The next operational task is creating the Firebase project and running the Hosting/GitHub integration setup.
+- Firebase Auth/cloud backup were deliberately not added in this batch.
+- The app remained a static localStorage PWA.
 
 ## V53 — Workflow foundation
 
-Date: 2026-05-21
-Type: Documentation/process/repo hygiene
-Runtime app behaviour changed: No
-Runtime app visible version changed: Not unless a separate app-version bump is added
+Date: 2026-05-21  
+Type: Documentation/process/automation  
+Runtime app behaviour changed: No  
+Runtime app visible version changed: No  
+Service worker/cache changed: No  
 
 Added:
-
-- `HANDOVER.txt` as the exhaustive project handover and continuity document.
-- `CHANGELOG.md` to track version-by-version changes.
-- `TESTING_CHECKLIST.md` for repeatable manual regression testing.
-- `AGENTS.md` for Codex/AI-agent coding instructions.
-- `.github/workflows/syntax-check.yml` to run JavaScript syntax checks on `app.js` and `service-worker.js`.
-
-Purpose:
-
-- Make the project recoverable if a chat becomes inaccessible.
-- Reduce repeated explanation when starting new chats.
-- Prepare the repo for Codex Cloud and pull-request based development.
-- Prepare for Firebase Hosting preview channels.
+- `HANDOVER.txt`.
+- `CHANGELOG.md`.
+- `TESTING_CHECKLIST.md`.
+- `AGENTS.md`.
+- `.github/workflows/syntax-check.yml`.
 
 Notes:
-
-- No app behaviour, data model, UI, cache, or service-worker runtime behaviour should change as part of this documentation/process package.
-- The next recommended workflow task is Firebase Hosting setup with preview channels, still local-first and without authentication/cloud data.
-
-## V52 — Current confirmed runtime baseline before V53 docs/process package
-
-Date: prior to 2026-05-21
-Type: App runtime/code
-
-Confirmed by user:
-
-- GitHub `main` is fully up to date and is the latest version of the project.
-- V52 is the current working runtime baseline before the V53 workflow foundation package.
-
-Known/expected areas to verify:
-
-- Floating navigation polish.
-- Home button appears on normal non-home pages but not during add/edit workflows.
-- Cancel button appears during add/edit workflows and triggers a themed warning popup.
-- Back/cancel/home buttons have consistent perimeter/border styling.
-- Save changes button only appears after actual edit changes.
-- Add/remove procedure pages warn before losing unsaved changes.
-- Draft support may be partially present and should be verified before treating as complete.
-
-## Earlier roadmap/batch milestones recovered from previous chat
-
-Recovered high-level status:
-
-- Placements foundation completed.
-- Placement in entry wizard completed.
-- Fixed specialties/show-hide specialties completed.
-- Specialty/category/procedure structure foundation completed or partially completed.
-- Add/remove procedures from categories completed or partially completed.
-- Custom procedures page still outstanding unless current code proves otherwise.
-- Procedure creation wizard still outstanding.
-- Procedure-specific add-entry workflows still outstanding.
-- Drafts, quick add, filtered export, filtered summaries, data robustness, Firebase Auth/cloud backup/restore remain future work.
+- Established permanent handover and repo instructions.
+- Added basic automated JavaScript syntax checks.

@@ -1,175 +1,103 @@
-# MyLogbook Manual Testing Checklist
+# MyLogbook Testing Checklist
 
-Use this checklist before merging a pull request, after a deploy, and before relying on a new version on a phone. Keep it updated as features are added.
+Use this checklist for manual regression testing and workflow validation.
 
-## 1. Basic load/update checks
+## Current status
 
-- [ ] App loads on desktop browser.
-- [ ] App loads on iPhone Safari.
-- [ ] Installed home-screen PWA opens.
-- [ ] Homepage visible version label is the expected version for runtime app releases.
-- [ ] After runtime changes, old cached app does not persist unexpectedly.
-- [ ] No blank screen on first load.
-- [ ] No obvious console errors on desktop.
+- Runtime app version currently confirmed: V52.
+- Workflow/infrastructure status: V56.
+- Primary live URL: https://app.mylogbook.uk
+- Firebase default URL: https://mylogbook-app.web.app
+- Legacy GitHub Pages site: keep active as fallback for now.
 
-## 2. Home screen and navigation
+## Automated checks
 
-- [ ] Home screen visual layout remains polished.
-- [ ] Buttons have consistent spacing, borders, radius, and shadow.
-- [ ] Back button appears where expected.
-- [ ] Home button appears on non-home viewing pages.
-- [ ] Home button does not appear during add/edit workflows.
-- [ ] Cancel/X button appears during add/edit workflows.
-- [ ] Cancel/X button triggers themed confirmation popup.
-- [ ] Native browser alert/confirm/prompt popups are not used for new flows.
-- [ ] Floating nav buttons are not tight to screen edges.
-- [ ] Floating nav buttons do not overlap important content.
+GitHub Actions should run on PRs and pushes:
 
-## 3. Add procedure entry flow
+- `Syntax check`
+  - `node --check app.js`
+  - `node --check service-worker.js`
 
-- [ ] Start procedure entry from home.
-- [ ] Date defaults correctly.
-- [ ] Date can be changed.
-- [ ] Placement page displays Not linked to placement and visible placements.
-- [ ] Specialty page displays visible app-defined specialties.
-- [ ] Hospital page works.
-- [ ] Location page works.
-- [ ] Procedure/category pages work.
-- [ ] Entry summary strip displays entered values correctly.
-- [ ] Back navigation works between wizard pages.
-- [ ] Cancel entry warns before discarding.
-- [ ] Save/review creates an entry.
-- [ ] New entry appears in View Logbook.
-- [ ] Backup status updates after adding an entry.
+- `Deploy to Firebase Hosting on PR`
+  - Should create a Firebase preview URL for pull requests.
 
-## 4. Edit entry flow
+- `Deploy to Firebase Hosting on merge`
+  - Should deploy the live Firebase site when changes are pushed/merged to `main`.
 
-- [ ] Open existing entry from View Logbook.
-- [ ] Existing values are pre-populated.
-- [ ] Save changes button is hidden when no changes have been made.
-- [ ] Save changes button appears after a real change.
-- [ ] Cancelling edit warns before discarding changes.
-- [ ] Saving edit updates the entry.
-- [ ] Returning to logbook preserves sensible position where possible.
-- [ ] Backup status updates after editing an entry.
+## Completed workflow validation
 
-## 5. Draft flow
+V56 deliberate syntax-check validation completed:
 
-Use this section once draft support is being tested/stabilised.
+- Temporary branch created: `test/syntax-check-failure`.
+- Deliberate app.js syntax error added on branch only.
+- PR opened.
+- Syntax check failed as expected.
+- Firebase PR preview URL was created.
+- Syntax error removed.
+- All PR checks passed.
+- PR closed without merging.
+- Temporary branch deleted locally.
+- Cloud Shell working tree returned clean.
 
-- [ ] Start an entry.
-- [ ] Navigate home/cancel and choose Save as draft if offered.
-- [ ] Draft is saved and visually marked.
-- [ ] Draft appears in the expected View Logbook/Drafts view.
-- [ ] Draft can be reopened.
-- [ ] Draft can be completed and converted to a final entry.
-- [ ] Draft can be discarded/deleted if supported.
-- [ ] Draft status is included/excluded correctly from summaries/export if relevant.
+Do not repeat this test on `main`.
 
-## 6. Placements
+## Manual smoke test after any runtime app change
 
-- [ ] Placements page opens from home.
-- [ ] Add placement with name/start/end dates.
-- [ ] Edit placement.
-- [ ] Delete placement with themed confirmation.
-- [ ] Show/hide placement toggles correctly.
-- [ ] Hidden placement does not appear in add-entry placement list.
-- [ ] Historical entries linked to deleted/hidden placements still display safely.
-- [ ] Placement ordering is correct: Not linked first; current placements next; then most recent end date.
+Test on both desktop and iPhone Safari using the Firebase PR preview URL first:
 
-## 7. Specialties and procedures
+1. App loads without console-visible failure.
+2. Home screen displays expected visible app version.
+3. Main buttons render with correct spacing and styling.
+4. Add entry flow starts correctly.
+5. Cancel button appears during add/edit workflows.
+6. Home button does not appear during add/edit workflows.
+7. Back/home/cancel floating controls appear only where expected.
+8. Cancel produces themed warning popup.
+9. Save changes button only appears after actual edit changes.
+10. View Logbook opens.
+11. Existing entries still display.
+12. JSON backup/export still works.
+13. Excel export still works.
+14. Import from backup still works on a safe test dataset.
+15. Service-worker/cache version has been bumped if runtime files changed.
+16. Refresh/reopen on iPhone and confirm new version is served.
 
-- [ ] Specialties & procedures page opens.
-- [ ] Show/hide specialties works.
-- [ ] Hidden specialty does not appear in add-entry wizard.
-- [ ] Procedure categories display correctly.
-- [ ] Show/hide procedures works.
-- [ ] Hidden procedures do not appear in add-entry wizard.
-- [ ] Add procedure to category supports intended selection/capsule behaviour.
-- [ ] Remove procedure from category does not delete from global procedure library.
-- [ ] Restore default category list works and uses themed confirmation.
-- [ ] Historical entries still display after procedures are hidden/removed from categories.
+## Placement tests
 
-## 8. Custom procedures
+1. Add placement with name/date range.
+2. Edit placement.
+3. Delete placement.
+4. Show/hide placement.
+5. Placement ordering:
+   - Not linked to placement first.
+   - Current placements next.
+   - Then by most recent end date.
+6. Older entries linked to deleted/hidden placements still display safely.
 
-Use this section once custom procedure support is implemented.
+## Specialty/procedure tests
 
-- [ ] Custom procedures page opens.
-- [ ] List shows all user-created procedures.
-- [ ] Usage is shown for each custom procedure.
-- [ ] Unused custom procedures show Not currently used or equivalent.
-- [ ] Create new custom procedure works.
-- [ ] Duplicate/similar name warning appears but does not block creation unless intentionally changed.
-- [ ] Creating from Custom Procedures page does not auto-assign to a category.
-- [ ] Creating from Add procedure flow can add to current specialty/category.
-- [ ] Add to Specialty/Category works from custom procedure detail page.
-- [ ] Edit custom procedure works.
-- [ ] Delete custom procedure removes it from all category assignments.
-- [ ] Historical entries linked to deleted custom procedures still display procedure name/details.
+1. Specialty page displays fixed specialties.
+2. Show/hide specialties works.
+3. Procedure categories display under selected specialty.
+4. Add procedure to category works.
+5. Remove procedure from category works.
+6. Show/hide procedures works.
+7. Restore default category list works.
+8. Historical entries remain readable after procedure/category changes.
+9. Add/remove procedures warns if leaving with unapplied changes.
 
-## 9. Backup/export/import
+## Firebase Hosting tests
 
-- [ ] Backup status card displays correctly.
-- [ ] Backup now creates/downloads JSON backup.
-- [ ] Import from backup works with a valid backup.
-- [ ] Import shows clear warnings before replacing/merging data.
-- [ ] Excel export downloads a workbook.
-- [ ] Export includes procedure entries.
-- [ ] Export includes CPD entries.
-- [ ] Export includes historical deleted/hidden placement/procedure names where appropriate.
-- [ ] No patient-identifiable information is requested by the app.
+After workflow or hosting changes:
 
-## 10. Summaries
+1. `https://mylogbook-app.web.app` loads.
+2. `https://app.mylogbook.uk` loads.
+3. iPhone Safari loads the custom domain.
+4. The installed PWA still launches.
+5. No unexpected redirect to GitHub Pages.
+6. GitHub Actions live deploy succeeds after merge to main.
+7. PR preview URL is generated for a test PR.
 
-- [ ] Summaries page opens.
-- [ ] Counts/totals are plausible.
-- [ ] Procedure and CPD entries are separated/grouped as intended.
-- [ ] Hidden/deleted management-list items do not break historical summaries.
-- [ ] Future filters work consistently with Excel export filters.
+## Do not test with real patient-identifiable data
 
-## 11. Mobile/PWA checks
-
-- [ ] iPhone Safari layout is usable.
-- [ ] iPhone home-screen PWA layout is usable.
-- [ ] Bottom floating buttons are reachable and not covered by browser/PWA UI.
-- [ ] Text inputs and date inputs are usable on mobile.
-- [ ] Scrolling feels normal.
-- [ ] No horizontal overflow.
-
-
-## 12. Firebase Hosting / preview-channel checks
-
-Use this section once Firebase Hosting setup begins.
-
-- [ ] Firebase Hosting live URL loads the app on desktop.
-- [ ] Firebase Hosting live URL loads the app on iPhone Safari.
-- [ ] Installed PWA behaviour remains acceptable when installed from the Firebase URL.
-- [ ] No app data is lost when moving from GitHub Pages to Firebase Hosting, noting that existing localStorage is origin-specific and the Firebase URL is a new origin.
-- [ ] Manual JSON backup/export is taken before relying on a new hosting origin.
-- [ ] GitHub pull request preview URL is created automatically once preview channels are configured.
-- [ ] Preview URL loads on desktop.
-- [ ] Preview URL loads on iPhone Safari.
-- [ ] Preview URL updates when another commit is pushed to the same branch/PR.
-- [ ] Live Firebase URL updates only after the intended merge/deploy step.
-
-## 13. One-time GitHub Actions syntax workflow verification
-
-Do this only once branches/PRs are being used. Do not do it on `main`.
-
-- [ ] Create a temporary test branch/PR.
-- [ ] Introduce a deliberate small syntax error in `app.js`.
-- [ ] Confirm the `Syntax check` workflow fails.
-- [ ] Remove the syntax error.
-- [ ] Confirm the `Syntax check` workflow passes.
-- [ ] Close/delete the temporary branch/PR if it exists only for the workflow test.
-
-## 14. Release checks for runtime app versions
-
-- [ ] Visible version label updated.
-- [ ] Service-worker/cache version bumped.
-- [ ] `node --check app.js` passes.
-- [ ] `node --check service-worker.js` passes.
-- [ ] `HANDOVER.txt` updated if architecture/roadmap/status changed.
-- [ ] `CHANGELOG.md` updated.
-- [ ] Any new test cases added to this checklist.
-- [ ] Preview URL tested before merge if Firebase preview channels are available.
+Never enter patient-identifiable information during testing.

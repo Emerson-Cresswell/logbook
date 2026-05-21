@@ -1,92 +1,216 @@
 PROJECT HANDOVER — MyLogbook PWA
-Version covered: V54 Firebase Hosting Prep
+Version covered: V56 workflow validation
 Date prepared: 2026-05-21
 Source of truth for code: GitHub main branch — https://github.com/Emerson-Cresswell/logbook
-Current confirmed runtime app version: V52 (V53/V54 are documentation/process/deployment-prep updates only)
-This handover should be updated every time a meaningful code, roadmap, architecture, testing, deployment, or process decision is made.
+Current confirmed runtime app version: V52
+Current infrastructure/process version: V56
+Primary live Firebase URL: https://app.mylogbook.uk
+Firebase default URL: https://mylogbook-app.web.app
+Legacy GitHub Pages site: keep active as fallback for now
 
+This handover must be updated every time a meaningful code, roadmap, architecture, testing, deployment, or process decision is made.
 
 ================================================================================
-0A. V54 FIREBASE HOSTING PREP UPDATE
+0A. V56 WORKFLOW VALIDATION UPDATE
 ================================================================================
+
+Purpose of V56:
+- Validate the new GitHub Actions + Firebase Hosting pull-request workflow.
+- Prove that broken JavaScript is caught by the automated syntax check before code reaches main.
+- Prove that Firebase Hosting creates a PR preview URL for test branches.
+- Record that the promised deliberate syntax-check test has been completed.
+
+What was done:
+1. Created temporary branch:
+   test/syntax-check-failure
+
+2. Added a deliberate syntax error to app.js:
+   const deliberateSyntaxError = ;
+
+3. Pushed the branch and opened PR:
+   Test syntax check failure
+
+4. Confirmed the expected failing state:
+   - Syntax check failed/red-crossed with the deliberate app.js syntax error.
+   - Firebase Hosting PR workflow still created/updated a preview URL for the PR.
+   - The failing PR was not merged.
+
+5. Removed the deliberate syntax error on the same PR branch.
+
+6. Confirmed the fixed state:
+   - All 3 PR checks passed:
+     - Deploy to Firebase Hosting on PR / build_and_preview
+     - Syntax check / JavaScript syntax (pull_request)
+     - Deploy to Firebase Hosting on PR / Deploy Preview
+   - The PR showed “Ready to merge” only after the deliberate error was removed.
+   - Files changed returned to 0 after the fix, confirming the test branch had no remaining app.js change.
+
+7. Closed the test PR without merging.
+
+8. Deleted the temporary branch locally:
+   test/syntax-check-failure
+
+9. Confirmed Cloud Shell local repo status was clean after returning to main and pulling.
+
+Important conclusion:
+- The automated syntax-check workflow is confirmed working.
+- Firebase PR preview URL generation is confirmed working.
+- The branch/PR workflow is safe to use for future app changes.
+- Never repeat deliberate syntax-failure testing on main.
+
+Versioning note:
+- V56 is a workflow-validation/documentation update only.
+- It does not change runtime app behaviour.
+- The visible in-app version remains V52.
+- No service-worker/cache bump is required for V56 unless runtime files are changed separately.
+
+Recommended repo update for V56:
+- Update HANDOVER.txt.
+- Update CHANGELOG.md.
+- Optionally update TESTING_CHECKLIST.md and AGENTS.md to mark the deliberate syntax-check test as completed.
+
+================================================================================
+0B. V55 FIREBASE GITHUB ACTIONS INTEGRATION UPDATE
+================================================================================
+
+Purpose of V55:
+- Connect Firebase Hosting to GitHub Actions.
+- Enable PR preview deployments.
+- Enable live Firebase deployment on pushes/merges to main.
+- Move away from manual file copying and GitHub Pages cache confusion.
+
+What was completed:
+- Firebase project created:
+  Project name: MyLogbook
+  Project ID: mylogbook-app
+  Plan: Spark/no-cost
+
+- Firebase Hosting deployed successfully from Cloud Shell.
+- Firebase default site confirmed working:
+  https://mylogbook-app.web.app
+
+- Custom subdomain configured and confirmed working:
+  https://app.mylogbook.uk
+
+- Porkbun DNS was updated for app.mylogbook.uk:
+  CNAME host: app
+  CNAME value: mylogbook-app.web.app
+
+- iCloud+ custom email was set up before Firebase:
+  admin@mylogbook.uk
+
+- GitHub Actions integration was created using:
+  firebase init hosting:github --project mylogbook-app
+
+- IAM API had to be enabled when Firebase initially returned:
+  "IAM API has not been used in project mylogbook-app before or it is disabled"
+
+- Firebase created:
+  .firebaserc
+  .gitignore
+  .github/workflows/firebase-hosting-pull-request.yml
+  .github/workflows/firebase-hosting-merge.yml
+
+- Firebase uploaded GitHub secret:
+  FIREBASE_SERVICE_ACCOUNT_MYLOGBOOK_APP
+
+- V55 commit pushed to main:
+  "V55 Firebase GitHub Actions integration"
+
+Important V55 notes:
+- Firebase Hosting is now the preferred testing/deployment host.
+- GitHub Pages should remain active only as a temporary fallback.
+- Future changes should be made on branches/PRs and tested through Firebase PR preview URLs before merging.
+
+================================================================================
+0C. V54 FIREBASE HOSTING PREP UPDATE
+================================================================================
+
 Purpose of V54:
 - Prepare the repository for Firebase Hosting while keeping the app static and local-first.
-- Add Firebase Hosting configuration without adding Firebase Authentication, Firestore, or cloud backup yet.
-- Preserve the current runtime app behaviour; this is a deployment/process-prep batch only.
-- Record the pending one-time GitHub Actions fail/pass verification test so it is not forgotten.
+- Add Firebase Hosting configuration without Firebase Authentication, Firestore, or cloud backup.
+- Preserve current runtime app behaviour.
 
-Files added/updated in the V54 Firebase Hosting Prep package:
-- firebase.json — Firebase Hosting configuration using the repository root as the public directory, while ignoring repo/process files that should not be deployed as site assets.
-- FIREBASE_SETUP.md — browser/Cloud-Shell-oriented setup guide for moving hosting to Firebase and later enabling GitHub PR preview channels.
-- HANDOVER.txt — updated with V54 status and the pending syntax-workflow deliberate failure test.
-- CHANGELOG.md — updated with V54.
-- TESTING_CHECKLIST.md — updated with Firebase/preview and GitHub Actions workflow checks.
-- AGENTS.md — updated with Firebase Hosting and branch-based syntax-workflow verification rules.
+Files added/updated:
+- firebase.json
+- FIREBASE_SETUP.md
+- HANDOVER.txt
+- CHANGELOG.md
+- TESTING_CHECKLIST.md
+- AGENTS.md
 
 Important V54 notes:
-- Do not add Firebase Auth/cloud backup in this batch.
-- Do not change app.js, styles.css, index.html, manifest.json, or service-worker.js unless a separate runtime app change is deliberately requested.
-- Do not bump the visible in-app version or service-worker/cache for this documentation/config-only prep batch.
-- Firebase Hosting should initially deploy the same static localStorage PWA currently hosted by GitHub Pages.
-- After Firebase preview channels/GitHub PR workflow are active, perform a one-time workflow verification on a temporary branch/PR only: introduce a deliberate JavaScript syntax error, confirm the Syntax check workflow fails, remove the error, confirm it passes, then close/merge as appropriate. Never perform this deliberate-failure test on main.
-
-Recommended immediate next workflow after committing V54:
-1. Create a Firebase project.
-2. Use Firebase CLI via Google Cloud Shell or another suitable browser-based environment.
-3. Connect the Firebase project to this GitHub repo.
-4. Deploy the static site to Firebase Hosting.
-5. Set up Firebase Hosting GitHub integration for PR preview URLs.
-6. Confirm the live Firebase URL and at least one preview URL work on desktop and iPhone.
-7. Then perform the one-time branch/PR syntax-check fail/pass verification test.
+- No runtime app behaviour change.
+- No visible in-app version bump.
+- No service-worker/cache bump.
+- Firebase Hosting initially deploys the same static localStorage PWA that GitHub Pages served.
 
 ================================================================================
-0. V53 WORKFLOW FOUNDATION UPDATE
+0D. V53 WORKFLOW FOUNDATION UPDATE
 ================================================================================
+
 Purpose of V53:
-- Optimise the project workflow before adding more app features.
+- Optimise the project workflow before more app features.
 - Make the project recoverable if a ChatGPT conversation becomes inaccessible.
-- Establish repo-level documentation for future ChatGPT/Codex handovers.
-- Establish repeatable testing and coding rules before Firebase/Codex workflow changes.
+- Establish repo-level documentation and repeatable testing/coding rules.
 
-Files added in the V53 workflow foundation package:
-- HANDOVER.txt — exhaustive project handover and source of truth for new chats.
-- CHANGELOG.md — version-by-version release/change record.
-- TESTING_CHECKLIST.md — manual regression checklist.
-- AGENTS.md — instructions for Codex/AI agents working on the repo.
-- .github/workflows/syntax-check.yml — GitHub Actions workflow to run JavaScript syntax checks.
+Files added:
+- HANDOVER.txt
+- CHANGELOG.md
+- TESTING_CHECKLIST.md
+- AGENTS.md
+- .github/workflows/syntax-check.yml
 
-Important note about versioning:
-- These files do not change app runtime behaviour.
-- If only these documentation/process files are committed, the visible in-app version label may still show V52.
-- For future app code releases, bump the visible homepage version label and service-worker/cache version.
-- Do not bump cache/service-worker for documentation-only commits unless a runtime file changes.
-
-Recommended immediate next workflow:
-1. Commit the V53 workflow foundation files to GitHub main or a branch.
-2. Use this HANDOVER.txt as the first file to upload/paste into any new ChatGPT conversation.
-3. Use AGENTS.md as the instruction source when using Codex Cloud.
-4. Move hosting to Firebase Hosting next, initially still static/local-first.
-5. Configure Firebase preview channels/GitHub integration before restarting large feature work.
+Important V53 notes:
+- Documentation/process only.
+- No runtime app behaviour change.
+- No visible in-app version bump.
+- No service-worker/cache bump.
 
 ================================================================================
 1. PROJECT SUMMARY
 ================================================================================
-MyLogbook is a medical procedure and CPD logbook Progressive Web App. It is currently a static HTML/CSS/JavaScript PWA using localStorage, a manifest, and a service worker. It is currently hosted on GitHub Pages, with a planned move to Firebase Hosting. The app is intended for doctors/clinicians to log procedures, CPD, placements, specialties, locations, hospitals, and related details.
 
-The app must remain polished, safe, and local-first while the data model is still changing. Wider private beta should not start until user accounts and automatic cloud backup/restore are available.
+MyLogbook is a medical procedure and CPD logbook Progressive Web App.
 
-Current confirmed status:
-- Current runtime app version: V52. V53 and V54 are documentation/process/deployment-prep updates only unless runtime files are separately changed.
-- GitHub main branch is fully up to date and is the latest version of the project.
-- Current stack: HTML, CSS, JavaScript, PWA, service worker, manifest, localStorage, Excel export via xlsx.full.min.js.
-- Current hosting: GitHub Pages until Firebase Hosting setup/deploy is completed.
-- Planned/next hosting: Firebase Hosting, initially still static/local-first.
-- Planned future backend: Firebase Authentication + cloud backup/restore later.
-- Possible later refactor: JavaScript to TypeScript, but not immediately.
+Current stack:
+- HTML
+- CSS
+- JavaScript
+- PWA manifest
+- service worker
+- localStorage
+- Excel export using xlsx.full.min.js
+- Firebase Hosting for static deployment
+- GitHub Actions for syntax checks and Firebase Hosting deployments
+
+Current confirmed runtime version:
+- V52
+
+Current confirmed infrastructure/process version:
+- V56
+
+Current hosting:
+- Primary: https://app.mylogbook.uk
+- Firebase default: https://mylogbook-app.web.app
+- Legacy fallback: GitHub Pages, keep active for now
+
+Current data model:
+- Local-first
+- localStorage-based
+- No Firebase Authentication yet
+- No Firestore/cloud backup yet
+- Manual JSON backup/import remains important
+
+Strategic beta goal:
+- Get to a safe private beta as soon as possible.
+- Do not invite wider users until accounts, automatic cloud backup, and restore-from-cloud are working.
+- The app must stay polished, safe, and reliable while the data model continues to evolve.
 
 ================================================================================
 2. CORE PRODUCT PRINCIPLES
 ================================================================================
+
 The user strongly prioritises:
 - Clean premium medical aesthetic.
 - Multiple small safe batches over large risky updates.
@@ -96,9 +220,9 @@ The user strongly prioritises:
 - No patient-identifiable information should be encouraged or required.
 - Manual JSON backup must remain available even after cloud backup exists.
 - Historical entries must remain readable even if placements, specialties, categories, or procedures are hidden, removed, or deleted from management lists.
-- The app should get to a safe private beta quickly, but not before accounts and automatic cloud backup/restore are working.
+- The app should reach private beta quickly, but not before accounts and automatic cloud backup/restore are working.
 
-Important UX preferences:
+UX preferences:
 - User is very sensitive to visual polish inconsistencies.
 - No native browser popups; all popups should be themed to match the app.
 - Buttons should use consistent spacing, borders, radius, and shadows.
@@ -111,12 +235,15 @@ Important UX preferences:
 ================================================================================
 3. CURRENT CODING RULES
 ================================================================================
-When producing a new app code version:
-- Only send changed files, unless a full replacement is explicitly required.
+
+For runtime app changes:
+- Always work in a branch/PR where possible.
+- Test via Firebase PR preview URL before merging.
+- Only send/change files that actually need changing.
 - Do not send unchanged files unnecessarily.
-- Always bump the visible version label on the homepage when runtime app files change.
-- Always bump the service worker/cache version when deployable runtime files change.
-- Always syntax-check JavaScript before sending.
+- Always bump the visible homepage version label when runtime app files change.
+- Always bump the service-worker/cache version when deployable runtime files change.
+- Always syntax-check JavaScript before sending/merging.
 - Avoid stale-cache/version mismatch issues.
 - Preserve existing working functionality.
 - Do not casually rewrite architecture.
@@ -125,18 +252,26 @@ When producing a new app code version:
 - Think about future Firebase/data model implications.
 - Avoid bloating code unnecessarily.
 - Do not introduce native alert/confirm/prompt popups; use themed app dialogs.
-- Do not remove existing manual JSON backup/import unless explicitly replacing it with safer functionality.
+- Do not remove manual JSON backup/import unless explicitly replacing it with safer functionality.
 
-Documentation/process commits:
-- Documentation-only commits do not require visible in-app version/cache changes.
+For documentation/process/infrastructure-only commits:
+- No visible in-app version bump is needed unless runtime app files change.
+- No service-worker/cache bump is needed unless runtime app files change.
 - HANDOVER.txt must be updated whenever important information changes.
 - CHANGELOG.md should be updated for every release/change batch.
 - TESTING_CHECKLIST.md should be updated when new features create new testing requirements.
 - AGENTS.md should be updated when coding rules or workflow assumptions change.
 
+Confirmed automated checks:
+- .github/workflows/syntax-check.yml runs:
+  - node --check app.js
+  - node --check service-worker.js
+- V56 deliberately proved this fails for broken app.js and passes once fixed.
+
 ================================================================================
 4. CURRENT UI / NAVIGATION RULES
 ================================================================================
+
 Floating nav controls:
 - Orange back button: bottom-left.
 - Green home button: bottom-centre.
@@ -147,9 +282,9 @@ Floating nav controls:
 - Cancel should trigger a themed warning popup when abandoning an add/edit flow.
 - Back/cancel/home buttons should have perimeter/border styling consistent with normal buttons.
 - Back button icon should be a 180-degree hairpin-style arrow, with a more orange tone.
-- Floating controls should sit slightly in from the screen edges, not tight to the corners.
+- Floating controls should sit slightly in from screen edges, not tight to corners.
 
-Important recent polish issues to verify in V52/V53 testing:
+Important recent polish issues to verify in future runtime testing:
 - Back/cancel buttons are slightly further from screen edges.
 - Save changes button only appears after actual edit changes.
 - Home button does not appear during add/edit flows.
@@ -160,6 +295,7 @@ Important recent polish issues to verify in V52/V53 testing:
 ================================================================================
 5. CURRENT WORKING FEATURE AREAS
 ================================================================================
+
 Known working or partially working feature areas include:
 - Placements system:
   - Add/edit/delete placements.
@@ -179,23 +315,25 @@ Known working or partially working feature areas include:
 ================================================================================
 6. PROCEDURE SYSTEM ARCHITECTURE
 ================================================================================
-This is critical.
 
-There are two separate concepts:
+This is critical. There are two separate concepts:
 
-A. GLOBAL PROCEDURE LIBRARY
-- App-provided procedures:
-  - Built into the app.
-  - Cannot be deleted from the app by the user.
-  - Can be added to or removed from individual specialty/category assignments.
-  - Can be shown/hidden within categories.
-- User-created procedures:
-  - Fully editable/deletable from the app.
-  - Can be assigned to one or more specialty/category combinations.
-  - If deleted from the custom procedure library, they are removed from every specialty/category where currently used.
-  - Historical entries must remain intact using saved snapshots of procedure names/details.
+A. Global procedure library
 
-B. SPECIALTY/CATEGORY ASSIGNMENT
+App-provided procedures:
+- Built into the app.
+- Cannot be deleted from the app by the user.
+- Can be added to or removed from individual specialty/category assignments.
+- Can be shown/hidden within categories.
+
+User-created procedures:
+- Fully editable/deletable from the app.
+- Can be assigned to one or more specialty/category combinations.
+- If deleted from the custom procedure library, they are removed from every specialty/category where currently used.
+- Historical entries must remain intact using saved snapshots of procedure names/details.
+
+B. Specialty/category assignment
+
 - Categories contain selected procedures from the global library.
 - Procedures can be added to a category.
 - Procedures can be removed from a category.
@@ -217,6 +355,7 @@ Custom categories:
 ================================================================================
 7. ADD / REMOVE PROCEDURE FLOW
 ================================================================================
+
 Desired behaviour:
 - Add/Remove procedures pages should support bulk selection.
 - Already-added procedures should be listed first alphabetically, then not-added procedures alphabetically.
@@ -232,6 +371,7 @@ Desired behaviour:
 ================================================================================
 8. CUSTOM PROCEDURE PLAN
 ================================================================================
+
 Custom procedure wizard must support:
 - Procedure name.
 - Duplicate warning: warn but allow creation.
@@ -280,6 +420,7 @@ Suggested stored metadata for filterable custom/template pages:
 ================================================================================
 9. SPECIALTIES / PLACEMENTS / WIZARD FLOW
 ================================================================================
+
 Placement decisions:
 - Users can create placements with a name and date range.
 - Placement can be Not linked to placement.
@@ -308,6 +449,7 @@ CPD flow:
 ================================================================================
 10. DRAFT ENTRY PLAN
 ================================================================================
+
 Drafts should come after the procedure wizard/workflow is stable, unless current V52 code already partially added draft support and needs stabilising sooner.
 
 Planned features:
@@ -321,6 +463,7 @@ Planned features:
 ================================================================================
 11. QUICK ADD ENTRY PLAN
 ================================================================================
+
 Quick add should come after the procedure library and procedure-specific workflows are stable.
 
 Planned features:
@@ -336,6 +479,7 @@ Planned features:
 ================================================================================
 12. EXPORT / SUMMARIES PLAN
 ================================================================================
+
 Filtered Excel export:
 - Export Excel file should open export options first.
 - Filters should include date range, placement, specialty, procedure vs CPD vs all, and later draft/final status if relevant.
@@ -349,28 +493,31 @@ Filtered summaries:
 ================================================================================
 13. FIREBASE / BETA ROADMAP
 ================================================================================
+
 Beta goal:
 Get to a safe private beta as soon as possible, but do not invite wider users until accounts and automatic cloud backup/restore are working.
 
 Revised high-level sequence:
-1. Stabilise current V52/V53 situation.
-2. Add permanent handover/versioning/testing workflow.
-3. Move hosting to Firebase Hosting while still static/local-first.
-4. Set up Firebase preview channels and/or GitHub PR preview deployments.
-5. Continue procedure-library work.
-6. Do data robustness/future-proofing pass before cloud data.
-7. Add Firebase Authentication.
-8. Add automatic whole-logbook cloud backup.
-9. Add restore-from-cloud.
-10. Add minimum privacy/security/legal wording.
-11. Small private beta with 3–10 colleagues.
-12. Fix beta issues.
-13. Later: certificate attachments, desktop/review screens, supervisor export/view, donation link, analytics, advanced sync.
+1. Stabilise current V52/V56 situation.
+2. Keep permanent handover/versioning/testing workflow current.
+3. Continue procedure-library work using branches/PRs and Firebase previews.
+4. Do data robustness/future-proofing pass before cloud data.
+5. Add Firebase Authentication.
+6. Add automatic whole-logbook cloud backup.
+7. Add restore-from-cloud.
+8. Add minimum privacy/security/legal wording.
+9. Small private beta with 3–10 colleagues.
+10. Fix beta issues.
+11. Later: certificate attachments, desktop/review screens, supervisor export/view, donation link, analytics, advanced sync.
 
 Automatic cloud backup target:
 - App works locally.
 - When an entry is added/edited/deleted, the whole logbook is backed up to the user’s Firebase account.
-- Clear statuses: Cloud backup up to date; Cloud backup pending; Last cloud backup date/time; Cloud backup failed — local data is still safe.
+- Clear statuses:
+  - Cloud backup up to date.
+  - Cloud backup pending.
+  - Last cloud backup date/time.
+  - Cloud backup failed — local data is still safe.
 - Manual JSON backup remains available.
 
 Restore-from-cloud target:
@@ -388,8 +535,9 @@ Privacy/security before private beta:
 - Make clear users remain responsible for not entering patient-identifiable data.
 
 ================================================================================
-14. RECOMMENDED WORKFLOW FROM V53 ONWARD
+14. CURRENT RECOMMENDED WORKFLOW
 ================================================================================
+
 Use ChatGPT for:
 - Product decisions.
 - Roadmap maintenance.
@@ -397,6 +545,7 @@ Use ChatGPT for:
 - Test planning.
 - Reviewing proposed diffs conceptually.
 - Keeping HANDOVER.txt current.
+- Generating precise prompts/instructions for Codex.
 
 Use Codex Cloud/GitHub PRs for:
 - Direct code changes.
@@ -404,50 +553,46 @@ Use Codex Cloud/GitHub PRs for:
 - Pull request creation.
 - Iterative fixes on the same branch/PR.
 
-Use Firebase Hosting preview channels for:
+Use Firebase Hosting preview URLs for:
 - Testing each branch/PR on iPhone and desktop before merge.
 - Avoiding GitHub Pages/service-worker cache confusion.
 - Sharing exact preview builds.
-
-One-time GitHub Actions verification still pending after branch/PR workflow exists:
-- On a temporary branch/PR only, deliberately introduce a small JavaScript syntax error in app.js.
-- Confirm the Syntax check workflow fails.
-- Remove the syntax error.
-- Confirm the Syntax check workflow passes.
-- Never run this deliberate failure test on main.
 
 Recommended branch/deploy workflow:
 1. Create or ask Codex to create a branch for the next small batch.
 2. Codex makes changes on the branch.
 3. Codex opens a pull request.
-4. Firebase Hosting GitHub Action creates a preview URL for that PR.
-5. Test preview URL on iPhone and desktop.
-6. Fix issues on the same branch/PR.
-7. Merge only when tested.
-8. Live channel updates.
-9. Update HANDOVER.txt and CHANGELOG.md.
+4. GitHub Actions run:
+   - Syntax check.
+   - Firebase Hosting PR preview.
+5. Firebase posts a preview URL on the PR.
+6. Test preview URL on iPhone and desktop.
+7. Fix issues on the same branch/PR.
+8. Merge only when tested.
+9. Live Firebase channel updates from main.
+10. Update HANDOVER.txt and CHANGELOG.md.
 
-For now, if not using Codex yet:
-- ChatGPT can continue to produce changed files only.
-- User can paste into GitHub manually, but this is slower and more error-prone.
-- Moving to Codex Cloud and Firebase previews should reduce manual copy/paste and phone cache confusion.
+Important:
+- Do not merge PRs with failing checks.
+- Do not commit direct to main for normal app work unless deliberately agreed.
+- Do not repeat syntax-failure testing on main.
 
 ================================================================================
 15. RECOMMENDED REFACTOR PLAN
 ================================================================================
+
 Do not split app.js as a giant first step. That is risky.
 
 Recommended staged approach:
-1. Add repo hygiene files first:
+1. Maintain repo hygiene files:
    - HANDOVER.txt.
    - CHANGELOG.md.
    - TESTING_CHECKLIST.md.
    - AGENTS.md.
-2. Add simple automated checks:
-   - JavaScript syntax check with node --check app.js.
-   - JavaScript syntax check with node --check service-worker.js.
-   - Optional lightweight smoke checks later.
-3. Move to Firebase Hosting and preview channels.
+2. Use automated checks:
+   - node --check app.js.
+   - node --check service-worker.js.
+3. Use Firebase Hosting and PR preview channels for all meaningful changes.
 4. Only then begin modularisation gradually.
 
 Suggested future module boundaries:
@@ -465,32 +610,36 @@ Suggested future module boundaries:
 - src/summary.js — summaries/filtering.
 - src/firebase.js — future auth/cloud backup.
 
-Use ES modules if keeping the app build-free, but update index.html and service worker cache carefully. Consider a proper build tool later, but not until the app is stable enough to justify it.
+Use ES modules if keeping the app build-free, but update index.html and service worker cache carefully.
+Consider a proper build tool later, but not until the app is stable enough to justify it.
 
 ================================================================================
 16. WHAT THE NEXT ASSISTANT SHOULD DO FIRST
 ================================================================================
+
 If starting in a new chat:
 1. Read this HANDOVER.txt.
 2. Treat GitHub main as the current source of truth unless the user says otherwise.
-3. Treat V52 as the current confirmed runtime version unless the user says a later runtime app version has been merged.
-4. Do not assume older V49 handover details are current if they conflict with V52/GitHub main.
-5. Before coding, inspect current app.js/styles.css/service-worker.js/index.html as needed.
-6. Continue with process/Firebase/Codex optimisation first if not already done.
-7. For app changes, propose a small batch, then produce only changed files with a version/cache bump and syntax check.
-8. Update HANDOVER.txt and CHANGELOG.md after each meaningful change.
+3. Treat V52 as the current confirmed runtime app version unless the user says a later runtime app version has been merged.
+4. Treat V56 as the current workflow/infrastructure status.
+5. Primary app URL is now https://app.mylogbook.uk.
+6. Before coding, inspect current app.js/styles.css/service-worker.js/index.html as needed.
+7. Use branch/PR + Firebase preview workflow for future app changes where possible.
+8. For app changes, propose a small batch, then produce/change only necessary files with version/cache bump and syntax check.
+9. Update HANDOVER.txt and CHANGELOG.md after each meaningful change.
+10. Do not assume older V49 handover details are current if they conflict with V52/GitHub main.
 
 ================================================================================
 17. IMMEDIATE NEXT TASKS SUGGESTED
 ================================================================================
-Recommended next non-feature tasks:
-1. Commit V53 workflow foundation files.
-2. Move static hosting from GitHub Pages to Firebase Hosting.
-3. Configure Firebase Hosting GitHub Action for PR preview URLs.
-4. Decide whether to use Codex Cloud as the main code-editing workflow.
-5. Confirm how to keep HANDOVER.txt updated after each merged PR.
 
-Recommended next feature tasks after workflow is improved:
+Recommended next non-feature tasks:
+1. Commit V56 handover/changelog documentation update.
+2. Decide whether to use Codex Cloud as the main code-editing workflow.
+3. Create first real feature branch/PR through Codex or Cloud Shell to test the new workflow on a harmless documentation-only or tiny UI change.
+4. Confirm how the user wants to manage updated HANDOVER.txt after each merged PR.
+
+Recommended next app feature tasks after workflow is improved:
 1. Stabilise any remaining V52 floating nav/procedure management issues.
 2. Custom procedures page.
 3. Procedure creation wizard.
@@ -501,9 +650,3 @@ Recommended next feature tasks after workflow is improved:
 8. Filtered summaries.
 9. Data robustness pass.
 10. Firebase Auth + whole-logbook backup + restore.
-
-
-================================================================================
-18. PENDING WORKFLOW VERIFICATION
-================================================================================
-After Firebase preview channels/GitHub PR workflow are active, perform a one-time test on a temporary branch/PR only: introduce a deliberate JavaScript syntax error in app.js, confirm the Syntax check workflow fails, remove the error, confirm it passes, then close/merge as appropriate. Never run this deliberate failure test on main.

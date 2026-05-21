@@ -1,168 +1,112 @@
-# AGENTS.md — MyLogbook Coding Instructions
+# AGENTS.md — MyLogbook Instructions for AI Coding Agents
 
-These instructions are for Codex/AI agents working on this repository.
+This file is for Codex or any other coding agent working on the MyLogbook repository.
 
 ## Project
 
-MyLogbook is a medical procedure/CPD logbook PWA. It is currently a static HTML/CSS/JavaScript app using localStorage, a service worker, a web manifest, and Excel export via `xlsx.full.min.js`.
+MyLogbook is a static local-first medical procedure/CPD logbook PWA.
 
-GitHub main is the source of truth unless the user explicitly says otherwise.
+Current runtime app version: V52  
+Current workflow/infrastructure status: V56  
+Primary live URL: https://app.mylogbook.uk  
+Firebase default URL: https://mylogbook-app.web.app  
+Source of truth: GitHub main branch  
 
-## Required first steps for any task
+## Read first
 
-1. Read `HANDOVER.txt`.
-2. Read `CHANGELOG.md`.
-3. Read `TESTING_CHECKLIST.md`.
-4. Inspect relevant current files before editing.
-5. Keep the change small and aligned with the requested batch.
+Before editing code, read:
 
-## Core rules
+1. `HANDOVER.txt`
+2. `CHANGELOG.md`
+3. `TESTING_CHECKLIST.md`
+4. Relevant source files for the requested change
 
-- Preserve existing working functionality.
-- Do not casually rewrite architecture.
-- Prefer small, safe, reviewable batches.
-- Only change files required for the task.
-- Do not send or modify unchanged files unnecessarily.
-- Do not introduce native browser `alert`, `confirm`, or `prompt` popups for new UI. Use themed app dialogs.
-- Preserve the premium medical aesthetic.
-- Preserve manual JSON backup/import.
-- Historical entries must remain readable even if associated placements/specialties/categories/procedures are hidden, removed, or deleted from management lists.
-- Avoid permanent hacky migration code. If migration is required, make it deliberate, versioned, and removable when safe.
+## Current workflow
 
-## Version/cache rules
+Use branch/PR workflow for meaningful changes.
+
+1. Create a branch for the requested batch.
+2. Keep the batch small.
+3. Change only necessary files.
+4. Run syntax checks locally if possible:
+   - `node --check app.js`
+   - `node --check service-worker.js`
+5. Open a pull request.
+6. Wait for GitHub Actions:
+   - Syntax check.
+   - Firebase Hosting PR preview.
+7. User tests the Firebase preview URL on desktop and iPhone.
+8. Fix issues on the same branch/PR.
+9. Merge only after checks pass and user approves.
+10. Update `HANDOVER.txt` and `CHANGELOG.md` for meaningful changes.
+
+## Versioning rules
 
 For runtime app changes:
+- Bump visible homepage version label.
+- Bump service-worker/cache version.
+- Ensure iPhone/PWA users receive the new runtime files.
+- Update testing checklist if new test coverage is needed.
 
-- Update the visible version label on the homepage.
-- Bump the service-worker/cache version when deployable runtime files change.
-- Ensure cache/version changes are consistent to avoid stale iPhone PWA behaviour.
-- Update `CHANGELOG.md`.
-- Update `HANDOVER.txt` if the task changes architecture, roadmap, known issues, or current status.
+For documentation/process/infrastructure-only changes:
+- Do not bump visible in-app version.
+- Do not bump service-worker/cache unless runtime files changed.
 
-For documentation-only changes:
+## Confirmed workflow validation
 
-- Do not bump the service-worker/cache unless runtime files change.
-- Still update `CHANGELOG.md` and `HANDOVER.txt` if relevant.
+V56 validated the GitHub Actions/Firebase preview flow:
 
-## Checks before finishing a task
+- Deliberate syntax error on temporary branch caused syntax check failure.
+- Removing the error caused all checks to pass.
+- Firebase PR preview URL was generated.
+- Test PR was closed without merging.
 
-Run syntax checks when JavaScript is touched:
+Do not repeat deliberate syntax-failure testing on main.
 
-```bash
-node --check app.js
-node --check service-worker.js
-```
+## Coding style and UX rules
 
-For app behaviour changes, also run through the relevant sections of `TESTING_CHECKLIST.md`.
-
-## UI principles
-
-- Clean, premium, medical aesthetic.
-- Emerald green primary actions.
+- Preserve the premium medical aesthetic.
+- Emerald green primary buttons.
 - White/secondary buttons with subtle internal shadow only.
-- No aggressive gradients.
-- Consistent button spacing, borders, radius, and shadows.
-- Floating nav buttons should feel part of the same design system as normal buttons.
-- Colour should not be the only state indicator; use text such as Shown/Hidden where relevant.
+- Avoid aggressive gradients.
+- No native alert/confirm/prompt popups.
+- Use themed app dialogs.
+- Keep spacing, borders, radius, and shadows consistent.
+- User is highly sensitive to visual polish inconsistencies.
 
-Floating navigation rules:
-
-- Orange back button: bottom-left.
-- Green home button: bottom-centre.
-- Red cancel/X button: bottom-right.
+Floating navigation:
+- Orange back button bottom-left.
+- Green home button bottom-centre.
+- Red cancel/X button bottom-right.
 - Home button appears on non-home viewing pages.
 - Home button does not appear during add/edit workflows.
 - Cancel appears during add/edit workflows.
-- Cancel triggers a themed warning before abandoning add/edit work.
+- Cancel should trigger a themed warning popup.
 
-## Procedure architecture rules
+## Data safety
 
-There are two separate concepts:
+- App is currently localStorage/local-first.
+- Manual JSON backup/import must remain available.
+- Historical entries must remain readable after placements/procedures/specialties are hidden, removed, or deleted.
+- Do not encourage or require patient-identifiable data.
+- Do not add Firebase Auth/Firestore/cloud backup unless explicitly requested in that batch.
 
-1. Global procedure library
-   - App-provided procedures are built in and cannot be deleted from the app.
-   - User-created procedures are fully editable/deletable.
+## Architecture caution
 
-2. Specialty/category assignment
-   - Categories contain selected procedures from the global library.
-   - Procedures can be added to or removed from categories.
-   - Procedures can be shown/hidden within categories.
-   - Removing from category does not delete from the global library.
-   - Historical entries must remain readable.
+Do not casually rewrite architecture.
+Do not split `app.js` as a giant refactor.
+If modularisation is requested, do it gradually and with careful service-worker/index.html updates.
 
-Restore default category list:
+## Near-term roadmap
 
-- Reset selected category to app-default procedures.
-- Remove user-added procedures from that category only.
-- Do not delete custom procedures from the app.
-- Restored default procedures become shown/visible.
-
-Custom categories:
-
-- Categories are app-defined for now.
-- Avoid choices that make future custom categories difficult.
-
-## Custom procedure rules
-
-Future custom procedure support should follow these decisions:
-
-- Custom Procedures page lists all user-created procedures.
-- Show where each custom procedure is used.
-- Deleting a custom procedure removes it from all category assignments, but historical entries remain readable.
-- Creating from Custom Procedures page does not auto-assign to any category.
-- Creating from within Add procedure flow can offer to add to the current category.
-- Duplicate/similar procedure names should warn but allow creation.
-
-Procedure wizard version 1 page types:
-
-- Single-choice button pages.
-- Optional free-text notes page.
-- Multi-choice only where needed, especially Complications.
-
-Template pages:
-
-- Site and Technique are named templates with user-defined options.
-- Role, Supervision, Outcome, Number of attempts can use app-defined options.
-- Complications should probably include an extensive/default list plus Other free text.
-- Template pages should be filterable/exportable later.
-- Fully custom pages should be exportable but not filterable initially.
-
-
-## Firebase Hosting / deployment rules
-
-The near-term Firebase task is Hosting only. Keep the app static and local-first. Do not add Firebase Authentication, Firestore, cloud backup, or restore-from-cloud unless the user explicitly starts that phase.
-
-For Firebase Hosting prep:
-
-- Prefer small config/documentation changes before runtime app changes.
-- Do not bump the visible runtime app version or service-worker/cache for documentation/config-only commits.
-- If runtime app files change, follow the normal version/cache rules.
-- Preserve manual JSON backup/import.
-- Remember that localStorage is origin-specific; moving from GitHub Pages to Firebase Hosting means the Firebase URL will not automatically see data stored under the GitHub Pages origin.
-
-## One-time workflow verification rule
-
-After branch/PR workflow is active, perform one temporary branch/PR test to prove the syntax workflow works end-to-end:
-
-1. Introduce a deliberate JavaScript syntax error in `app.js`.
-2. Confirm the `Syntax check` workflow fails.
-3. Remove the syntax error.
-4. Confirm the `Syntax check` workflow passes.
-
-Never perform this deliberate-failure test on `main`.
-
-## Firebase/cloud roadmap constraints
-
-Near-term Firebase move is Hosting only:
-
-- Keep the app static and local-first initially.
-- Do not add Firebase Auth/cloud data until data model and app structure are stable enough.
-- Add preview channels before large feature work where possible.
-
-Later beta requirements:
-
-- Firebase Authentication.
-- Automatic whole-logbook cloud backup.
-- Restore from cloud.
-- Manual JSON backup remains available.
-- Basic privacy/security wording before inviting wider users.
+Likely next app work:
+1. Stabilise any remaining V52 floating nav/procedure management issues.
+2. Custom procedures page.
+3. Procedure creation wizard.
+4. Procedure-specific add-entry workflows.
+5. Draft entries.
+6. Quick add entry.
+7. Filtered Excel export.
+8. Filtered summaries.
+9. Data robustness pass.
+10. Firebase Auth + whole-logbook backup + restore.
