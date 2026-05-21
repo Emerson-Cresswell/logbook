@@ -27,6 +27,9 @@ Completed:
 - Updated `service-worker.js` cache name and cache file list to include new first-party JS files.
 - Updated syntax workflow to check all first-party JavaScript files while excluding `xlsx.full.min.js`.
 - Updated handover/testing/agent documentation for V57 scope and regression expectations.
+- Follow-up hardening: added explicit startup guard in `app.js` for missing `AppConfig`/`AppUtils` with clear console error.
+- Follow-up hardening: bumped service-worker cache key to prevent stale/mixed asset combinations during rollout.
+- Follow-up hardening: confirmed app-shell network-first matching supports both Firebase root paths and legacy `/logbook` fallback paths.
 
 ## V56 — Workflow validation
 

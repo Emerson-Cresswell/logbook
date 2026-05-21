@@ -1,3 +1,10 @@
+if (!window.AppConfig || !window.AppUtils) {
+  console.error(
+    "MyLogbook startup blocked: missing AppConfig/AppUtils. This usually indicates mixed cached assets. Hard refresh to load the latest app shell."
+  );
+  throw new Error("Missing AppConfig/AppUtils");
+}
+
 const {
   STORAGE_KEY,
   APP_VERSION,

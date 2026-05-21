@@ -25,8 +25,9 @@ What was done:
 - Added `js/utils.js` for shared low-risk helpers (`padNumber`, `todayISO`, `formatDate`).
 - Kept `app.js` as the main entry point and consumed `window.AppConfig`/`window.AppUtils`.
 - Updated `index.html` script order to load new first-party modules before `app.js`.
-- Bumped service-worker cache key and added new JS files to cache and app-shell path matching.
+- Bumped service-worker cache key and added new JS files to cache and app-shell path matching (including Firebase root + legacy /logbook app-shell paths).
 - Expanded syntax-check workflow to check all first-party `.js` files while excluding `xlsx.full.min.js`.
+- Added startup guard in `app.js` to emit a clear console error if `window.AppConfig`/`window.AppUtils` are missing (indicates mixed stale assets).
 
 Versioning note:
 - V57 is a structure/workflow refactor with behaviour preserved.
