@@ -1,9 +1,9 @@
 PROJECT HANDOVER — MyLogbook PWA
-Version covered: V56 workflow validation
+Version covered: V57 modularisation foundation
 Date prepared: 2026-05-21
 Source of truth for code: GitHub main branch — https://github.com/Emerson-Cresswell/logbook
 Current confirmed runtime app version: V52
-Current infrastructure/process version: V56
+Current infrastructure/process version: V57
 Primary live Firebase URL: https://app.mylogbook.uk
 Firebase default URL: https://mylogbook-app.web.app
 Legacy GitHub Pages site: keep active as fallback for now
@@ -11,6 +11,27 @@ Legacy GitHub Pages site: keep active as fallback for now
 This handover must be updated every time a meaningful code, roadmap, architecture, testing, deployment, or process decision is made.
 
 ================================================================================
+
+================================================================================
+0. V57 MODULARISATION FOUNDATION UPDATE
+================================================================================
+
+Purpose of V57:
+- Establish a low-risk JavaScript modularisation foundation for future incremental splits.
+- Preserve existing behaviour and UI while reducing `app.js` constant/helper surface area.
+
+What was done:
+- Added `js/config.js` for default constants and option datasets.
+- Added `js/utils.js` for shared low-risk helpers (`padNumber`, `todayISO`, `formatDate`).
+- Kept `app.js` as the main entry point and consumed `window.AppConfig`/`window.AppUtils`.
+- Updated `index.html` script order to load new first-party modules before `app.js`.
+- Bumped service-worker cache key and added new JS files to cache and app-shell path matching.
+- Expanded syntax-check workflow to check all first-party `.js` files while excluding `xlsx.full.min.js`.
+
+Versioning note:
+- V57 is a structure/workflow refactor with behaviour preserved.
+- Visible runtime label remains V52.
+
 0A. V56 WORKFLOW VALIDATION UPDATE
 ================================================================================
 

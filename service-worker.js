@@ -1,10 +1,12 @@
-const CACHE_NAME = "procedure-logbook-v52-nav-guard-fixes";
+const CACHE_NAME = "procedure-logbook-v57-modular-foundation";
 
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./js/config.js",
+  "./js/utils.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
@@ -44,6 +46,8 @@ function isAppShellRequest(request) {
     "/logbook/",
     "/logbook/index.html",
     "/logbook/app.js",
+    "/logbook/js/config.js",
+    "/logbook/js/utils.js",
     "/logbook/styles.css",
     "/logbook/manifest.json",
     "/logbook/service-worker.js"

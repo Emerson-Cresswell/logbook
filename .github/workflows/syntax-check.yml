@@ -20,8 +20,12 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check app.js syntax
-        run: node --check app.js
-
-      - name: Check service-worker.js syntax
-        run: node --check service-worker.js
+      - name: Check first-party JavaScript syntax
+        run: |
+          mapfile -t files < <(find . -type f -name "*.js" \
+            ! -name "xlsx.full.min.js" \
+            ! -path "./.git/*" | sort)
+          printf '%s\n' "${files[@]}"
+          for file in "${files[@]}"; do
+            node --check "$file"
+          done

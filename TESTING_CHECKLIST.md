@@ -5,7 +5,7 @@ Use this checklist for manual regression testing and workflow validation.
 ## Current status
 
 - Runtime app version currently confirmed: V52.
-- Workflow/infrastructure status: V56.
+- Workflow/infrastructure status: V57.
 - Primary live URL: https://app.mylogbook.uk
 - Firebase default URL: https://mylogbook-app.web.app
 - Legacy GitHub Pages site: keep active as fallback for now.
@@ -17,6 +17,8 @@ GitHub Actions should run on PRs and pushes:
 - `Syntax check`
   - `node --check app.js`
   - `node --check service-worker.js`
+  - `node --check js/config.js`
+  - `node --check js/utils.js`
 
 - `Deploy to Firebase Hosting on PR`
   - Should create a Firebase preview URL for pull requests.
@@ -101,3 +103,11 @@ After workflow or hosting changes:
 ## Do not test with real patient-identifiable data
 
 Never enter patient-identifiable information during testing.
+
+
+## V57 modularisation regression focus
+
+1. Confirm app loads normally with no console errors after adding `js/config.js` and `js/utils.js`.
+2. Confirm home screen still shows runtime app version `v52`.
+3. Confirm add/view/edit/export/import flows behave identically to pre-V57 behaviour.
+4. Confirm service-worker serves refreshed runtime assets after hard refresh/reopen on iPhone PWA.

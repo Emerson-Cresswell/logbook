@@ -7,7 +7,7 @@ This file is for Codex or any other coding agent working on the MyLogbook reposi
 MyLogbook is a static local-first medical procedure/CPD logbook PWA.
 
 Current runtime app version: V52  
-Current workflow/infrastructure status: V56  
+Current workflow/infrastructure status: V57  
 Primary live URL: https://app.mylogbook.uk  
 Firebase default URL: https://mylogbook-app.web.app  
 Source of truth: GitHub main branch  
