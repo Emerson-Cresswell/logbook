@@ -4039,3 +4039,6 @@ function init() {
 }
 
 init();
+
+// DELIBERATE SYNTAX TEST - REMOVE BEFORE MERGE
+const deliberateSyntaxError = ;
