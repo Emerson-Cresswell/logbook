@@ -9,6 +9,33 @@ This file records meaningful project changes so future chats, Codex tasks, and p
 - Documentation-only/process-only/infrastructure-only commits do not need a service-worker/cache bump unless runtime files are changed.
 - Keep entries concise but specific enough to support debugging and handover.
 
+
+## V57 — JavaScript modularisation foundation
+
+Date: 2026-05-21  
+Type: Runtime structure refactor (behaviour-preserving)  
+Runtime app behaviour changed: No  
+Runtime app visible version changed: No (remains `v52`)  
+Service worker/cache changed: Yes  
+
+Completed:
+- Added first-party JavaScript folder `js/`.
+- Moved low-risk configuration/constants from `app.js` to `js/config.js`.
+- Moved low-risk date/format helper utilities (`padNumber`, `todayISO`, `formatDate`) from `app.js` to `js/utils.js`.
+- Kept `app.js` as the main entry-point and wired it to consume `window.AppConfig` and `window.AppUtils`.
+- Updated `index.html` script loading order to load new files before `app.js`.
+- Updated `service-worker.js` cache name and cache file list to include new first-party JS files.
+- Updated syntax workflow to check all first-party JavaScript files while excluding `xlsx.full.min.js`.
+- Updated handover/testing/agent documentation for V57 scope and regression expectations.
+- Follow-up hardening: added explicit startup guard in `app.js` for missing `AppConfig`/`AppUtils` with clear console error.
+- Follow-up hardening: bumped service-worker cache key to prevent stale/mixed asset combinations during rollout.
+- Follow-up hardening: confirmed app-shell network-first matching supports both Firebase root paths and legacy `/logbook` fallback paths.
+
+- Follow-up hardening: wrapped `js/utils.js` and `js/config.js` in IIFEs to prevent global identifier collisions in classic script loading.
+
+- Follow-up hardening: changed `app.js` helper aliases to `var` bindings to tolerate stale older `js/utils.js` globals during mixed-cache rollouts.
+- Follow-up hardening: added `?v=57` cache-busting query strings to runtime script tags and matched those URLs in service-worker pre-cache list.
+
 ## V56 — Workflow validation
 
 Date: 2026-05-21  

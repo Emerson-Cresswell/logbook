@@ -1,5 +1,28 @@
-const STORAGE_KEY = "procedureLogbookData_v1";
-const APP_VERSION = "v52";
+if (!window.AppConfig || !window.AppUtils) {
+  console.error(
+    "MyLogbook startup blocked: missing AppConfig/AppUtils. This usually indicates mixed cached assets. Hard refresh to load the latest app shell."
+  );
+  throw new Error("Missing AppConfig/AppUtils");
+}
+
+const {
+  STORAGE_KEY,
+  APP_VERSION,
+  procedureSteps,
+  cpdSteps,
+  defaultSpecialties,
+  defaultProcedureCategories,
+  defaultProcedureLibrary,
+  defaultSpecialtyProcedureAssignments,
+  defaultProcedureOptions,
+  defaultSiteOptionsByProcedure,
+  defaultCpdOptions,
+  configurableFields
+} = window.AppConfig;
+
+var padNumber = window.AppUtils.padNumber;
+var todayISO = window.AppUtils.todayISO;
+var formatDate = window.AppUtils.formatDate;
 
 let state = {
   entries: [],
@@ -44,224 +67,6 @@ let editOriginalComparableData = null;
 let placementsBackAction = () => showScreen("homeScreen");
 let specialtiesProceduresBackAction = () => showScreen("homeScreen");
 let activeHomeGuard = null;
-
-const procedureSteps = [
-  "date",
-  "placement",
-  "specialty",
-  "hospital",
-  "context",
-  "procedure",
-  "site",
-  "technique",
-  "role",
-  "supervision",
-  "outcome",
-  "attempts",
-  "complication",
-  "notes",
-  "review"
-];
-
-const cpdSteps = [
-  "date",
-  "placement",
-  "cpdType",
-  "cpdFormat",
-  "cpdTopic",
-  "cpdDetails",
-  "cpdTime",
-  "cpdReflection",
-  "cpdEvidence",
-  "review"
-];
-
-const defaultSpecialties = [
-  { id: "critical-care", name: "Critical Care" },
-  { id: "anaesthetics", name: "Anaesthetics" },
-  { id: "emergency-medicine", name: "Emergency Medicine" },
-  { id: "acute-medicine", name: "Acute Medicine" }
-];
-
-const defaultProcedureCategories = [
-  { id: "vascular-access", name: "Line insertion" },
-  { id: "airway", name: "Airway" },
-  { id: "ultrasound", name: "Ultrasound" },
-  { id: "drains", name: "Drains" },
-  { id: "halo", name: "HALO procedures" },
-  { id: "other", name: "Other procedures" }
-];
-
-const defaultProcedureLibrary = [
-  { id: "central-venous-catheter", name: "Central venous catheter", needsSite: true, needsTechnique: false },
-  { id: "arterial-line", name: "Arterial line", needsSite: true, needsTechnique: true },
-  { id: "intubation", name: "Intubation", needsSite: false, needsTechnique: false },
-  { id: "chest-drain", name: "Chest drain", needsSite: true, needsTechnique: false },
-  { id: "lumbar-puncture", name: "Lumbar puncture", needsSite: false, needsTechnique: false },
-  { id: "ascitic-drain", name: "Ascitic drain", needsSite: true, needsTechnique: false },
-  { id: "bronchoscopy", name: "Bronchoscopy", needsSite: false, needsTechnique: false },
-  { id: "tracheostomy-related-procedure", name: "Tracheostomy-related procedure", needsSite: false, needsTechnique: false },
-  { id: "other", name: "Other", needsSite: false, needsTechnique: false }
-];
-
-const defaultSpecialtyProcedureAssignments = {
-  "critical-care": {
-    "vascular-access": ["central-venous-catheter", "arterial-line"],
-    "airway": ["intubation", "tracheostomy-related-procedure", "bronchoscopy"],
-    "drains": ["chest-drain", "ascitic-drain"],
-    "other": ["lumbar-puncture", "other"]
-  },
-  "anaesthetics": {
-    "airway": ["intubation"],
-    "vascular-access": ["arterial-line", "central-venous-catheter"],
-    "other": ["other"]
-  },
-  "emergency-medicine": {
-    "halo": ["intubation", "chest-drain"],
-    "vascular-access": ["arterial-line", "central-venous-catheter"],
-    "other": ["lumbar-puncture", "other"]
-  },
-  "acute-medicine": {
-    "drains": ["ascitic-drain", "chest-drain"],
-    "other": ["lumbar-puncture", "other"]
-  }
-};
-
-const defaultProcedureOptions = {
-  specialty: defaultSpecialties.map(specialty => specialty.name),
-  procedure: [
-    "Central venous catheter",
-    "Arterial line",
-    "Intubation",
-    "Chest drain",
-    "Lumbar puncture",
-    "Ascitic drain",
-    "Bronchoscopy",
-    "Tracheostomy-related procedure",
-    "Other"
-  ],
-  context: [
-    "ICU",
-    "Theatre",
-    "Emergency Department",
-    "Ward",
-    "Transfer",
-    "Clinic",
-    "Other"
-  ],
-  technique: ["Ultrasound", "Landmark"],
-  role: ["Observed", "Assisted", "Primary operator", "Supervisor"],
-  supervision: [
-    "Direct supervision",
-    "Indirect supervision",
-    "Independent",
-    "Supervising another clinician"
-  ],
-  outcome: ["Successful", "Unsuccessful"],
-  complication: [
-    "None",
-    "Failed procedure",
-    "Bleeding",
-    "Arterial puncture",
-    "Pneumothorax",
-    "Malposition",
-    "Other"
-  ]
-};
-
-const defaultSiteOptionsByProcedure = {
-  "Central venous catheter": [
-    "Right IJ",
-    "Left IJ",
-    "Right femoral",
-    "Left femoral",
-    "Right subclavian",
-    "Left subclavian",
-    "Other"
-  ],
-  "Arterial line": [
-    "Right radial",
-    "Left radial",
-    "Right femoral",
-    "Left femoral",
-    "Right brachial",
-    "Left brachial",
-    "Dorsalis pedis",
-    "Other"
-  ],
-  "Chest drain": ["Right chest", "Left chest", "Other"],
-  "Ascitic drain": ["Right abdomen", "Left abdomen", "Midline", "Other"]
-};
-
-const defaultCpdOptions = {
-  cpdType: [
-    "Course",
-    "Conference",
-    "Teaching session",
-    "Simulation",
-    "E-learning",
-    "Podcast",
-    "Journal/article",
-    "Guideline review",
-    "Departmental teaching",
-    "Self-directed learning",
-    "Other"
-  ],
-  cpdFormat: [
-    "In person",
-    "Online live",
-    "Online recorded",
-    "Podcast/audio",
-    "Reading",
-    "Practical/simulation",
-    "Other"
-  ],
-  cpdTopic: [
-    "ICU",
-    "Anaesthetics",
-    "Emergency Medicine",
-    "Acute Medicine",
-    "PHEM/Retrieval",
-    "Governance/QI",
-    "Teaching/Education",
-    "Leadership/Management",
-    "Other"
-  ],
-  cpdTime: ["15 minutes", "30 minutes", "1 hour", "2 hours", "Half day", "Full day", "Custom"],
-  cpdEvidence: ["Certificate available", "Attendance recorded", "Reflection only", "No evidence", "Other"]
-};
-
-const configurableFields = [
-  "context",
-  "procedure",
-  "site",
-  "cpdType",
-  "cpdFormat",
-  "cpdTopic"
-];
-
-function padNumber(value) {
-  return String(value).padStart(2, "0");
-}
-
-function todayISO() {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = padNumber(date.getMonth() + 1);
-  const day = padNumber(date.getDate());
-  return `${year}-${month}-${day}`;
-}
-
-function formatDate(dateString) {
-  if (!dateString) return "Not recorded";
-  const date = new Date(`${dateString}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return "Not recorded";
-  return date.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  });
-}
 
 function formatShortDateTime(dateValue) {
   if (!dateValue) return "Never";
