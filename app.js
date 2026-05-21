@@ -20,7 +20,9 @@ const {
   configurableFields
 } = window.AppConfig;
 
-const { padNumber, todayISO, formatDate } = window.AppUtils;
+var padNumber = window.AppUtils.padNumber;
+var todayISO = window.AppUtils.todayISO;
+var formatDate = window.AppUtils.formatDate;
 
 let state = {
   entries: [],

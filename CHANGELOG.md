@@ -33,6 +33,9 @@ Completed:
 
 - Follow-up hardening: wrapped `js/utils.js` and `js/config.js` in IIFEs to prevent global identifier collisions in classic script loading.
 
+- Follow-up hardening: changed `app.js` helper aliases to `var` bindings to tolerate stale older `js/utils.js` globals during mixed-cache rollouts.
+- Follow-up hardening: added `?v=57` cache-busting query strings to runtime script tags and matched those URLs in service-worker pre-cache list.
+
 ## V56 — Workflow validation
 
 Date: 2026-05-21  

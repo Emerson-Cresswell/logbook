@@ -113,3 +113,5 @@ Never enter patient-identifiable information during testing.
 4. Confirm service-worker serves refreshed runtime assets after hard refresh/reopen on iPhone PWA.
 5. Check browser console for AppConfig/AppUtils startup errors (should be absent in normal load).
 6. Confirm browser console has no `Identifier has already been declared` errors on startup.
+7. Confirm runtime script URLs include `?v=57` for `js/config.js`, `js/utils.js`, and `app.js`.
+8. Reload the same PR preview URL and confirm the startup error does not reappear.

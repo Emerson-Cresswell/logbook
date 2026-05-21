@@ -28,6 +28,9 @@ What was done:
 - Bumped service-worker cache key and added new JS files to cache and app-shell path matching (including Firebase root + legacy /logbook app-shell paths).
 - Expanded syntax-check workflow to check all first-party `.js` files while excluding `xlsx.full.min.js`.
 - Added startup guard in `app.js` to emit a clear console error if `window.AppConfig`/`window.AppUtils` are missing (indicates mixed stale assets).
+- Updated `index.html` runtime script tags with `?v=57` and aligned service-worker pre-cache URLs to the same versioned paths.
+- Updated `app.js` to use stale-safe `var` aliases for `padNumber`/`todayISO`/`formatDate` to avoid lexical redeclaration failures if an older utils file is served.
+
 
 Versioning note:
 - V57 is a structure/workflow refactor with behaviour preserved.
