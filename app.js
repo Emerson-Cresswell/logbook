@@ -118,6 +118,16 @@ function initThemeSettings() {
   }
 }
 
+
+function getThemeDebugState() {
+  const selected = settingsState.theme;
+  const resolved = resolveTheme(selected);
+  const rootTheme = document.documentElement.getAttribute("data-theme");
+  const stored = (() => { try { return localStorage.getItem(THEME_STORAGE_KEY); } catch (error) { return null; } })();
+  return { selected, resolved, rootTheme, stored };
+}
+window.MyLogbookThemeDebug = { getState: getThemeDebugState };
+
 let state = {
   entries: [],
   hospitals: [],
@@ -3920,6 +3930,7 @@ if ("serviceWorker" in navigator) {
 
 function init() {
   attachEvents();
+  initThemeSettings();
 
   try {
     loadState();

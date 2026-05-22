@@ -1728,3 +1728,72 @@ select:-webkit-autofill {
 
 #themeToggleHint { margin: 4px 2px 10px; }
 .app-version-label { margin-top: 12px !important; padding-bottom: calc(4px + env(safe-area-inset-bottom)); }
+
+/* V59 final token button audit */
+:root {
+  --btn-danger-bg: var(--danger-surface);
+  --btn-danger-text: var(--danger-text);
+  --btn-danger-border: var(--danger-border);
+  --btn-danger-hover-bg: color-mix(in srgb, var(--btn-danger-bg) 82%, #ffffff 18%);
+  --btn-ghost-bg: transparent;
+  --btn-ghost-text: var(--color-text-secondary);
+  --btn-ghost-border: var(--color-border-strong);
+  --btn-disabled-bg: color-mix(in srgb, var(--btn-secondary-bg) 75%, #9ca3af 25%);
+  --btn-disabled-text: color-mix(in srgb, var(--btn-secondary-text) 60%, #6b7280 40%);
+}
+
+html[data-theme="dark"] {
+  --btn-danger-hover-bg: color-mix(in srgb, var(--btn-danger-bg) 70%, #ffffff 8%);
+  --btn-disabled-bg: color-mix(in srgb, var(--btn-secondary-bg) 88%, #6b7280 12%);
+  --btn-disabled-text: #b7c5d6;
+}
+
+.small-button,
+.button.danger,
+.danger-button,
+.procedure-remove-pill,
+.procedure-remove-selected-pill,
+.delete-select-button.selected {
+  background: var(--btn-danger-bg) !important;
+  color: var(--btn-danger-text) !important;
+  border: 1px solid var(--btn-danger-border) !important;
+}
+
+.small-button:hover,
+.button.danger:hover,
+.danger-button:hover,
+.procedure-remove-pill:hover,
+.procedure-remove-selected-pill:hover {
+  background: var(--btn-danger-hover-bg) !important;
+}
+
+.button.ghost,
+.procedure-add-pill,
+.procedure-selected-pill {
+  background: var(--btn-ghost-bg) !important;
+  color: var(--btn-ghost-text) !important;
+  border: 1px solid var(--btn-ghost-border) !important;
+}
+
+button:disabled,
+.button:disabled,
+.choice-button:disabled,
+.filter-button:disabled,
+.small-button:disabled {
+  background: var(--btn-disabled-bg) !important;
+  color: var(--btn-disabled-text) !important;
+  border-color: var(--btn-secondary-border) !important;
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.popup-content .button,
+.dialog-content .button,
+.review-list .button,
+.summary-card .button {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border-color: var(--btn-secondary-border);
+}
+
+.home-actions { margin-bottom: 10px; }

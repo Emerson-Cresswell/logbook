@@ -186,3 +186,4 @@ After test Hosting changes:
 8. Confirm Summaries cards/readability is correct in dark mode.
 9. Confirm specialty/procedure shown/hidden style updates immediately on first tap (capsule + border + row interior).
 10. Confirm home footer spacing: theme helper text and v59 label do not overlap on narrow mobile Safari.
+14. In DevTools, confirm theme tap changes all of: localStorage `mylogbook.theme`, `document.documentElement.dataset.theme`, visible theme label, and page colours (not just pressed button style).
