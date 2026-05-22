@@ -1612,3 +1612,119 @@ html[data-theme="dark"] {
   border-bottom: 2px solid currentColor;
   transform: rotate(45deg) translateY(-1px);
 }
+
+/* V59 bugfix pass: enforce theme-safe form/card/visibility styling */
+:root {
+  --field-bg: var(--color-surface);
+  --field-text: var(--color-text-primary);
+  --field-border: var(--color-border-strong);
+  --field-placeholder: var(--color-text-muted);
+  --field-focus-bg: var(--color-surface-elevated);
+  --danger-surface: #fff1f2;
+  --danger-border: #f8b4bf;
+  --danger-text: #8a1c2f;
+}
+
+html[data-theme="dark"] {
+  --field-bg: var(--color-surface-inset);
+  --field-text: var(--color-text-primary);
+  --field-border: var(--color-border-strong);
+  --field-placeholder: #9eb0c3;
+  --field-focus-bg: var(--color-surface-elevated);
+  --danger-surface: rgba(180, 35, 24, 0.22);
+  --danger-border: #b95b67;
+  --danger-text: #ffd2d8;
+}
+
+input,
+textarea,
+select,
+option,
+.search-input,
+.text-input,
+.number-input,
+.textarea-input,
+.date-input {
+  background: var(--field-bg) !important;
+  color: var(--field-text) !important;
+  border: 1px solid var(--field-border) !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.search-input::placeholder,
+.text-input::placeholder,
+.textarea-input::placeholder {
+  color: var(--field-placeholder) !important;
+  opacity: 1;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.search-input:focus,
+.text-input:focus,
+.textarea-input:focus,
+.date-input:focus {
+  background: var(--field-focus-bg) !important;
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled,
+input[readonly],
+textarea[readonly] {
+  opacity: 0.85;
+  color: var(--field-placeholder) !important;
+}
+
+input:-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--field-text) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--field-bg) inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+.summary-card,
+.review-list,
+.current-entry-summary,
+.procedure-foundation-card,
+.empty-state,
+.dialog-content,
+.popup-content {
+  background: var(--color-surface-elevated) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border-strong) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.current-entry-summary-body {
+  background: var(--color-surface-inset) !important;
+  border-top: 1px solid var(--color-border-subtle) !important;
+}
+
+.management-card.management-hidden,
+.choice-button.visibility-option.hidden-option,
+.visibility-option.hidden-option {
+  background: var(--danger-surface) !important;
+  border-color: var(--danger-border) !important;
+  color: var(--danger-text) !important;
+}
+
+.management-card.management-hidden h3,
+.management-card.management-hidden p,
+.visibility-option.hidden-option .placement-choice-name,
+.visibility-option.hidden-option .placement-choice-dates {
+  color: var(--danger-text) !important;
+}
+
+.status-hidden,
+.procedure-remove-selected-pill {
+  background: var(--danger-surface) !important;
+  color: var(--danger-text) !important;
+  border-color: var(--danger-border) !important;
+}
+
+#themeToggleHint { margin: 4px 2px 10px; }
+.app-version-label { margin-top: 12px !important; padding-bottom: calc(4px + env(safe-area-inset-bottom)); }

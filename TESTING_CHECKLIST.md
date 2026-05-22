@@ -172,3 +172,17 @@ After test Hosting changes:
 11. Confirm service-worker update behaviour still clean.
 12. Confirm visible version label is `v59`.
 13. After merge, run installed iPhone PWA check via https://test.mylogbook.uk.
+
+
+## V59 theme/design bugfix validation (required)
+
+1. Confirm theme button visibly changes theme on each tap/click: System -> Light -> Dark -> System.
+2. Confirm iPhone Safari theme switching works on narrow screen.
+3. Confirm theme persists after refresh in Safari and Chrome.
+4. Confirm theme persists after navigating away/back and after installed-PWA close/reopen.
+5. Confirm visible theme label matches actual resolved/applied theme at all times.
+6. Confirm dark-mode form controls (input/textarea/select/search/date) remain readable while typing.
+7. Confirm Review & save card/readability is correct in dark mode.
+8. Confirm Summaries cards/readability is correct in dark mode.
+9. Confirm specialty/procedure shown/hidden style updates immediately on first tap (capsule + border + row interior).
+10. Confirm home footer spacing: theme helper text and v59 label do not overlap on narrow mobile Safari.

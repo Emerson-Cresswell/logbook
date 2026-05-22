@@ -29,7 +29,8 @@ const THEME_STORAGE_KEY = "mylogbook.theme";
 const THEME_OPTIONS = ["light", "dark", "system"];
 
 const settingsState = {
-  theme: "system"
+  theme: "system",
+  bound: false
 };
 
 function getSystemTheme() {
@@ -46,6 +47,9 @@ function applyTheme(preference) {
   settingsState.theme = safePreference;
   document.documentElement.setAttribute("data-theme", resolved);
   document.documentElement.setAttribute("data-theme-preference", safePreference);
+  document.body && document.body.setAttribute("data-theme-resolved", resolved);
+  const themeMeta = document.querySelector("meta[name=\"theme-color\"]");
+  if (themeMeta) themeMeta.setAttribute("content", resolved === "dark" ? "#101c2b" : "#0f766e");
 }
 
 function saveThemePreference(preference) {
@@ -91,13 +95,14 @@ function initThemeSettings() {
   renderThemeToggleLabel();
 
   const button = document.getElementById("themeToggleButton");
-  if (button) {
+  if (button && !settingsState.bound) {
     button.addEventListener("click", () => {
       const next = getNextTheme(settingsState.theme);
       applyTheme(next);
       saveThemePreference(next);
       renderThemeToggleLabel();
     });
+    settingsState.bound = true;
   }
 
   if (window.matchMedia) {
