@@ -192,3 +192,4 @@ After test Hosting changes:
 16. Placements page dark mode: placement rows/cards use dark/elevated surfaces with readable name/date text and readable shown/hidden badges.
 17. In light mode, normal button click/tap/tap-hold active states must not flash/turn red (except destructive danger actions).
 18. Confirm danger active styling is scoped to destructive actions only (e.g., Delete) and not used by normal primary/secondary buttons.
+19. Interaction consistency: in both Light and Dark mode, hover is subtle and active/pressed is a clearer second step for non-danger controls; no red flash on non-danger controls.
