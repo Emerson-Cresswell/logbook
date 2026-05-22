@@ -10,6 +10,25 @@ This file records meaningful project changes so future chats, Codex tasks, and p
 - Keep entries concise but specific enough to support debugging and handover.
 
 
+## V58 — Stable test Hosting site
+
+Date: 2026-05-22  
+Type: Infrastructure/workflow improvement  
+Runtime app behaviour changed: No  
+Runtime app visible version changed: No (remains `v52`)  
+Service worker/cache changed: No  
+
+Completed:
+- Created second Firebase Hosting site: `mylogbook-app-test`.
+- Added deploy targets:
+  - `live` → `mylogbook-app`
+  - `test` → `mylogbook-app-test`
+- Converted `firebase.json` to multisite Hosting target format.
+- Updated PR/live GitHub Hosting workflows to explicitly deploy target `live`.
+- Added manual GitHub Actions workflow to deploy a selected branch to the stable test site.
+- Connected `test.mylogbook.uk` to the test Hosting site.
+- Purpose: allow one permanent iPhone home-screen test PWA instead of reinstalling every PR preview URL.
+
 ## V57 — JavaScript modularisation foundation
 
 Date: 2026-05-21  

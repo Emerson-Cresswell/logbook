@@ -5,7 +5,7 @@ Use this checklist for manual regression testing and workflow validation.
 ## Current status
 
 - Runtime app version currently confirmed: V52.
-- Workflow/infrastructure status: V57.
+- Workflow/infrastructure status: V58.
 - Primary live URL: https://app.mylogbook.uk
 - Firebase default URL: https://mylogbook-app.web.app
 - Legacy GitHub Pages site: keep active as fallback for now.
@@ -115,3 +115,28 @@ Never enter patient-identifiable information during testing.
 6. Confirm browser console has no `Identifier has already been declared` errors on startup.
 7. Confirm runtime script URLs include `?v=57` for `js/config.js`, `js/utils.js`, and `app.js`.
 8. Reload the same PR preview URL and confirm the startup error does not reappear.
+
+## V58 stable test Hosting checks
+
+After test Hosting changes:
+
+1. Confirm live app still loads:
+   - https://app.mylogbook.uk
+
+2. Confirm test app still loads:
+   - https://test.mylogbook.uk
+   - https://mylogbook-app-test.web.app
+
+3. Confirm both show runtime version `v52`.
+
+4. Confirm buttons work on both live and test.
+
+5. Confirm GitHub Actions:
+   - PR preview deploys target `live` preview.
+   - Merge deploys target `live`.
+   - Manual `Deploy to Firebase Hosting test` workflow is available.
+
+6. For PWA testing:
+   - Install https://test.mylogbook.uk once on iPhone home screen.
+   - Use it for stable branch testing instead of installing every PR preview URL.
+
