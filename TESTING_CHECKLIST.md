@@ -188,3 +188,7 @@ After test Hosting changes:
 10. Confirm home footer spacing: theme helper text and v59 label do not overlap on narrow mobile Safari.
 14. In DevTools, confirm theme tap changes all of: localStorage `mylogbook.theme`, `document.documentElement.dataset.theme`, visible theme label, and page colours (not just pressed button style).
 15. View logbook dark mode: entry cards use dark/elevated surfaces with readable title/metadata text and high-contrast View/Edit/Delete buttons.
+
+16. Placements page dark mode: placement rows/cards use dark/elevated surfaces with readable name/date text and readable shown/hidden badges.
+17. In light mode, normal button click/tap/tap-hold active states must not flash/turn red (except destructive danger actions).
+18. Confirm danger active styling is scoped to destructive actions only (e.g., Delete) and not used by normal primary/secondary buttons.
