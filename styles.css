@@ -1491,3 +1491,124 @@ input, select, textarea { border-radius: var(--radius-input); border: 1px solid 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* V59 contrast hardening + explicit semantic component states */
+:root {
+  --btn-primary-bg: var(--color-primary);
+  --btn-primary-text: var(--color-text-inverse);
+  --btn-primary-border: var(--color-primary-active);
+  --btn-primary-hover-bg: var(--color-primary-hover);
+  --btn-primary-active-bg: var(--color-primary-active);
+
+  --btn-secondary-bg: var(--color-surface);
+  --btn-secondary-text: var(--color-text-primary);
+  --btn-secondary-border: var(--color-border-strong);
+  --btn-secondary-hover-bg: var(--color-surface-inset);
+  --btn-secondary-active-bg: var(--color-accent-subtle);
+
+  --list-row-bg: var(--color-surface);
+  --list-row-text: var(--color-text-primary);
+  --list-row-border: var(--color-border-subtle);
+  --list-row-hover-bg: var(--color-surface-inset);
+  --list-row-active-bg: var(--color-primary-subtle);
+}
+
+html[data-theme="dark"] {
+  --btn-secondary-bg: var(--color-surface-elevated);
+  --btn-secondary-text: var(--color-text-primary);
+  --btn-secondary-border: var(--color-border-strong);
+  --btn-secondary-hover-bg: #253a50;
+  --btn-secondary-active-bg: #2b4763;
+
+  --list-row-bg: var(--color-surface-elevated);
+  --list-row-text: var(--color-text-primary);
+  --list-row-border: var(--color-border-strong);
+  --list-row-hover-bg: #24384d;
+  --list-row-active-bg: #2a435d;
+}
+
+.button,
+.btn,
+.menu button,
+.home-actions .button,
+.theme-toggle {
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  background: var(--btn-secondary-bg);
+}
+
+.button.primary,
+.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: 1px solid var(--btn-primary-border);
+}
+
+.button.secondary,
+.btn-secondary,
+.choice-button,
+.filter-button,
+.theme-toggle,
+.menu button {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+}
+
+.management-card,
+.list-row {
+  background: var(--list-row-bg);
+  color: var(--list-row-text);
+  border: 1px solid var(--list-row-border);
+}
+
+.button.primary:hover,
+.btn-primary:hover { background: var(--btn-primary-hover-bg); }
+.button.primary:active,
+.btn-primary:active { background: var(--btn-primary-active-bg); }
+
+.button.secondary:hover,
+.btn-secondary:hover,
+.choice-button:hover,
+.filter-button:hover,
+.theme-toggle:hover,
+.management-card:hover,
+.list-row:hover,
+.menu button:hover {
+  background: var(--btn-secondary-hover-bg);
+}
+
+.button.secondary:active,
+.btn-secondary:active,
+.choice-button:active,
+.filter-button:active,
+.theme-toggle:active,
+.management-card:active,
+.list-row:active,
+.menu button:active {
+  background: var(--btn-secondary-active-bg);
+}
+
+.button:focus-visible,
+.btn:focus-visible,
+.choice-button:focus-visible,
+.filter-button:focus-visible,
+.management-card:focus-visible,
+.list-row:focus-visible,
+.theme-toggle:focus-visible,
+.menu button:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  box-shadow: var(--glow-subtle);
+}
+
+.theme-toggle::after {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 10px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-1px);
+}

@@ -77,10 +77,12 @@ function renderThemeToggleLabel() {
   const active = settingsState.theme;
   const activeLabel = active.charAt(0).toUpperCase() + active.slice(1);
   const resolved = resolveTheme(active);
-  button.textContent = `Theme: ${activeLabel}`;
-  button.setAttribute("aria-label", `Theme is ${activeLabel}. Tap to change theme.`);
+  const resolvedLabel = resolved.charAt(0).toUpperCase() + resolved.slice(1);
+  button.textContent = `Theme: ${activeLabel} (${resolvedLabel})`;
+  button.setAttribute("aria-label", `Theme preference: ${activeLabel}. Active palette: ${resolvedLabel}. Activate to change.`);
   button.setAttribute("data-theme-state", active);
-  button.setAttribute("title", `Active palette: ${resolved}`);
+  button.setAttribute("data-theme-resolved", resolved);
+  button.setAttribute("title", `Theme preference ${activeLabel}; active palette ${resolvedLabel}`);
 }
 
 function initThemeSettings() {

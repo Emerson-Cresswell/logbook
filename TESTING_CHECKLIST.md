@@ -155,3 +155,20 @@ After test Hosting changes:
 9. Confirm themed dialogs still appear (no native alert/confirm/prompt reintroduced).
 10. Confirm backup/export/import flows remain unaffected.
 11. Confirm service-worker update delivers V59 assets cleanly after refresh/reopen.
+
+
+## V59 post-review fixes verification
+
+1. Theme control is visible on home screen and clearly indicates active preference and resolved palette.
+2. Theme control cycles System -> Light -> Dark -> System by click/tap and keyboard activation.
+3. In System mode with OS/browser dark, UI resolves to dark palette and remains readable.
+4. Refresh after each theme selection preserves preference from `mylogbook.theme`.
+5. Close/reopen installed PWA and confirm theme preference persists.
+6. Verify home-screen buttons/list rows are readable in Light/Dark/System themes at desktop width.
+7. Verify narrow mobile width readability for menu buttons/list rows and theme control.
+8. Re-test add/edit/cancel/home/back flows for regressions.
+9. Re-test themed dialogs (no native alert/confirm/prompt).
+10. Re-test backup/export/import unaffected.
+11. Confirm service-worker update behaviour still clean.
+12. Confirm visible version label is `v59`.
+13. After merge, run installed iPhone PWA check via https://test.mylogbook.uk.
