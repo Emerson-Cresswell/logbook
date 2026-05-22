@@ -1797,3 +1797,66 @@ button:disabled,
 }
 
 .home-actions { margin-bottom: 10px; }
+
+/* V59: logbook row/action contrast fixes */
+:root {
+  --logbook-card-bg: var(--color-surface-elevated);
+  --logbook-card-border: var(--color-border-subtle);
+  --logbook-card-shadow: var(--shadow-soft);
+  --logbook-title: var(--color-text-primary);
+  --logbook-meta: var(--color-text-secondary);
+  --small-btn-secondary-bg: var(--btn-secondary-bg);
+  --small-btn-secondary-text: var(--btn-secondary-text);
+  --small-btn-secondary-border: var(--btn-secondary-border);
+  --small-btn-secondary-hover: var(--btn-secondary-hover-bg);
+}
+
+html[data-theme="dark"] {
+  --logbook-card-bg: var(--color-surface-elevated);
+  --logbook-card-border: var(--color-border-strong);
+  --logbook-card-shadow: 0 8px 20px rgba(2, 8, 23, 0.32);
+  --logbook-title: var(--color-text-primary);
+  --logbook-meta: var(--color-text-secondary);
+  --small-btn-secondary-bg: var(--color-surface-inset);
+  --small-btn-secondary-text: var(--color-text-primary);
+  --small-btn-secondary-border: var(--color-border-strong);
+  --small-btn-secondary-hover: #253a50;
+}
+
+.entry-card {
+  background: var(--logbook-card-bg) !important;
+  border: 1px solid var(--logbook-card-border) !important;
+  box-shadow: var(--logbook-card-shadow) !important;
+}
+
+.entry-card h3 {
+  color: var(--logbook-title) !important;
+}
+
+.entry-card p,
+.entry-card .entry-card-date,
+.entry-card .entry-card-subtitle {
+  color: var(--logbook-meta) !important;
+}
+
+.small-button.small-button-secondary {
+  background: var(--small-btn-secondary-bg) !important;
+  color: var(--small-btn-secondary-text) !important;
+  border: 1px solid var(--small-btn-secondary-border) !important;
+}
+
+.small-button.small-button-secondary:hover,
+.small-button.small-button-secondary:focus-visible {
+  background: var(--small-btn-secondary-hover) !important;
+}
+
+.small-button.small-button-danger {
+  background: var(--btn-danger-bg) !important;
+  color: var(--btn-danger-text) !important;
+  border: 1px solid var(--btn-danger-border) !important;
+}
+
+.small-button.small-button-danger:hover,
+.small-button.small-button-danger:focus-visible {
+  background: var(--btn-danger-hover-bg) !important;
+}

@@ -3374,15 +3374,15 @@ function renderLogbook() {
     const actions = document.createElement("div");
     actions.className = "card-actions";
 
-    actions.appendChild(makeButton("View", "small-button", () => {
+    actions.appendChild(makeButton("View", "small-button small-button-secondary", () => {
       showAppAlert(entrySummary(entry));
     }));
 
-    actions.appendChild(makeButton("Edit", "small-button", () => {
+    actions.appendChild(makeButton("Edit", "small-button small-button-secondary", () => {
       editEntry(entry.id);
     }));
 
-    actions.appendChild(makeButton("Delete", "small-button delete", () => {
+    actions.appendChild(makeButton("Delete", "small-button small-button-danger", () => {
       showAppConfirm({
         title: "Delete entry?",
         message: "Delete this entry? This cannot be undone.",
