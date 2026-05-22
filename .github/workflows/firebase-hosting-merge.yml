@@ -17,3 +17,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MYLOGBOOK_APP }}
           channelId: live
           projectId: mylogbook-app
+          target: live

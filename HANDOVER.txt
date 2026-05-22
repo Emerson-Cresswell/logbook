@@ -3,7 +3,7 @@ Version covered: V57 modularisation foundation
 Date prepared: 2026-05-21
 Source of truth for code: GitHub main branch — https://github.com/Emerson-Cresswell/logbook
 Current confirmed runtime app version: V52
-Current infrastructure/process version: V57
+Current infrastructure/process version: V58
 Primary live Firebase URL: https://app.mylogbook.uk
 Firebase default URL: https://mylogbook-app.web.app
 Legacy GitHub Pages site: keep active as fallback for now
@@ -11,6 +11,41 @@ Legacy GitHub Pages site: keep active as fallback for now
 This handover must be updated every time a meaningful code, roadmap, architecture, testing, deployment, or process decision is made.
 
 ================================================================================
+
+================================================================================
+0. V58 STABLE TEST HOSTING UPDATE
+================================================================================
+
+Purpose of V58:
+- Create a stable, permanent test deployment for proper PWA testing.
+- Avoid installing/deleting a different Firebase PR preview URL on the iPhone home screen for every PR.
+
+What was done:
+- Created second Firebase Hosting site: mylogbook-app-test.
+- Test default URL: https://mylogbook-app-test.web.app
+- Test custom URL: https://test.mylogbook.uk
+- Live URL remains: https://app.mylogbook.uk
+- Added Firebase deploy targets:
+  - live -> mylogbook-app
+  - test -> mylogbook-app-test
+- Updated firebase.json to use multisite hosting target format.
+- Updated GitHub Actions live/PR deploy workflows to explicitly target live.
+- Added manual workflow: Deploy to Firebase Hosting test.
+- The manual test workflow deploys the selected branch to the stable test Hosting site.
+
+Recommended workflow from V58 onward:
+1. Codex creates feature PR.
+2. GitHub checks and Firebase PR preview run.
+3. Do quick browser check on PR preview.
+4. Deploy that branch manually to test Hosting if PWA/home-screen testing is needed.
+5. Test installed test.mylogbook.uk PWA on iPhone.
+6. Merge only after checks and testing pass.
+7. Main deploys to live app.mylogbook.uk.
+
+Versioning note:
+- V58 is infrastructure/workflow only.
+- Visible runtime app version remains V52.
+
 
 ================================================================================
 0. V57 MODULARISATION FOUNDATION UPDATE

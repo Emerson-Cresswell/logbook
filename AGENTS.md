@@ -7,7 +7,7 @@ This file is for Codex or any other coding agent working on the MyLogbook reposi
 MyLogbook is a static local-first medical procedure/CPD logbook PWA.
 
 Current runtime app version: V52  
-Current workflow/infrastructure status: V57  
+Current workflow/infrastructure status: V58  
 Primary live URL: https://app.mylogbook.uk  
 Firebase default URL: https://mylogbook-app.web.app  
 Source of truth: GitHub main branch  
@@ -110,3 +110,15 @@ Likely next app work:
 8. Filtered summaries.
 9. Data robustness pass.
 10. Firebase Auth + whole-logbook backup + restore.
+
+
+## V58 stable test Hosting workflow
+
+There are now two Firebase Hosting targets:
+
+- `live` -> production Hosting site used by app.mylogbook.uk.
+- `test` -> stable test Hosting site used by test.mylogbook.uk.
+
+Do not deploy experimental work directly to live. For feature branches requiring installed-PWA testing, use the manual GitHub Actions workflow `Deploy to Firebase Hosting test` to deploy the selected branch to the stable test site.
+
+PR preview URLs are still useful for quick browser checks, but the permanent test PWA should use https://test.mylogbook.uk.

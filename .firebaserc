@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "mylogbook-app"
-  }
+  },
+  "targets": {
+    "mylogbook-app": {
+      "hosting": {
+        "live": [
+          "mylogbook-app"
+        ],
+        "test": [
+          "mylogbook-app-test"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
