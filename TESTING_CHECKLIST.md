@@ -140,3 +140,18 @@ After test Hosting changes:
    - Install https://test.mylogbook.uk once on iPhone home screen.
    - Use it for stable branch testing instead of installing every PR preview URL.
 
+
+
+## V59 design system foundation checks
+
+1. Confirm home screen shows runtime version `v59`.
+2. Switch theme toggle through `System` -> `Light` -> `Dark` and confirm visible palette updates each step.
+3. Refresh after each theme selection and confirm preference persists.
+4. Close and reopen installed PWA and confirm theme preference persists.
+5. Test installed iPhone PWA from https://test.mylogbook.uk using the selected theme.
+6. Verify narrow mobile width remains usable and buttons remain touch-friendly.
+7. Verify desktop browser width uses constrained content width and spacing (not edge-to-edge stretch).
+8. Re-run add/edit flow and confirm back/home/cancel behaviour is unchanged.
+9. Confirm themed dialogs still appear (no native alert/confirm/prompt reintroduced).
+10. Confirm backup/export/import flows remain unaffected.
+11. Confirm service-worker update delivers V59 assets cleanly after refresh/reopen.

@@ -1,12 +1,12 @@
-const CACHE_NAME = "procedure-logbook-v57-modular-foundation-fix2";
+const CACHE_NAME = "procedure-logbook-v59-design-system-foundation";
 
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.js?v=57",
-  "./js/config.js?v=57",
-  "./js/utils.js?v=57",
+  "./styles.css?v=59",
+  "./app.js?v=59",
+  "./js/config.js?v=59",
+  "./js/utils.js?v=59",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",

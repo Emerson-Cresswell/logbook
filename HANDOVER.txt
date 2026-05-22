@@ -1,8 +1,8 @@
 PROJECT HANDOVER — MyLogbook PWA
-Version covered: V57 modularisation foundation
+Version covered: V59 design system foundation
 Date prepared: 2026-05-21
 Source of truth for code: GitHub main branch — https://github.com/Emerson-Cresswell/logbook
-Current confirmed runtime app version: V52
+Current confirmed runtime app version: V59
 Current infrastructure/process version: V58
 Primary live Firebase URL: https://app.mylogbook.uk
 Firebase default URL: https://mylogbook-app.web.app
@@ -11,6 +11,29 @@ Legacy GitHub Pages site: keep active as fallback for now
 This handover must be updated every time a meaningful code, roadmap, architecture, testing, deployment, or process decision is made.
 
 ================================================================================
+
+
+================================================================================
+0. V59 DESIGN SYSTEM FOUNDATION UPDATE
+================================================================================
+
+Purpose of V59:
+- Establish semantic design tokens and theme architecture without rewriting app behaviour.
+- Prepare the app for future premium light/dark polish and wider-screen layout work.
+
+What was done:
+- Added central semantic token layer in `styles.css` for colour roles, spacing, radii, shadows, glow, and responsive breakpoints.
+- Added dark theme token overrides via `html[data-theme="dark"]`.
+- Added early theme initialisation in `index.html` that reads `mylogbook.theme` and applies theme attributes before render.
+- Added home-screen accessible theme toggle wired to `light`/`dark`/`system` preference cycling.
+- Added modular theme settings logic in `app.js` ready for future settings expansion.
+- Added responsive max-width foundation for tablet/desktop while keeping mobile-first behaviour.
+- Bumped runtime version to `v59` and updated cache-busting query strings.
+- Bumped service-worker cache key and precache runtime asset URLs for safe PWA updates.
+- Updated testing and changelog documentation for V59 checks and scope.
+
+Important scope note:
+- This PR intentionally does not include procedure catalogue/custom procedure feature work.
 
 ================================================================================
 0. V58 STABLE TEST HOSTING UPDATE
