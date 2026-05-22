@@ -10,6 +10,27 @@ This file records meaningful project changes so future chats, Codex tasks, and p
 - Keep entries concise but specific enough to support debugging and handover.
 
 
+## V59 — Design system foundation
+
+Date: 2026-05-22  
+Type: Runtime architecture / UI foundation  
+Runtime app behaviour changed: No (visual foundation + theme setting only)  
+Runtime app visible version changed: Yes (`v59`)  
+Service worker/cache changed: Yes  
+
+Completed:
+- Added semantic CSS design tokens for colours, surfaces, spacing, radii, shadows, glow, and breakpoints.
+- Added light/dark theme architecture via `data-theme` attributes on the root element.
+- Added persistent theme preference storage under `mylogbook.theme` with `light` / `dark` / `system` options.
+- Added early theme bootstrapping in `index.html` to reduce wrong-theme flash on load.
+- Added accessible home-screen theme toggle button and wired theme label refresh.
+- Added responsive foundation rules for tablet/desktop max widths and spacing while keeping mobile-first behaviour.
+- Added reusable design-system utility/component class foundations (cards, sections, action bar, chip radius, focus ring).
+- Bumped runtime script/style version query strings to `v=59`.
+- Bumped service worker cache key and precache URLs for V59 runtime assets.
+- Updated handover/testing documentation for V59 theme and responsive regression checks.
+- Confirmed this batch does not include procedure catalogue/custom procedures implementation work.
+
 ## V58 — Stable test Hosting site
 
 Date: 2026-05-22  

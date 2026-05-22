@@ -140,3 +140,56 @@ After test Hosting changes:
    - Install https://test.mylogbook.uk once on iPhone home screen.
    - Use it for stable branch testing instead of installing every PR preview URL.
 
+
+
+## V59 design system foundation checks
+
+1. Confirm home screen shows runtime version `v59`.
+2. Switch theme toggle through `System` -> `Light` -> `Dark` and confirm visible palette updates each step.
+3. Refresh after each theme selection and confirm preference persists.
+4. Close and reopen installed PWA and confirm theme preference persists.
+5. Test installed iPhone PWA from https://test.mylogbook.uk using the selected theme.
+6. Verify narrow mobile width remains usable and buttons remain touch-friendly.
+7. Verify desktop browser width uses constrained content width and spacing (not edge-to-edge stretch).
+8. Re-run add/edit flow and confirm back/home/cancel behaviour is unchanged.
+9. Confirm themed dialogs still appear (no native alert/confirm/prompt reintroduced).
+10. Confirm backup/export/import flows remain unaffected.
+11. Confirm service-worker update delivers V59 assets cleanly after refresh/reopen.
+
+
+## V59 post-review fixes verification
+
+1. Theme control is visible on home screen and clearly indicates active preference and resolved palette.
+2. Theme control cycles System -> Light -> Dark -> System by click/tap and keyboard activation.
+3. In System mode with OS/browser dark, UI resolves to dark palette and remains readable.
+4. Refresh after each theme selection preserves preference from `mylogbook.theme`.
+5. Close/reopen installed PWA and confirm theme preference persists.
+6. Verify home-screen buttons/list rows are readable in Light/Dark/System themes at desktop width.
+7. Verify narrow mobile width readability for menu buttons/list rows and theme control.
+8. Re-test add/edit/cancel/home/back flows for regressions.
+9. Re-test themed dialogs (no native alert/confirm/prompt).
+10. Re-test backup/export/import unaffected.
+11. Confirm service-worker update behaviour still clean.
+12. Confirm visible version label is `v59`.
+13. After merge, run installed iPhone PWA check via https://test.mylogbook.uk.
+
+
+## V59 theme/design bugfix validation (required)
+
+1. Confirm theme button visibly changes theme on each tap/click: System -> Light -> Dark -> System.
+2. Confirm iPhone Safari theme switching works on narrow screen.
+3. Confirm theme persists after refresh in Safari and Chrome.
+4. Confirm theme persists after navigating away/back and after installed-PWA close/reopen.
+5. Confirm visible theme label matches actual resolved/applied theme at all times.
+6. Confirm dark-mode form controls (input/textarea/select/search/date) remain readable while typing.
+7. Confirm Review & save card/readability is correct in dark mode.
+8. Confirm Summaries cards/readability is correct in dark mode.
+9. Confirm specialty/procedure shown/hidden style updates immediately on first tap (capsule + border + row interior).
+10. Confirm home footer spacing: theme helper text and v59 label do not overlap on narrow mobile Safari.
+14. In DevTools, confirm theme tap changes all of: localStorage `mylogbook.theme`, `document.documentElement.dataset.theme`, visible theme label, and page colours (not just pressed button style).
+15. View logbook dark mode: entry cards use dark/elevated surfaces with readable title/metadata text and high-contrast View/Edit/Delete buttons.
+
+16. Placements page dark mode: placement rows/cards use dark/elevated surfaces with readable name/date text and readable shown/hidden badges.
+17. In light mode, normal button click/tap/tap-hold active states must not flash/turn red (except destructive danger actions).
+18. Confirm danger active styling is scoped to destructive actions only (e.g., Delete) and not used by normal primary/secondary buttons.
+19. Interaction consistency: in both Light and Dark mode, hover is subtle and active/pressed is a clearer second step for non-danger controls; no red flash on non-danger controls.

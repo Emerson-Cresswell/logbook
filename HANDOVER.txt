@@ -1,714 +1,123 @@
 PROJECT HANDOVER — MyLogbook PWA
-Version covered: V57 modularisation foundation
-Date prepared: 2026-05-21
+Version covered: V59 Design System Foundation
+Date prepared: 2026-05-22
 Source of truth for code: GitHub main branch — https://github.com/Emerson-Cresswell/logbook
-Current confirmed runtime app version: V52
-Current infrastructure/process version: V58
-Primary live Firebase URL: https://app.mylogbook.uk
+
+Current confirmed runtime app version: V59
+Current confirmed codebase/infrastructure status: V59
+Live app URL: https://app.mylogbook.uk
+Stable installed-PWA test URL: https://test.mylogbook.uk
 Firebase default URL: https://mylogbook-app.web.app
-Legacy GitHub Pages site: keep active as fallback for now
-
-This handover must be updated every time a meaningful code, roadmap, architecture, testing, deployment, or process decision is made.
 
 ================================================================================
-
-================================================================================
-0. V58 STABLE TEST HOSTING UPDATE
+1. CURRENT STATE SUMMARY (authoritative)
 ================================================================================
 
-Purpose of V58:
-- Create a stable, permanent test deployment for proper PWA testing.
-- Avoid installing/deleting a different Firebase PR preview URL on the iPhone home screen for every PR.
+MyLogbook is a static local-first medical procedure/CPD logbook PWA.
 
-What was done:
-- Created second Firebase Hosting site: mylogbook-app-test.
-- Test default URL: https://mylogbook-app-test.web.app
-- Test custom URL: https://test.mylogbook.uk
-- Live URL remains: https://app.mylogbook.uk
-- Added Firebase deploy targets:
-  - live -> mylogbook-app
-  - test -> mylogbook-app-test
-- Updated firebase.json to use multisite hosting target format.
-- Updated GitHub Actions live/PR deploy workflows to explicitly target live.
-- Added manual workflow: Deploy to Firebase Hosting test.
-- The manual test workflow deploys the selected branch to the stable test Hosting site.
+Current architecture:
+- HTML/CSS/JavaScript (no build tool)
+- service worker + manifest
+- localStorage data model
+- manual JSON backup/import
+- Excel export via xlsx.full.min.js
+- Firebase Hosting + GitHub Actions PR preview/live workflows
 
-Recommended workflow from V58 onward:
-1. Codex creates feature PR.
-2. GitHub checks and Firebase PR preview run.
-3. Do quick browser check on PR preview.
-4. Deploy that branch manually to test Hosting if PWA/home-screen testing is needed.
-5. Test installed test.mylogbook.uk PWA on iPhone.
-6. Merge only after checks and testing pass.
-7. Main deploys to live app.mylogbook.uk.
-
-Versioning note:
-- V58 is infrastructure/workflow only.
-- Visible runtime app version remains V52.
-
+Current workflow:
+1. Create/update a feature branch.
+2. Open/update PR against main.
+3. GitHub Actions run syntax + Firebase PR preview.
+4. Browser check on PR preview URL.
+5. Installed-PWA checks on https://test.mylogbook.uk.
+6. Fix on same branch/PR.
+7. Merge when checks pass and user approves.
+8. Update HANDOVER/CHANGELOG/TESTING_CHECKLIST for meaningful changes.
 
 ================================================================================
-0. V57 MODULARISATION FOUNDATION UPDATE
+2. MOST RECENT COMPLETED TASK
 ================================================================================
 
-Purpose of V57:
-- Establish a low-risk JavaScript modularisation foundation for future incremental splits.
-- Preserve existing behaviour and UI while reducing `app.js` constant/helper surface area.
+V59 Design System Foundation (current most-recent task):
+- Added semantic design tokens and dark-theme token architecture.
+- Added working, persistent theme control (System/Light/Dark).
+- Added early theme bootstrapping to reduce wrong-theme flash.
+- Added responsive width foundations for mobile/tablet/desktop.
+- Preserved existing app behaviours and local-first model.
+- Bumped runtime visible version to V59 and aligned service-worker cache/version.
 
-What was done:
-- Added `js/config.js` for default constants and option datasets.
-- Added `js/utils.js` for shared low-risk helpers (`padNumber`, `todayISO`, `formatDate`).
-- Kept `app.js` as the main entry point and consumed `window.AppConfig`/`window.AppUtils`.
-- Updated `index.html` script order to load new first-party modules before `app.js`.
-- Bumped service-worker cache key and added new JS files to cache and app-shell path matching (including Firebase root + legacy /logbook app-shell paths).
-- Expanded syntax-check workflow to check all first-party `.js` files while excluding `xlsx.full.min.js`.
-- Added startup guard in `app.js` to emit a clear console error if `window.AppConfig`/`window.AppUtils` are missing (indicates mixed stale assets).
-- Updated `index.html` runtime script tags with `?v=57` and aligned service-worker pre-cache URLs to the same versioned paths.
-- Updated `app.js` to use stale-safe `var` aliases for `padNumber`/`todayISO`/`formatDate` to avoid lexical redeclaration failures if an older utils file is served.
-
-
-Versioning note:
-- V57 is a structure/workflow refactor with behaviour preserved.
-- Wrapped `js/utils.js` and `js/config.js` in IIFEs so only `window.AppUtils`/`window.AppConfig` are exported and no helper names leak globally.
-
-- Visible runtime label remains V52.
-
-0A. V56 WORKFLOW VALIDATION UPDATE
-================================================================================
-
-Purpose of V56:
-- Validate the new GitHub Actions + Firebase Hosting pull-request workflow.
-- Prove that broken JavaScript is caught by the automated syntax check before code reaches main.
-- Prove that Firebase Hosting creates a PR preview URL for test branches.
-- Record that the promised deliberate syntax-check test has been completed.
-
-What was done:
-1. Created temporary branch:
-   test/syntax-check-failure
-
-2. Added a deliberate syntax error to app.js:
-   const deliberateSyntaxError = ;
-
-3. Pushed the branch and opened PR:
-   Test syntax check failure
-
-4. Confirmed the expected failing state:
-   - Syntax check failed/red-crossed with the deliberate app.js syntax error.
-   - Firebase Hosting PR workflow still created/updated a preview URL for the PR.
-   - The failing PR was not merged.
-
-5. Removed the deliberate syntax error on the same PR branch.
-
-6. Confirmed the fixed state:
-   - All 3 PR checks passed:
-     - Deploy to Firebase Hosting on PR / build_and_preview
-     - Syntax check / JavaScript syntax (pull_request)
-     - Deploy to Firebase Hosting on PR / Deploy Preview
-   - The PR showed “Ready to merge” only after the deliberate error was removed.
-   - Files changed returned to 0 after the fix, confirming the test branch had no remaining app.js change.
-
-7. Closed the test PR without merging.
-
-8. Deleted the temporary branch locally:
-   test/syntax-check-failure
-
-9. Confirmed Cloud Shell local repo status was clean after returning to main and pulling.
-
-Important conclusion:
-- The automated syntax-check workflow is confirmed working.
-- Firebase PR preview URL generation is confirmed working.
-- The branch/PR workflow is safe to use for future app changes.
-- Never repeat deliberate syntax-failure testing on main.
-
-Versioning note:
-- V56 is a workflow-validation/documentation update only.
-- It does not change runtime app behaviour.
-- The visible in-app version remains V52.
-- No service-worker/cache bump is required for V56 unless runtime files are changed separately.
-
-Recommended repo update for V56:
-- Update HANDOVER.txt.
-- Update CHANGELOG.md.
-- Optionally update TESTING_CHECKLIST.md and AGENTS.md to mark the deliberate syntax-check test as completed.
+Important: V59 is a foundation PR, not a full visual redesign.
 
 ================================================================================
-0B. V55 FIREBASE GITHUB ACTIONS INTEGRATION UPDATE
+3. STRATEGIC DIRECTION (current)
 ================================================================================
 
-Purpose of V55:
-- Connect Firebase Hosting to GitHub Actions.
-- Enable PR preview deployments.
-- Enable live Firebase deployment on pushes/merges to main.
-- Move away from manual file copying and GitHub Pages cache confusion.
+Planned sequence:
+1. V59 Design System Foundation (completed in this cycle).
+2. Future premium home-screen redesign using the design system.
+3. Broader UI rollout across remaining screens.
+4. Later procedure catalogue/specialty assignment enhancements.
+5. Custom procedures as a possible future niche enhancement only.
 
-What was completed:
-- Firebase project created:
-  Project name: MyLogbook
-  Project ID: mylogbook-app
-  Plan: Spark/no-cost
-
-- Firebase Hosting deployed successfully from Cloud Shell.
-- Firebase default site confirmed working:
-  https://mylogbook-app.web.app
-
-- Custom subdomain configured and confirmed working:
-  https://app.mylogbook.uk
-
-- Porkbun DNS was updated for app.mylogbook.uk:
-  CNAME host: app
-  CNAME value: mylogbook-app.web.app
-
-- iCloud+ custom email was set up before Firebase:
-  admin@mylogbook.uk
-
-- GitHub Actions integration was created using:
-  firebase init hosting:github --project mylogbook-app
-
-- IAM API had to be enabled when Firebase initially returned:
-  "IAM API has not been used in project mylogbook-app before or it is disabled"
-
-- Firebase created:
-  .firebaserc
-  .gitignore
-  .github/workflows/firebase-hosting-pull-request.yml
-  .github/workflows/firebase-hosting-merge.yml
-
-- Firebase uploaded GitHub secret:
-  FIREBASE_SERVICE_ACCOUNT_MYLOGBOOK_APP
-
-- V55 commit pushed to main:
-  "V55 Firebase GitHub Actions integration"
-
-Important V55 notes:
-- Firebase Hosting is now the preferred testing/deployment host.
-- GitHub Pages should remain active only as a temporary fallback.
-- Future changes should be made on branches/PRs and tested through Firebase PR preview URLs before merging.
+Scope status:
+- Procedure catalogue work: deferred until after design-system/premium UI phases.
+- Custom procedures: deferred/future; not current active implementation scope.
 
 ================================================================================
-0C. V54 FIREBASE HOSTING PREP UPDATE
+4. PRODUCT / UX RULES TO PRESERVE
 ================================================================================
 
-Purpose of V54:
-- Prepare the repository for Firebase Hosting while keeping the app static and local-first.
-- Add Firebase Hosting configuration without Firebase Authentication, Firestore, or cloud backup.
-- Preserve current runtime app behaviour.
-
-Files added/updated:
-- firebase.json
-- FIREBASE_SETUP.md
-- HANDOVER.txt
-- CHANGELOG.md
-- TESTING_CHECKLIST.md
-- AGENTS.md
-
-Important V54 notes:
-- No runtime app behaviour change.
-- No visible in-app version bump.
-- No service-worker/cache bump.
-- Firebase Hosting initially deploys the same static localStorage PWA that GitHub Pages served.
+- Premium medical aesthetic.
+- Emerald primary actions; polished consistent controls.
+- No native alert/confirm/prompt; use themed dialogs.
+- Floating nav behaviour remains:
+  - Orange back (bottom-left)
+  - Green home (bottom-centre on viewing pages)
+  - Red cancel/X (bottom-right during add/edit)
+- Historical entries must remain readable even when options are hidden/removed.
+- Manual JSON backup/import must remain available.
 
 ================================================================================
-0D. V53 WORKFLOW FOUNDATION UPDATE
+5. VERSIONING / CACHE RULES
 ================================================================================
 
-Purpose of V53:
-- Optimise the project workflow before more app features.
-- Make the project recoverable if a ChatGPT conversation becomes inaccessible.
-- Establish repo-level documentation and repeatable testing/coding rules.
+For runtime changes:
+- Bump visible app version label.
+- Bump service-worker cache/version.
+- Keep index/runtime asset query strings and SW precache entries aligned.
 
-Files added:
-- HANDOVER.txt
-- CHANGELOG.md
-- TESTING_CHECKLIST.md
-- AGENTS.md
-- .github/workflows/syntax-check.yml
-
-Important V53 notes:
-- Documentation/process only.
-- No runtime app behaviour change.
-- No visible in-app version bump.
-- No service-worker/cache bump.
+For documentation/process-only changes:
+- No runtime label bump required.
+- No SW cache bump required.
 
 ================================================================================
-1. PROJECT SUMMARY
+6. HOSTING / TESTING NOTES
 ================================================================================
 
-MyLogbook is a medical procedure and CPD logbook Progressive Web App.
+- Live: https://app.mylogbook.uk
+- Stable test PWA: https://test.mylogbook.uk
+- Use PR previews for quick browser checks.
+- Use stable test site for installed-PWA checks on iPhone.
 
-Current stack:
-- HTML
-- CSS
-- JavaScript
-- PWA manifest
-- service worker
-- localStorage
-- Excel export using xlsx.full.min.js
-- Firebase Hosting for static deployment
-- GitHub Actions for syntax checks and Firebase Hosting deployments
-
-Current confirmed runtime version:
-- V52
-
-Current confirmed infrastructure/process version:
-- V56
-
-Current hosting:
-- Primary: https://app.mylogbook.uk
-- Firebase default: https://mylogbook-app.web.app
-- Legacy fallback: GitHub Pages, keep active for now
-
-Current data model:
-- Local-first
-- localStorage-based
-- No Firebase Authentication yet
-- No Firestore/cloud backup yet
-- Manual JSON backup/import remains important
-
-Strategic beta goal:
-- Get to a safe private beta as soon as possible.
-- Do not invite wider users until accounts, automatic cloud backup, and restore-from-cloud are working.
-- The app must stay polished, safe, and reliable while the data model continues to evolve.
+Do not test with real patient-identifiable data.
 
 ================================================================================
-2. CORE PRODUCT PRINCIPLES
+7. IMMEDIATE NEXT TASKS
 ================================================================================
 
-The user strongly prioritises:
-- Clean premium medical aesthetic.
-- Multiple small safe batches over large risky updates.
-- Future-proof architecture from the beginning.
-- Avoiding hacky permanent migration code.
-- If migration code is required, prefer temporary migration versions and remove migration code later.
-- No patient-identifiable information should be encouraged or required.
-- Manual JSON backup must remain available even after cloud backup exists.
-- Historical entries must remain readable even if placements, specialties, categories, or procedures are hidden, removed, or deleted from management lists.
-- The app should reach private beta quickly, but not before accounts and automatic cloud backup/restore are working.
-
-UX preferences:
-- User is very sensitive to visual polish inconsistencies.
-- No native browser popups; all popups should be themed to match the app.
-- Buttons should use consistent spacing, borders, radius, and shadows.
-- Avoid aggressive gradients.
-- Emerald green is the primary action colour.
-- White/secondary buttons should have subtle internal shadow only.
-- Floating nav buttons must feel part of the same design system as normal buttons.
-- Colour alone should not be the only status indicator; use text labels as well when indicating shown/hidden or similar states.
+1. Validate/merge V59 foundation after full cross-device manual checks.
+2. Prepare a focused premium home-screen visual redesign batch using V59 tokens.
+3. Roll refined design-system components through other screens in small PRs.
+4. Revisit procedure catalogue improvements only after UI foundation rollout stabilises.
+5. Keep custom-procedure work deferred unless explicitly reprioritised.
 
 ================================================================================
-3. CURRENT CODING RULES
+8. HISTORY SNAPSHOT (non-authoritative, brief)
 ================================================================================
 
-For runtime app changes:
-- Always work in a branch/PR where possible.
-- Test via Firebase PR preview URL before merging.
-- Only send/change files that actually need changing.
-- Do not send unchanged files unnecessarily.
-- Always bump the visible homepage version label when runtime app files change.
-- Always bump the service-worker/cache version when deployable runtime files change.
-- Always syntax-check JavaScript before sending/merging.
-- Avoid stale-cache/version mismatch issues.
-- Preserve existing working functionality.
-- Do not casually rewrite architecture.
-- Explain planned batches before coding.
-- Keep batches contained and testable.
-- Think about future Firebase/data model implications.
-- Avoid bloating code unnecessarily.
-- Do not introduce native alert/confirm/prompt popups; use themed app dialogs.
-- Do not remove manual JSON backup/import unless explicitly replacing it with safer functionality.
+- V58: stable test hosting target + workflow hardening.
+- V57: initial JavaScript modularisation foundation.
+- V56: syntax-check/PR-preview workflow validation.
+- V55: Firebase GitHub Actions integration.
+- V54: Firebase hosting prep.
+- V53: project workflow/documentation foundation.
 
-For documentation/process/infrastructure-only commits:
-- No visible in-app version bump is needed unless runtime app files change.
-- No service-worker/cache bump is needed unless runtime app files change.
-- HANDOVER.txt must be updated whenever important information changes.
-- CHANGELOG.md should be updated for every release/change batch.
-- TESTING_CHECKLIST.md should be updated when new features create new testing requirements.
-- AGENTS.md should be updated when coding rules or workflow assumptions change.
-
-Confirmed automated checks:
-- .github/workflows/syntax-check.yml runs:
-  - node --check app.js
-  - node --check service-worker.js
-- V56 deliberately proved this fails for broken app.js and passes once fixed.
-
-================================================================================
-4. CURRENT UI / NAVIGATION RULES
-================================================================================
-
-Floating nav controls:
-- Orange back button: bottom-left.
-- Green home button: bottom-centre.
-- Red cancel/X button: bottom-right.
-- Home button appears on non-home viewing pages.
-- Home button should not appear during add/edit workflows.
-- Cancel button appears during add/edit workflows.
-- Cancel should trigger a themed warning popup when abandoning an add/edit flow.
-- Back/cancel/home buttons should have perimeter/border styling consistent with normal buttons.
-- Back button icon should be a 180-degree hairpin-style arrow, with a more orange tone.
-- Floating controls should sit slightly in from screen edges, not tight to corners.
-
-Important recent polish issues to verify in future runtime testing:
-- Back/cancel buttons are slightly further from screen edges.
-- Save changes button only appears after actual edit changes.
-- Home button does not appear during add/edit flows.
-- Cancel button produces the correct warning popup.
-- Add/remove procedures page warns about unsaved changes if navigating home.
-- Floating nav buttons replace old buttons entirely rather than merely hiding old buttons visually.
-
-================================================================================
-5. CURRENT WORKING FEATURE AREAS
-================================================================================
-
-Known working or partially working feature areas include:
-- Placements system:
-  - Add/edit/delete placements.
-  - Shown/hidden toggle.
-  - Ordering logic: Not linked to placement first; current placements next; then by most recent end date.
-- Specialty/category/procedure structure foundation.
-- Add/remove procedures from categories.
-- Procedure visibility toggles.
-- Entry editing.
-- JSON backup/import.
-- Excel export foundation.
-- Entry summary dropdown.
-- Home button warning popups.
-- User-created procedure concept is planned/partially prepared, but not necessarily fully implemented.
-- Draft support concept appears to have started in the current code, but should still be treated as requiring verification/completion.
-
-================================================================================
-6. PROCEDURE SYSTEM ARCHITECTURE
-================================================================================
-
-This is critical. There are two separate concepts:
-
-A. Global procedure library
-
-App-provided procedures:
-- Built into the app.
-- Cannot be deleted from the app by the user.
-- Can be added to or removed from individual specialty/category assignments.
-- Can be shown/hidden within categories.
-
-User-created procedures:
-- Fully editable/deletable from the app.
-- Can be assigned to one or more specialty/category combinations.
-- If deleted from the custom procedure library, they are removed from every specialty/category where currently used.
-- Historical entries must remain intact using saved snapshots of procedure names/details.
-
-B. Specialty/category assignment
-
-- Categories contain selected procedures from the global library.
-- Procedures can be added to a category.
-- Procedures can be removed from a category.
-- Procedures can be shown/hidden within a category.
-- Removing a procedure from a category only affects future entries.
-- Historical entries must still display normally.
-
-Restore default logic:
-- Restore default resets a category back to the app-default procedure list.
-- Custom procedures are not deleted from the app.
-- User-added procedures are removed from that category.
-- Restored default procedures become shown/visible.
-
-Custom categories:
-- Categories are app-defined for now.
-- Data structures should avoid making future custom categories difficult.
-- Do not hard-code assumptions that categories can never be user-created.
-
-================================================================================
-7. ADD / REMOVE PROCEDURE FLOW
-================================================================================
-
-Desired behaviour:
-- Add/Remove procedures pages should support bulk selection.
-- Already-added procedures should be listed first alphabetically, then not-added procedures alphabetically.
-- Procedures should have right-side capsule buttons such as Add, Remove, Selected, Already added.
-- User can tap the capsule to flag/unflag multiple procedures.
-- A Make changes / Add selected procedures / Remove selected procedures button applies all selected changes.
-- Already added procedures should be visible but disabled/marked as Already added when adding.
-- Removing from category must not delete from global library.
-- Create new procedure button should appear near the top of the add-procedure flow.
-- Search box should appear only if the list/category has more than 10 procedures, unless later UX testing suggests always showing it is better.
-- Add/remove procedures page should warn about unsaved changes if navigating home before applying changes.
-
-================================================================================
-8. CUSTOM PROCEDURE PLAN
-================================================================================
-
-Custom procedure wizard must support:
-- Procedure name.
-- Duplicate warning: warn but allow creation.
-- If duplicate is found while creating from inside Add procedure to category, offer to add the existing procedure instead.
-- If created from Custom Procedures page, do not auto-assign to any category.
-- If created from inside a category, ask/allow adding it to that specialty/category by default.
-
-Custom Procedures page:
-- Accessible from Specialties & procedures.
-- Lists all user-created procedures.
-- Shows usage for each custom procedure, e.g. Emergency Medicine → Joint aspiration, Critical Care → Other, or Not currently used.
-- Tapping a custom procedure opens view/edit/delete.
-- Delete custom procedure removes it from the custom procedure library and all category assignments, but historical entries remain intact using snapshots.
-- Custom Procedures page should allow creation of a custom procedure without assigning it by default.
-- Custom procedure detail page should have Add to Specialty/Category button allowing the user to choose specialty then category.
-
-Procedure wizard page types, version 1:
-- Single-choice button pages.
-- Optional free-text notes page.
-- Multi-choice may be needed for Complications.
-
-Premade/tickable template pages:
-- Site.
-- Technique.
-- Role.
-- Supervision.
-- Outcome.
-- Number of attempts.
-- Complications.
-- Optional notes.
-
-Important page-template decisions:
-- Date performed, Placement, Specialty, Hospital, Location, and Procedure are always assumed for any procedure and should not appear as tickable template options in the custom procedure wizard.
-- Site and Technique should be special named templates, but the user can define the options for each procedure.
-- Role, Supervision, Outcome, and similar standard fields can use app-defined options.
-- Complications should probably have an extensive/default list plus Other free text, but options may need to vary by procedure.
-- Template pages should be filterable/exportable later.
-- Fully custom pages should be exportable but not filterable initially.
-
-Suggested stored metadata for filterable custom/template pages:
-- pageType: singleChoice | multiChoice | freeText | numberText.
-- title: human-readable page title.
-- filterKey: stable filter/export key such as site, technique, role, supervision, outcome, attempts, complications.
-- options: array of user-defined/app-defined options where relevant.
-
-================================================================================
-9. SPECIALTIES / PLACEMENTS / WIZARD FLOW
-================================================================================
-
-Placement decisions:
-- Users can create placements with a name and date range.
-- Placement can be Not linked to placement.
-- Placement applies to procedures and likely CPD.
-- Placement page in add-entry wizard should show user-defined visible placements.
-- Placements button exists on home for add/edit/delete/show/hide.
-- Within the wizard, Add placement and Show/hide placements may exist; deletion should remain on the home Placements management page.
-
-Specialty decisions:
-- Specialties are app-defined initially: Critical Care, Anaesthetics, Emergency Medicine, Acute Medicine.
-- Surgery may come later, not necessarily included now.
-- Specialty page should not have add/delete buttons.
-- Show/hide specialties should exist.
-- Specialties drive specialty-specific procedure/category lists.
-
-Procedure add-entry flow target:
-Date → Placement → Specialty → Hospital → Location → Procedure category → Procedure → procedure-specific follow-up pages.
-
-Procedure page should include a search box when useful, especially for long lists.
-
-CPD flow:
-- Placement and specialty should probably be available for CPD.
-- Hospital/location/procedure-specific pages apply to procedures, not CPD.
-- CPD flow still needs deliberate review before major CPD-specific changes.
-
-================================================================================
-10. DRAFT ENTRY PLAN
-================================================================================
-
-Drafts should come after the procedure wizard/workflow is stable, unless current V52 code already partially added draft support and needs stabilising sooner.
-
-Planned features:
-- Save as draft option during entry.
-- Draft entries stored in the logbook but marked as draft.
-- View Logbook screen has All entries and Drafts views/filters.
-- Drafts appear in date order in All entries but are visually marked, probably subtle red/orange.
-- Drafts can be opened, edited, and completed later.
-- Drafts are important because procedure workflows will become longer.
-
-================================================================================
-11. QUICK ADD ENTRY PLAN
-================================================================================
-
-Quick add should come after the procedure library and procedure-specific workflows are stable.
-
-Planned features:
-- Homepage button: Quick add entry.
-- User can predefine quick-add settings:
-  - Placement.
-  - Specialty.
-  - Hospital.
-  - Common procedures.
-- Date defaults to today.
-- Flow: Quick add entry → choose one of your quick procedures → wizard opens with date/placement/hospital/specialty/category/procedure pre-filled → user completes only the remaining procedure-specific pages.
-
-================================================================================
-12. EXPORT / SUMMARIES PLAN
-================================================================================
-
-Filtered Excel export:
-- Export Excel file should open export options first.
-- Filters should include date range, placement, specialty, procedure vs CPD vs all, and later draft/final status if relevant.
-- Default should remain export everything.
-- Goal is to avoid sending years of irrelevant entries to supervisors.
-
-Filtered summaries:
-- Summaries page should allow filtering by date range, placement, specialty, procedure category, and procedure/CPD subgroup.
-- Summaries should reuse the same filtering logic as Excel export.
-
-================================================================================
-13. FIREBASE / BETA ROADMAP
-================================================================================
-
-Beta goal:
-Get to a safe private beta as soon as possible, but do not invite wider users until accounts and automatic cloud backup/restore are working.
-
-Revised high-level sequence:
-1. Stabilise current V52/V56 situation.
-2. Keep permanent handover/versioning/testing workflow current.
-3. Continue procedure-library work using branches/PRs and Firebase previews.
-4. Do data robustness/future-proofing pass before cloud data.
-5. Add Firebase Authentication.
-6. Add automatic whole-logbook cloud backup.
-7. Add restore-from-cloud.
-8. Add minimum privacy/security/legal wording.
-9. Small private beta with 3–10 colleagues.
-10. Fix beta issues.
-11. Later: certificate attachments, desktop/review screens, supervisor export/view, donation link, analytics, advanced sync.
-
-Automatic cloud backup target:
-- App works locally.
-- When an entry is added/edited/deleted, the whole logbook is backed up to the user’s Firebase account.
-- Clear statuses:
-  - Cloud backup up to date.
-  - Cloud backup pending.
-  - Last cloud backup date/time.
-  - Cloud backup failed — local data is still safe.
-- Manual JSON backup remains available.
-
-Restore-from-cloud target:
-- User installs app on new device.
-- User logs in.
-- User restores cloud backup.
-- If both local and cloud data exist, offer clear choices first; avoid complex merging initially.
-
-Privacy/security before private beta:
-- No patient-identifiable data notice.
-- Privacy policy page.
-- Explain what is stored locally.
-- Explain what is stored in Firebase.
-- Explain manual backup/export options.
-- Make clear users remain responsible for not entering patient-identifiable data.
-
-================================================================================
-14. CURRENT RECOMMENDED WORKFLOW
-================================================================================
-
-Use ChatGPT for:
-- Product decisions.
-- Roadmap maintenance.
-- Architecture review.
-- Test planning.
-- Reviewing proposed diffs conceptually.
-- Keeping HANDOVER.txt current.
-- Generating precise prompts/instructions for Codex.
-
-Use Codex Cloud/GitHub PRs for:
-- Direct code changes.
-- Branch creation.
-- Pull request creation.
-- Iterative fixes on the same branch/PR.
-
-Use Firebase Hosting preview URLs for:
-- Testing each branch/PR on iPhone and desktop before merge.
-- Avoiding GitHub Pages/service-worker cache confusion.
-- Sharing exact preview builds.
-
-Recommended branch/deploy workflow:
-1. Create or ask Codex to create a branch for the next small batch.
-2. Codex makes changes on the branch.
-3. Codex opens a pull request.
-4. GitHub Actions run:
-   - Syntax check.
-   - Firebase Hosting PR preview.
-5. Firebase posts a preview URL on the PR.
-6. Test preview URL on iPhone and desktop.
-7. Fix issues on the same branch/PR.
-8. Merge only when tested.
-9. Live Firebase channel updates from main.
-10. Update HANDOVER.txt and CHANGELOG.md.
-
-Important:
-- Do not merge PRs with failing checks.
-- Do not commit direct to main for normal app work unless deliberately agreed.
-- Do not repeat syntax-failure testing on main.
-
-================================================================================
-15. RECOMMENDED REFACTOR PLAN
-================================================================================
-
-Do not split app.js as a giant first step. That is risky.
-
-Recommended staged approach:
-1. Maintain repo hygiene files:
-   - HANDOVER.txt.
-   - CHANGELOG.md.
-   - TESTING_CHECKLIST.md.
-   - AGENTS.md.
-2. Use automated checks:
-   - node --check app.js.
-   - node --check service-worker.js.
-3. Use Firebase Hosting and PR preview channels for all meaningful changes.
-4. Only then begin modularisation gradually.
-
-Suggested future module boundaries:
-- src/main.js — app bootstrap.
-- src/state.js — state management/localStorage/data version.
-- src/navigation.js — page transitions/floating nav/warnings.
-- src/ui.js — reusable UI rendering helpers/buttons/cards/popups.
-- src/placements.js — placement management.
-- src/specialties.js — specialties and visibility.
-- src/procedures/library.js — global procedure library.
-- src/procedures/categories.js — specialty/category assignments.
-- src/procedures/custom.js — custom procedures.
-- src/entryWizard.js — add/edit entry wizard.
-- src/export.js — Excel/JSON export/import.
-- src/summary.js — summaries/filtering.
-- src/firebase.js — future auth/cloud backup.
-
-Use ES modules if keeping the app build-free, but update index.html and service worker cache carefully.
-Consider a proper build tool later, but not until the app is stable enough to justify it.
-
-================================================================================
-16. WHAT THE NEXT ASSISTANT SHOULD DO FIRST
-================================================================================
-
-If starting in a new chat:
-1. Read this HANDOVER.txt.
-2. Treat GitHub main as the current source of truth unless the user says otherwise.
-3. Treat V52 as the current confirmed runtime app version unless the user says a later runtime app version has been merged.
-4. Treat V56 as the current workflow/infrastructure status.
-5. Primary app URL is now https://app.mylogbook.uk.
-6. Before coding, inspect current app.js/styles.css/service-worker.js/index.html as needed.
-7. Use branch/PR + Firebase preview workflow for future app changes where possible.
-8. For app changes, propose a small batch, then produce/change only necessary files with version/cache bump and syntax check.
-9. Update HANDOVER.txt and CHANGELOG.md after each meaningful change.
-10. Do not assume older V49 handover details are current if they conflict with V52/GitHub main.
-
-================================================================================
-17. IMMEDIATE NEXT TASKS SUGGESTED
-================================================================================
-
-Recommended next non-feature tasks:
-1. Commit V56 handover/changelog documentation update.
-2. Decide whether to use Codex Cloud as the main code-editing workflow.
-3. Create first real feature branch/PR through Codex or Cloud Shell to test the new workflow on a harmless documentation-only or tiny UI change.
-4. Confirm how the user wants to manage updated HANDOVER.txt after each merged PR.
-
-Recommended next app feature tasks after workflow is improved:
-1. Stabilise any remaining V52 floating nav/procedure management issues.
-2. Custom procedures page.
-3. Procedure creation wizard.
-4. Procedure-specific add-entry workflows.
-5. Draft entries.
-6. Quick add entry.
-7. Filtered Excel export.
-8. Filtered summaries.
-9. Data robustness pass.
-10. Firebase Auth + whole-logbook backup + restore.

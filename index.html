@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#064e3b">
+  <meta name="theme-color" content="#0f766e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="MyLogbook">
@@ -13,7 +13,21 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png">
   <link rel="icon" href="favicon.ico" sizes="any">
-  <link rel="stylesheet" href="styles.css">
+  <script>
+    (function () {
+      var STORAGE_KEY = "mylogbook.theme";
+      var allowed = { light: true, dark: true, system: true };
+      var stored = null;
+      try { stored = localStorage.getItem(STORAGE_KEY); } catch (error) { stored = null; }
+      var preference = allowed[stored] ? stored : "system";
+      var resolved = preference === "system"
+        ? (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        : preference;
+      document.documentElement.setAttribute("data-theme", resolved);
+      document.documentElement.setAttribute("data-theme-preference", preference);
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css?v=59">
 </head>
 <body>
   <div id="app">
@@ -36,6 +50,8 @@
           <button id="managePlacementsButton" class="button secondary" type="button">Placements</button>
           <button id="manageSpecialtiesProceduresButton" class="button secondary" type="button">Specialties & procedures</button>
           <button id="viewBackupButton" class="button secondary" type="button">Backup & export</button>
+          <button id="themeToggleButton" class="button secondary theme-toggle" type="button" aria-label="Theme preference: System. Activate to change." aria-describedby="themeToggleHint">Theme: System (Light)</button>
+          <p id="themeToggleHint" class="help-text">Theme control: System → Light → Dark.</p>
         </div>
         <p id="appVersionLabel" class="app-version-label">v50</p>
       </section>
@@ -103,8 +119,8 @@
   </div>
 
   <script src="xlsx.full.min.js"></script>
-  <script src="js/config.js?v=57"></script>
-  <script src="js/utils.js?v=57"></script>
-  <script src="app.js?v=57"></script>
+  <script src="js/config.js?v=59"></script>
+  <script src="js/utils.js?v=59"></script>
+  <script src="app.js?v=59"></script>
 </body>
 </html>

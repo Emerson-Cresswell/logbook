@@ -24,6 +24,110 @@ var padNumber = window.AppUtils.padNumber;
 var todayISO = window.AppUtils.todayISO;
 var formatDate = window.AppUtils.formatDate;
 
+
+const THEME_STORAGE_KEY = "mylogbook.theme";
+const THEME_OPTIONS = ["light", "dark", "system"];
+
+const settingsState = {
+  theme: "system",
+  bound: false
+};
+
+function getSystemTheme() {
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function resolveTheme(preference) {
+  return preference === "system" ? getSystemTheme() : preference;
+}
+
+function applyTheme(preference) {
+  const safePreference = THEME_OPTIONS.includes(preference) ? preference : "system";
+  const resolved = resolveTheme(safePreference);
+  settingsState.theme = safePreference;
+  document.documentElement.setAttribute("data-theme", resolved);
+  document.documentElement.setAttribute("data-theme-preference", safePreference);
+  document.body && document.body.setAttribute("data-theme-resolved", resolved);
+  const themeMeta = document.querySelector("meta[name=\"theme-color\"]");
+  if (themeMeta) themeMeta.setAttribute("content", resolved === "dark" ? "#101c2b" : "#0f766e");
+}
+
+function saveThemePreference(preference) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, preference);
+  } catch (error) {
+    console.warn("Unable to save theme preference.", error);
+  }
+}
+
+function loadThemePreference() {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    return THEME_OPTIONS.includes(stored) ? stored : "system";
+  } catch (error) {
+    return "system";
+  }
+}
+
+function getNextTheme(preference) {
+  if (preference === "system") return "light";
+  if (preference === "light") return "dark";
+  return "system";
+}
+
+function renderThemeToggleLabel() {
+  const button = document.getElementById("themeToggleButton");
+  if (!button) return;
+  const active = settingsState.theme;
+  const activeLabel = active.charAt(0).toUpperCase() + active.slice(1);
+  const resolved = resolveTheme(active);
+  const resolvedLabel = resolved.charAt(0).toUpperCase() + resolved.slice(1);
+  button.textContent = `Theme: ${activeLabel} (${resolvedLabel})`;
+  button.setAttribute("aria-label", `Theme preference: ${activeLabel}. Active palette: ${resolvedLabel}. Activate to change.`);
+  button.setAttribute("data-theme-state", active);
+  button.setAttribute("data-theme-resolved", resolved);
+  button.setAttribute("title", `Theme preference ${activeLabel}; active palette ${resolvedLabel}`);
+}
+
+function initThemeSettings() {
+  const preference = loadThemePreference();
+  applyTheme(preference);
+  renderThemeToggleLabel();
+
+  const button = document.getElementById("themeToggleButton");
+  if (button && !settingsState.bound) {
+    button.addEventListener("click", () => {
+      const next = getNextTheme(settingsState.theme);
+      applyTheme(next);
+      saveThemePreference(next);
+      renderThemeToggleLabel();
+    });
+    settingsState.bound = true;
+  }
+
+  if (window.matchMedia) {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const onSystemThemeChange = () => {
+      if (settingsState.theme === "system") {
+        applyTheme("system");
+        renderThemeToggleLabel();
+      }
+    };
+    if (typeof media.addEventListener === "function") media.addEventListener("change", onSystemThemeChange);
+    else if (typeof media.addListener === "function") media.addListener(onSystemThemeChange);
+  }
+}
+
+
+function getThemeDebugState() {
+  const selected = settingsState.theme;
+  const resolved = resolveTheme(selected);
+  const rootTheme = document.documentElement.getAttribute("data-theme");
+  const stored = (() => { try { return localStorage.getItem(THEME_STORAGE_KEY); } catch (error) { return null; } })();
+  return { selected, resolved, rootTheme, stored };
+}
+window.MyLogbookThemeDebug = { getState: getThemeDebugState };
+
 let state = {
   entries: [],
   hospitals: [],
@@ -3270,15 +3374,15 @@ function renderLogbook() {
     const actions = document.createElement("div");
     actions.className = "card-actions";
 
-    actions.appendChild(makeButton("View", "small-button", () => {
+    actions.appendChild(makeButton("View", "small-button small-button-secondary", () => {
       showAppAlert(entrySummary(entry));
     }));
 
-    actions.appendChild(makeButton("Edit", "small-button", () => {
+    actions.appendChild(makeButton("Edit", "small-button small-button-secondary", () => {
       editEntry(entry.id);
     }));
 
-    actions.appendChild(makeButton("Delete", "small-button delete", () => {
+    actions.appendChild(makeButton("Delete", "small-button small-button-danger", () => {
       showAppConfirm({
         title: "Delete entry?",
         message: "Delete this entry? This cannot be undone.",
@@ -3826,6 +3930,7 @@ if ("serviceWorker" in navigator) {
 
 function init() {
   attachEvents();
+  initThemeSettings();
 
   try {
     loadState();
