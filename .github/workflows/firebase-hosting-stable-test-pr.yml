@@ -1,0 +1,26 @@
+name: Deploy stable test site on PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy_stable_test:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MYLOGBOOK_APP }}
+          channelId: live
+          projectId: mylogbook-app
+          target: test

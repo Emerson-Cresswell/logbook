@@ -1,12 +1,12 @@
 PROJECT HANDOVER — MyLogbook PWA
-Version covered: V59 Design System Foundation
-Date prepared: 2026-05-22
+Version covered: V59.1 Stable test PR auto-deploy workflow
+Date prepared: 2026-05-27
 Source of truth for code: GitHub main branch — https://github.com/Emerson-Cresswell/logbook
 
 Current confirmed runtime app version: V59
-Current confirmed codebase/infrastructure status: V59
-Live app URL: https://app.mylogbook.uk
-Stable installed-PWA test URL: https://test.mylogbook.uk
+Current confirmed codebase/infrastructure status: V59.1
+Production live app URL: https://app.mylogbook.uk
+Stable test app URL: https://test.mylogbook.uk
 Firebase default URL: https://mylogbook-app.web.app
 
 ================================================================================
@@ -21,45 +21,50 @@ Current architecture:
 - localStorage data model
 - manual JSON backup/import
 - Excel export via xlsx.full.min.js
-- Firebase Hosting + GitHub Actions PR preview/live workflows
+- Firebase Hosting + GitHub Actions workflows
 
-Current workflow:
+Hosting/deployment workflow (current):
 1. Create/update a feature branch.
 2. Open/update PR against main.
-3. GitHub Actions run syntax + Firebase PR preview.
-4. Browser check on PR preview URL.
-5. Installed-PWA checks on https://test.mylogbook.uk.
-6. Fix on same branch/PR.
-7. Merge when checks pass and user approves.
-8. Update HANDOVER/CHANGELOG/TESTING_CHECKLIST for meaningful changes.
+3. GitHub Actions run syntax + Firebase PR preview deploy.
+4. GitHub Actions also auto-deploy the PR branch to stable test site https://test.mylogbook.uk (target `test`, live channel).
+5. Latest PR update overwrites https://test.mylogbook.uk.
+6. This is acceptable because project workflow normally runs one active PR at a time.
+7. Perform installed-PWA checks using https://test.mylogbook.uk before merge.
+8. Merge to main only after checks pass and user approves.
+9. Main merge/push deploys production live site https://app.mylogbook.uk (target `live`, live channel).
 
 ================================================================================
 2. MOST RECENT COMPLETED TASK
 ================================================================================
 
-V59 Design System Foundation (current most-recent task):
-- Added semantic design tokens and dark-theme token architecture.
-- Added working, persistent theme control (System/Light/Dark).
-- Added early theme bootstrapping to reduce wrong-theme flash.
-- Added responsive width foundations for mobile/tablet/desktop.
-- Preserved existing app behaviours and local-first model.
-- Bumped runtime visible version to V59 and aligned service-worker cache/version.
+V59.1 Stable test PR auto-deploy workflow (current most-recent task):
+- Added automatic PR-triggered deploy workflow for stable test site.
+- PR opened/synchronized/reopened/ready_for_review now deploys branch code to `test` target on live channel.
+- Kept existing production deploy workflow from main to `live` target.
+- Kept temporary Firebase PR preview workflow.
+- Updated handover/changelog/testing docs for the stable test deployment model.
 
-Important: V59 is a foundation PR, not a full visual redesign.
+Important:
+- This is infrastructure/workflow only.
+- Runtime app files were not changed.
+- Visible runtime version remains V59.
+- Service-worker/cache version remains unchanged.
 
 ================================================================================
 3. STRATEGIC DIRECTION (current)
 ================================================================================
 
 Planned sequence:
-1. V59 Design System Foundation (completed in this cycle).
-2. Future premium home-screen redesign using the design system.
-3. Broader UI rollout across remaining screens.
-4. Later procedure catalogue/specialty assignment enhancements.
-5. Custom procedures as a possible future niche enhancement only.
+1. V59 Design System Foundation (completed).
+2. V59.1 stable test PR auto-deploy workflow (completed).
+3. Next planned app task: V60 Premium Home Screen Redesign (unless reprioritised).
+4. Broader UI rollout across remaining screens.
+5. Later procedure catalogue/specialty assignment enhancements.
+6. Custom procedures as a possible future niche enhancement only.
 
 Scope status:
-- Procedure catalogue work: deferred until after design-system/premium UI phases.
+- Procedure catalogue work: deferred until after premium UI phase.
 - Custom procedures: deferred/future; not current active implementation scope.
 
 ================================================================================
@@ -85,7 +90,7 @@ For runtime changes:
 - Bump service-worker cache/version.
 - Keep index/runtime asset query strings and SW precache entries aligned.
 
-For documentation/process-only changes:
+For documentation/process/infrastructure-only changes:
 - No runtime label bump required.
 - No SW cache bump required.
 
@@ -93,10 +98,15 @@ For documentation/process-only changes:
 6. HOSTING / TESTING NOTES
 ================================================================================
 
-- Live: https://app.mylogbook.uk
-- Stable test PWA: https://test.mylogbook.uk
-- Use PR previews for quick browser checks.
-- Use stable test site for installed-PWA checks on iPhone.
+- Production live: https://app.mylogbook.uk
+  - Deploy source: push/merge to `main`
+  - Hosting target/channel: `live` / `live`
+- Stable test: https://test.mylogbook.uk
+  - Deploy source: pull request branch updates
+  - Hosting target/channel: `test` / `live`
+  - Overwrite behaviour: latest PR branch update wins
+- Temporary PR preview URLs may still be available for quick browser checks.
+- Installed-PWA branch testing should use https://test.mylogbook.uk.
 
 Do not test with real patient-identifiable data.
 
@@ -104,8 +114,8 @@ Do not test with real patient-identifiable data.
 7. IMMEDIATE NEXT TASKS
 ================================================================================
 
-1. Validate/merge V59 foundation after full cross-device manual checks.
-2. Prepare a focused premium home-screen visual redesign batch using V59 tokens.
+1. Run V60 Premium Home Screen Redesign planning/implementation batch.
+2. Validate premium redesign on desktop + installed iPhone PWA via stable test site.
 3. Roll refined design-system components through other screens in small PRs.
 4. Revisit procedure catalogue improvements only after UI foundation rollout stabilises.
 5. Keep custom-procedure work deferred unless explicitly reprioritised.
@@ -114,10 +124,8 @@ Do not test with real patient-identifiable data.
 8. HISTORY SNAPSHOT (non-authoritative, brief)
 ================================================================================
 
+- V59.1: automatic PR deploy to stable test site (`test.mylogbook.uk`).
+- V59: design system foundation + theme architecture.
 - V58: stable test hosting target + workflow hardening.
 - V57: initial JavaScript modularisation foundation.
 - V56: syntax-check/PR-preview workflow validation.
-- V55: Firebase GitHub Actions integration.
-- V54: Firebase hosting prep.
-- V53: project workflow/documentation foundation.
-

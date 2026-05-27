@@ -4,8 +4,8 @@ Use this checklist for manual regression testing and workflow validation.
 
 ## Current status
 
-- Runtime app version currently confirmed: V52.
-- Workflow/infrastructure status: V58.
+- Runtime app version currently confirmed: V59.
+- Workflow/infrastructure status: V59.1.
 - Primary live URL: https://app.mylogbook.uk
 - Firebase default URL: https://mylogbook-app.web.app
 - Legacy GitHub Pages site: keep active as fallback for now.
@@ -193,3 +193,18 @@ After test Hosting changes:
 17. In light mode, normal button click/tap/tap-hold active states must not flash/turn red (except destructive danger actions).
 18. Confirm danger active styling is scoped to destructive actions only (e.g., Delete) and not used by normal primary/secondary buttons.
 19. Interaction consistency: in both Light and Dark mode, hover is subtle and active/pressed is a clearer second step for non-danger controls; no red flash on non-danger controls.
+
+
+## V59.1 stable test auto-deploy checks (required)
+
+1. Open or update a PR branch against `main`.
+2. Confirm GitHub Actions runs the stable test deploy workflow for the PR.
+3. Confirm https://test.mylogbook.uk updates to the PR branch version/changes.
+4. Confirm installed-PWA branch testing is done against https://test.mylogbook.uk before merge.
+5. Confirm https://app.mylogbook.uk does not update while PR remains unmerged.
+6. Merge the PR to `main` and confirm production deploy workflow runs.
+7. Confirm https://app.mylogbook.uk updates only after merge as expected.
+8. Confirm https://app.mylogbook.uk remains production/live while test site remains pre-merge validation target.
+9. Confirm temporary Firebase PR preview URL is still available when expected.
+10. Confirm latest PR update can overwrite https://test.mylogbook.uk (expected one-PR-at-a-time behaviour).
+

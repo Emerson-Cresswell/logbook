@@ -10,6 +10,28 @@ This file records meaningful project changes so future chats, Codex tasks, and p
 - Keep entries concise but specific enough to support debugging and handover.
 
 
+## V59.1 — Auto-deploy stable test site from PR branches
+
+Date: 2026-05-27  
+Type: Infrastructure/workflow improvement  
+Runtime app behaviour changed: No  
+Runtime app visible version changed: No (remains `v59`)  
+Service worker/cache changed: No  
+
+Completed:
+- Added `.github/workflows/firebase-hosting-stable-test-pr.yml`.
+- Added automatic pull-request deploy to Firebase Hosting target `test` using `channelId: live`.
+- Configured PR triggers for `opened`, `synchronize`, `reopened`, and `ready_for_review`.
+- Kept the same safety guard to run only for in-repo PR branches.
+- Preserved existing production deploy flow from `main` to Hosting target `live`.
+- Preserved temporary Firebase PR preview workflow.
+- Updated `HANDOVER.txt` and `TESTING_CHECKLIST.md` to reflect stable test auto-deploy behaviour.
+
+Notes:
+- `https://test.mylogbook.uk` is now automatically overwritten by the latest PR branch update.
+- This is acceptable because project workflow normally runs one active PR at a time.
+- This is an infrastructure-only change; runtime code and runtime version remain unchanged.
+
 ## V59 — Design system foundation
 
 Date: 2026-05-22  
