@@ -2384,3 +2384,71 @@ html[data-theme="dark"] .home-nav-card { box-shadow: var(--home-dark-soft-shadow
   .home-backup-card { grid-template-columns: 52px minmax(0,1fr); row-gap: 6px; min-height: 84px; }
   #backupNowButton { grid-column: 2; justify-self: start; }
 }
+
+/* V60 polish pass 4: close gap to target mockups */
+:root {
+  --home-statusbar-bg-light: #f3f2ef;
+  --home-statusbar-bg-dark: #031127;
+  --home-hero-glass: color-mix(in srgb, var(--home-masthead-bg) 86%, transparent);
+  --home-card-glass: color-mix(in srgb, var(--home-card-bg) 90%, transparent);
+  --home-card-outline-soft: color-mix(in srgb, var(--home-card-border) 62%, transparent);
+  --home-accent-coral: color-mix(in srgb, var(--home-coral-accent) 88%, #e9845d 12%);
+}
+
+body[data-current-screen="homeScreen"] .app-header {
+  background: var(--home-statusbar-bg-light);
+  box-shadow: none;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 2px;
+}
+html[data-theme="dark"] body[data-current-screen="homeScreen"] .app-header {
+  background: var(--home-statusbar-bg-dark);
+}
+body[data-current-screen="homeScreen"] #app {
+  background: transparent;
+}
+
+.home-masthead {
+  background: var(--home-hero-glass);
+  border-color: var(--home-card-outline-soft);
+  box-shadow: 0 12px 30px rgba(6, 23, 42, 0.11), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(255,255,255,0.14);
+}
+html[data-theme="dark"] .home-masthead {
+  box-shadow: 0 16px 34px rgba(1, 8, 21, 0.54), inset 0 1px 0 rgba(159, 230, 255, 0.12), inset 0 -1px 0 rgba(8, 25, 43, 0.8);
+}
+.home-brand-mark {
+  background: radial-gradient(120% 120% at 35% 25%, color-mix(in srgb, var(--home-teal) 42%, #ffffff 58%) 0%, color-mix(in srgb, var(--home-card-bg) 84%, transparent) 62%, color-mix(in srgb, var(--home-accent-coral) 24%, transparent) 100%);
+  border: 1px solid color-mix(in srgb, var(--home-card-border) 78%, var(--home-accent-coral) 22%);
+}
+.home-brand-mark svg { stroke: color-mix(in srgb, var(--home-card-text) 84%, var(--home-accent-coral) 16%); }
+.home-brand-copy h2 { max-width: 14ch; }
+.compact-theme-toggle {
+  border-color: color-mix(in srgb, var(--home-card-border) 82%, transparent) !important;
+  background: color-mix(in srgb, var(--home-masthead-bg) 72%, transparent) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 2px 8px rgba(2, 12, 24, 0.10);
+}
+
+.home-backup-card,
+.home-nav-card {
+  background: var(--home-card-glass) !important;
+  border-color: var(--home-card-outline-soft) !important;
+}
+.home-backup-card::before {
+  text-shadow: 0 1px 0 rgba(255,255,255,0.22);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--home-teal) 16%, transparent), 0 12px 24px rgba(10, 167, 154, 0.20), inset 0 1px 0 rgba(255,255,255,0.35);
+}
+.home-primary-cta {
+  background: linear-gradient(132deg, color-mix(in srgb, var(--home-teal) 78%, #28d0c6 22%) 0%, color-mix(in srgb, var(--home-teal) 52%, #0d3d54 48%) 100%) !important;
+  border-color: color-mix(in srgb, var(--home-teal) 50%, #7debe3 50%) !important;
+}
+.home-primary-cta .home-nav-icon {
+  background: color-mix(in srgb, #083147 58%, #ffffff 42%);
+  border: 1px solid color-mix(in srgb, var(--home-accent-coral) 38%, #ffffff 62%);
+  color: var(--home-accent-coral);
+}
+.home-nav-icon {
+  border-color: color-mix(in srgb, var(--home-accent-coral) 34%, var(--home-card-border) 66%);
+  color: var(--home-accent-coral);
+}
+.home-chevron { color: var(--home-accent-coral); opacity: 0.95; }
+
+.app-version-label { opacity: 0.8; margin-top: 4px; }
