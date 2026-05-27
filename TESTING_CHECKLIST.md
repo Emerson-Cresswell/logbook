@@ -4,7 +4,7 @@ Use this checklist for manual regression testing and workflow validation.
 
 ## Current status
 
-- Runtime app version currently confirmed: V59.
+- Runtime app version currently confirmed: V60.
 - Workflow/infrastructure status: V59.1.
 - Primary live URL: https://app.mylogbook.uk
 - Firebase default URL: https://mylogbook-app.web.app
@@ -208,3 +208,23 @@ After test Hosting changes:
 9. Confirm temporary Firebase PR preview URL is still available when expected.
 10. Confirm latest PR update can overwrite https://test.mylogbook.uk (expected one-PR-at-a-time behaviour).
 
+
+
+## V60 premium home screen redesign checks
+
+1. Confirm home screen shows runtime version `v60`.
+2. Confirm premium home hero, backup card, and action cards render correctly in Light, Dark, and System theme modes.
+3. Confirm theme toggle remains on home and cycles System -> Light -> Dark with persisted preference.
+4. Confirm backup status card still updates text/state and shows `Backup now` only when required.
+5. Confirm home action buttons still navigate correctly:
+   - Add new entry
+   - View logbook
+   - Summaries
+   - Placements
+   - Specialties & procedures
+   - Backup & export
+6. Confirm responsive layout remains touch-friendly on narrow iPhone widths and constrained/polished on desktop widths.
+7. Confirm add/edit/cancel/back/home flows are unchanged from pre-V60 behaviour.
+8. Confirm backup/export/import workflows remain unchanged.
+9. Confirm no native alert/confirm/prompt dialogs appear.
+10. Confirm service-worker update delivers V60 assets after refresh/reopen in installed PWA.

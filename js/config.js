@@ -1,7 +1,7 @@
 (() => {
   window.AppConfig = {
     STORAGE_KEY: "procedureLogbookData_v1",
-    APP_VERSION: "v59",
+    APP_VERSION: "v60",
     procedureSteps: [
       "date","placement","specialty","hospital","context","procedure","site","technique","role","supervision","outcome","attempts","complication","notes","review"
     ],

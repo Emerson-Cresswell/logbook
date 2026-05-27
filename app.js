@@ -496,6 +496,7 @@ function showScreen(screenId) {
 
   screen.classList.add("active");
   currentScreen = screenId;
+  if (document.body) document.body.setAttribute("data-current-screen", screenId);
 
   if (screenId === "logbookScreen") renderLogbook();
   if (screenId === "summariesScreen") renderSummaries();
