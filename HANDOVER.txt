@@ -1,10 +1,10 @@
 PROJECT HANDOVER — MyLogbook PWA
-Version covered: V59.1 Stable test PR auto-deploy workflow
+Version covered: V60 Premium Home Screen Redesign
 Date prepared: 2026-05-27
 Source of truth for code: GitHub main branch — https://github.com/Emerson-Cresswell/logbook
 
-Current confirmed runtime app version: V59
-Current confirmed codebase/infrastructure status: V59.1
+Current confirmed runtime app version: V60
+Current confirmed codebase/infrastructure status: V60
 Production live app URL: https://app.mylogbook.uk
 Stable test app URL: https://test.mylogbook.uk
 Firebase default URL: https://mylogbook-app.web.app
@@ -38,18 +38,13 @@ Hosting/deployment workflow (current):
 2. MOST RECENT COMPLETED TASK
 ================================================================================
 
-V59.1 Stable test PR auto-deploy workflow (current most-recent task):
-- Added automatic PR-triggered deploy workflow for stable test site.
-- PR opened/synchronized/reopened/ready_for_review now deploys branch code to `test` target on live channel.
-- Kept existing production deploy workflow from main to `live` target.
-- Kept temporary Firebase PR preview workflow.
-- Updated handover/changelog/testing docs for the stable test deployment model.
-
-Important:
-- This is infrastructure/workflow only.
-- Runtime app files were not changed.
-- Visible runtime version remains V59.
-- Service-worker/cache version remains unchanged.
+V60 Premium Home Screen Redesign (current most-recent task):
+- Redesigned home screen only using extensible V59 theme tokens and new V60 home tokens.
+- Added premium hero, elevated backup/status card styling, and refined home navigation card states.
+- Kept existing behaviour for all flows, data model, dialogs, and backup/export/import features.
+- Bumped runtime version label to v60 and aligned cache-busting query strings.
+- Bumped service-worker cache key and pre-cache asset URLs for V60 rollout.
+- Updated handover/changelog/testing documentation for V60 checks.
 
 ================================================================================
 3. STRATEGIC DIRECTION (current)
@@ -58,10 +53,9 @@ Important:
 Planned sequence:
 1. V59 Design System Foundation (completed).
 2. V59.1 stable test PR auto-deploy workflow (completed).
-3. Next planned app task: V60 Premium Home Screen Redesign (unless reprioritised).
-4. Broader UI rollout across remaining screens.
-5. Later procedure catalogue/specialty assignment enhancements.
-6. Custom procedures as a possible future niche enhancement only.
+3. Broader UI rollout across remaining screens after V60 home polish.
+4. Later procedure catalogue/specialty assignment enhancements.
+5. Custom procedures as a possible future niche enhancement only.
 
 Scope status:
 - Procedure catalogue work: deferred until after premium UI phase.
@@ -114,16 +108,16 @@ Do not test with real patient-identifiable data.
 7. IMMEDIATE NEXT TASKS
 ================================================================================
 
-1. Run V60 Premium Home Screen Redesign planning/implementation batch.
-2. Validate premium redesign on desktop + installed iPhone PWA via stable test site.
-3. Roll refined design-system components through other screens in small PRs.
-4. Revisit procedure catalogue improvements only after UI foundation rollout stabilises.
-5. Keep custom-procedure work deferred unless explicitly reprioritised.
+1. Validate V60 premium home redesign on desktop + installed iPhone PWA via stable test site.
+2. Roll refined design-system components through other screens in small PRs.
+3. Revisit procedure catalogue improvements only after UI foundation rollout stabilises.
+4. Keep custom-procedure work deferred unless explicitly reprioritised.
 
 ================================================================================
 8. HISTORY SNAPSHOT (non-authoritative, brief)
 ================================================================================
 
+- V60: premium home-screen redesign on top of V59 tokens/theme system.
 - V59.1: automatic PR deploy to stable test site (`test.mylogbook.uk`).
 - V59: design system foundation + theme architecture.
 - V58: stable test hosting target + workflow hardening.

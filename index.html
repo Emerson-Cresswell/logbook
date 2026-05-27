@@ -27,7 +27,7 @@
       document.documentElement.setAttribute("data-theme-preference", preference);
     })();
   </script>
-  <link rel="stylesheet" href="styles.css?v=59">
+  <link rel="stylesheet" href="styles.css?v=60">
 </head>
 <body>
   <div id="app">
@@ -37,21 +37,33 @@
 
     <main>
       <section id="homeScreen" class="screen active">
-        <div id="backupCard" class="backup-card backup-ok">
-          <h2 id="backupTitle">Backup up to date</h2>
-          <p id="backupText">Last backup: Never</p>
-          <button id="backupNowButton" class="button primary hidden" type="button">Backup now</button>
-        </div>
+        <div class="home-shell">
+          <div class="home-hero card">
+            <div class="home-hero-brand">
+              <p class="home-kicker">MyLogbook</p>
+              <h2>Procedure & CPD Dashboard</h2>
+              <p class="home-hero-subtitle">Capture procedures and CPD with a calm, local-first workflow.</p>
+            </div>
+            <div class="home-hero-controls">
+              <button id="themeToggleButton" class="button secondary theme-toggle" type="button" aria-label="Theme preference: System. Activate to change." aria-describedby="themeToggleHint">Theme: System (Light)</button>
+              <p id="themeToggleHint" class="help-text">Theme control: System → Light → Dark.</p>
+            </div>
+          </div>
 
-        <div class="home-actions">
-          <button id="addEntryButton" class="button primary" type="button">Add new entry</button>
-          <button id="viewLogbookButton" class="button secondary" type="button">View logbook</button>
-          <button id="viewSummariesButton" class="button secondary" type="button">Summaries</button>
-          <button id="managePlacementsButton" class="button secondary" type="button">Placements</button>
-          <button id="manageSpecialtiesProceduresButton" class="button secondary" type="button">Specialties & procedures</button>
-          <button id="viewBackupButton" class="button secondary" type="button">Backup & export</button>
-          <button id="themeToggleButton" class="button secondary theme-toggle" type="button" aria-label="Theme preference: System. Activate to change." aria-describedby="themeToggleHint">Theme: System (Light)</button>
-          <p id="themeToggleHint" class="help-text">Theme control: System → Light → Dark.</p>
+          <div id="backupCard" class="backup-card backup-ok home-backup-card">
+            <h2 id="backupTitle">Backup up to date</h2>
+            <p id="backupText">Last backup: Never</p>
+            <button id="backupNowButton" class="button primary hidden" type="button">Backup now</button>
+          </div>
+
+          <div class="home-actions">
+            <button id="addEntryButton" class="button primary home-primary-cta" type="button">Add new entry</button>
+            <button id="viewLogbookButton" class="button secondary" type="button">View logbook</button>
+            <button id="viewSummariesButton" class="button secondary" type="button">Summaries</button>
+            <button id="managePlacementsButton" class="button secondary" type="button">Placements</button>
+            <button id="manageSpecialtiesProceduresButton" class="button secondary" type="button">Specialties & procedures</button>
+            <button id="viewBackupButton" class="button secondary" type="button">Backup & export</button>
+          </div>
         </div>
         <p id="appVersionLabel" class="app-version-label">v50</p>
       </section>
@@ -119,8 +131,8 @@
   </div>
 
   <script src="xlsx.full.min.js"></script>
-  <script src="js/config.js?v=59"></script>
-  <script src="js/utils.js?v=59"></script>
-  <script src="app.js?v=59"></script>
+  <script src="js/config.js?v=60"></script>
+  <script src="js/utils.js?v=60"></script>
+  <script src="app.js?v=60"></script>
 </body>
 </html>

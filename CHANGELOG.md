@@ -10,6 +10,28 @@ This file records meaningful project changes so future chats, Codex tasks, and p
 - Keep entries concise but specific enough to support debugging and handover.
 
 
+
+## V60 — Premium home screen redesign
+
+Date: 2026-05-27  
+Type: Runtime UI refinement (home screen only)  
+Runtime app behaviour changed: No (visual redesign only)  
+Runtime app visible version changed: Yes (`v60`)  
+Service worker/cache changed: Yes  
+
+Completed:
+- Redesigned home screen header/hero, backup status card, CTA hierarchy, navigation cards, theme control placement, and footer/version presentation.
+- Extended tokenised home-surface, glow, accent, and elevation styles using CSS custom properties for maintainability.
+- Kept existing home-screen actions, routes, and backup behaviour unchanged.
+- Updated runtime asset query strings to `v=60` in `index.html`.
+- Bumped `APP_VERSION` to `v60` in `js/config.js`.
+- Bumped service-worker cache key and V60 pre-cache URLs.
+- Updated `HANDOVER.txt` and `TESTING_CHECKLIST.md` for V60 validation scope.
+
+Notes:
+- Scope intentionally excludes procedure catalogue changes and custom procedures.
+- Scope intentionally excludes non-home-screen redesign work.
+
 ## V59.1 — Auto-deploy stable test site from PR branches
 
 Date: 2026-05-27  
