@@ -2140,3 +2140,124 @@ html[data-theme="dark"] .home-brand-mark svg { stroke: #c8f7ff; }
   .home-brand-copy h2{font-size:1.3rem}
   .home-actions{gap:10px}
 }
+
+/* V60 polish pass 2: closer premium mockup language */
+:root {
+  --home-font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --home-bg-light: radial-gradient(120% 72% at 0% 0%, #fffefb 0%, #f8f4ed 52%, #f3f3f1 100%);
+  --home-bg-dark: radial-gradient(130% 85% at 0% 0%, #06152a 0%, #071a30 46%, #030d1e 100%);
+  --home-masthead-bg: color-mix(in srgb, #ffffff 84%, #f7f2ea 16%);
+  --home-masthead-border: #eadfd2;
+  --home-card-bg: color-mix(in srgb, #ffffff 92%, #f5eee4 8%);
+  --home-card-border: #e7ddd2;
+  --home-card-text: #0f363a;
+  --home-subtle-text: #65737a;
+  --home-coral-accent: #ea8d69;
+  --home-teal: #1abeb5;
+  --home-glow: 0 14px 34px rgba(26, 190, 181, 0.20);
+}
+html[data-theme="dark"] {
+  --home-masthead-bg: color-mix(in srgb, #0d2138 86%, #0a1629 14%);
+  --home-masthead-border: #244866;
+  --home-card-bg: color-mix(in srgb, #0c223b 88%, #0a1930 12%);
+  --home-card-border: #275075;
+  --home-card-text: #edf6ff;
+  --home-subtle-text: #9ab2c7;
+  --home-coral-accent: #f49b78;
+  --home-teal: #35d3c9;
+  --home-glow: 0 16px 36px rgba(53, 211, 201, 0.24);
+}
+
+body[data-current-screen="homeScreen"] main { padding-top: 6px; }
+.home-shell { gap: 12px; }
+.home-masthead {
+  background: var(--home-masthead-bg);
+  border-color: var(--home-masthead-border);
+  padding: 14px 12px;
+  box-shadow: 0 10px 28px rgba(9, 22, 38, 0.10), inset 0 1px 0 rgba(255,255,255,0.55);
+}
+html[data-theme="dark"] .home-masthead {
+  box-shadow: 0 14px 32px rgba(2, 8, 23, 0.45), inset 0 1px 0 rgba(125, 211, 252, 0.08);
+}
+.home-brand-copy { position: relative; padding-left: 14px; }
+.home-brand-copy::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  background: color-mix(in srgb, var(--home-coral-accent) 70%, transparent);
+}
+.home-brand-copy h2 {
+  font-family: var(--home-font-display);
+  color: var(--home-card-text);
+  font-size: clamp(1.75rem, 8.2vw, 2.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+}
+.home-tagline {
+  color: var(--home-coral-accent);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-top: 8px;
+}
+.home-brand-mark { width: 58px; height: 58px; border-radius: 18px; }
+.compact-theme-toggle {
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border-color: var(--home-masthead-border) !important;
+  background: color-mix(in srgb, var(--home-masthead-bg) 88%, transparent) !important;
+  font-size: 0.78rem;
+}
+.home-theme-hint { display: none; }
+
+.home-backup-card,
+.home-nav-card {
+  background: var(--home-card-bg) !important;
+  border: 1px solid var(--home-card-border) !important;
+  color: var(--home-card-text) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+.home-backup-card { padding: 14px 16px; }
+.home-backup-card h2 { font-family: var(--home-font-display); font-size: clamp(1.9rem, 6.8vw, 2.35rem); color: var(--home-card-text); margin-bottom: 4px; }
+.home-backup-card p { color: var(--home-subtle-text); font-size: 0.95rem; }
+
+.home-primary-cta {
+  min-height: 64px !important;
+  border-color: color-mix(in srgb, var(--home-teal) 58%, #7dd3fc 42%) !important;
+  background: linear-gradient(130deg, color-mix(in srgb, var(--home-teal) 82%, #0b2430 18%) 0%, color-mix(in srgb, var(--home-teal) 70%, #0f766e 30%) 100%) !important;
+  box-shadow: var(--home-glow), inset 0 1px 0 rgba(255,255,255,0.34) !important;
+  color: #f7fffe !important;
+  font-family: var(--home-font-display);
+  font-size: clamp(1.9rem, 6.2vw, 2.3rem);
+}
+.home-nav-card {
+  min-height: 58px !important;
+  border-radius: 20px !important;
+  font-family: var(--home-font-display);
+  font-size: clamp(1.85rem, 6vw, 2.2rem);
+}
+.home-nav-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--home-card-bg) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--home-card-border) 72%, var(--home-coral-accent) 28%);
+  color: var(--home-coral-accent);
+}
+.home-nav-icon svg { width: 23px; height: 23px; }
+.home-chevron { color: var(--home-coral-accent); font-size: 1.45rem; }
+
+.app-version-label {
+  color: color-mix(in srgb, var(--home-subtle-text) 80%, transparent);
+  margin-top: 6px;
+  font-size: 0.7rem;
+}
+@media (max-width: 390px) {
+  .home-masthead { grid-template-columns: auto 1fr; }
+  .compact-theme-toggle { grid-column: 1 / -1; justify-self: end; }
+}
