@@ -2261,3 +2261,126 @@ html[data-theme="dark"] .home-masthead {
   .home-masthead { grid-template-columns: auto 1fr; }
   .compact-theme-toggle { grid-column: 1 / -1; justify-self: end; }
 }
+
+/* V60 polish pass 3: refined scale, hierarchy, and premium calm density */
+:root {
+  --home-title-size: clamp(1.1rem, 5.2vw, 1.85rem);
+  --home-title-leading: 1.06;
+  --home-nav-label-size: clamp(1rem, 4.9vw, 1.18rem);
+  --home-cta-label-size: clamp(1.12rem, 5.5vw, 1.3rem);
+  --home-card-min-height: 64px;
+  --home-ring-size: 60px;
+  --home-soft-shadow: 0 10px 24px rgba(7, 22, 40, 0.09), 0 1px 0 rgba(255,255,255,0.5) inset;
+  --home-dark-soft-shadow: 0 14px 30px rgba(2, 8, 23, 0.42), 0 1px 0 rgba(126, 222, 255, 0.08) inset;
+  --home-border-soft: color-mix(in srgb, var(--home-card-border) 82%, transparent);
+}
+
+.home-shell { gap: 10px; }
+.home-masthead {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 12px 12px;
+  border-color: color-mix(in srgb, var(--home-masthead-border) 82%, transparent);
+}
+.home-brand-mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  box-shadow: 0 9px 20px rgba(11, 31, 49, 0.18), inset 0 1px 0 rgba(255,255,255,0.34);
+}
+.home-brand-mark svg { width: 24px; height: 24px; stroke-width: 2.1; }
+.home-brand-copy { padding-left: 12px; }
+.home-brand-copy h2 {
+  font-size: var(--home-title-size);
+  line-height: var(--home-title-leading);
+  letter-spacing: -0.01em;
+}
+.home-tagline { margin-top: 6px; letter-spacing: 0.14em; font-size: 0.68rem; }
+.compact-theme-toggle {
+  min-height: 32px;
+  padding: 4px 9px;
+  font-size: 0.72rem;
+  align-self: start;
+  margin-top: 2px;
+}
+
+.home-backup-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--home-ring-size) minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 11px;
+  min-height: 90px;
+  padding: 12px 14px;
+  border-color: var(--home-border-soft) !important;
+  box-shadow: var(--home-soft-shadow);
+}
+html[data-theme="dark"] .home-backup-card { box-shadow: var(--home-dark-soft-shadow); }
+.home-backup-card::before {
+  content: "✓";
+  width: var(--home-ring-size);
+  height: var(--home-ring-size);
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--home-teal) 75%, #0d9488 25%);
+  background: color-mix(in srgb, var(--home-card-bg) 86%, transparent);
+  border: 2px solid color-mix(in srgb, var(--home-teal) 65%, #7dd3fc 35%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--home-teal) 20%, transparent), 0 10px 20px rgba(5, 150, 105, 0.16);
+}
+.home-backup-card h2,
+.home-backup-card p { grid-column: 2; }
+.home-backup-card h2 { font-size: clamp(1.05rem, 5.6vw, 1.45rem); line-height: 1.08; margin-bottom: 3px; }
+.home-backup-card p { font-size: 0.85rem; margin-bottom: 0; }
+#backupNowButton {
+  position: static;
+  grid-column: 3;
+  align-self: center;
+  min-width: 92px;
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 0.84rem;
+}
+
+.home-primary-cta,
+.home-nav-card {
+  min-height: var(--home-card-min-height) !important;
+  border-color: var(--home-border-soft) !important;
+  box-shadow: var(--home-soft-shadow) !important;
+}
+html[data-theme="dark"] .home-primary-cta,
+html[data-theme="dark"] .home-nav-card { box-shadow: var(--home-dark-soft-shadow) !important; }
+
+.home-primary-cta {
+  font-family: inherit;
+  font-size: var(--home-cta-label-size);
+  font-weight: 700;
+  padding: 12px 14px !important;
+}
+.home-primary-cta .home-nav-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  margin-right: 10px;
+}
+.home-primary-cta .home-chevron { font-size: 1.2rem; color: #ffe2d6; }
+
+.home-nav-card {
+  font-family: inherit;
+  font-size: var(--home-nav-label-size);
+  font-weight: 600;
+  min-height: 56px !important;
+  gap: 10px;
+  padding: 10px 12px !important;
+  border-radius: 16px !important;
+}
+.home-nav-icon { width: 34px; height: 34px; border-radius: 10px; }
+.home-nav-icon svg { width: 18px; height: 18px; }
+.home-chevron { font-size: 1.18rem; }
+
+@media (max-width: 390px) {
+  .home-backup-card { grid-template-columns: 52px minmax(0,1fr); row-gap: 6px; min-height: 84px; }
+  #backupNowButton { grid-column: 2; justify-self: start; }
+}
